@@ -5,6 +5,8 @@
 #include "FlyingModeManager.h"
 #include "ControlsManager.h"
 #include "IDRCUtils.h"
+#include "APIManager.h"
+#include "FastTravelManager.h"
 
 namespace IDRC {   
 
@@ -122,13 +124,32 @@ namespace IDRC {
             log::error("IDRC - {}: target is null", __func__);
             return;
         }
+
+        auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
+        if (!dragonActor) {
+            log::error("IDRC - {}: dragonActor is null", __func__);
+            return;
+        }
+
+        // stop ongoing fast travel if any
+        FastTravelManager::GetSingleton().StopFastTravel(a_target);
+
+        if (dragonActor->IsInCombat()) {
+            SKSE::GetTaskInterface()->AddTask([dragonActor, a_target]() {
+                // When modifying Game objects, send task to TaskInterface to ensure thread safety
+
+                // This just puts the new target on top of the combat target stack
+                // need to call StartCombat() (below) to actually make the dragon attack the now target
+                _ts_SKSEFunctions::UpdateCombatTarget(dragonActor, a_target);
+            });
+        }
+
 // TODO - using same workaround as in ForceCombatTargetAliasTo, with same caveats:
         auto handle = _ts_SKSEFunctions::GetHandle(DataManager::GetSingleton().GetRideQuest());
         if (!handle) {
             log::error("IDRC - {}: Quest handle is null", __func__);
             return;
         }
-        auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
         auto* args = RE::MakeFunctionArguments((RE::Actor*)dragonActor, (RE::Actor*)a_target);
         SKSE::GetTaskInterface()->AddTask([handle, args]() {
             // When modifying Game objects, send task to TaskInterface to ensure thread safety
@@ -143,7 +164,7 @@ namespace IDRC {
             count++;
         }
         if (count >= 100) {
-            log::error("IDRC - {}: ERROR - Timed out while waiting for dragon to start combat with {}", __func__, a_target->GetFormID());
+            log::error("IDRC - {}: ERROR - Timed out while waiting for dragon to start combat with {} ({})", __func__, a_target->GetName(), a_target->GetFormID());
         }
 // END TODO
     }
@@ -277,10 +298,13 @@ namespace IDRC {
                   });
             }
         }
-
-        // Display attack notification
-        if (displayManager.GetDisplayFlyingMode() && displayManager.GetDisplayMessages()) {
-            RE::DebugNotification("Commanding Attack");
+        
+        if (APIs::TrueDirectionalMovement) {
+            auto currentTarget = APIs::TrueDirectionalMovement->GetCurrentTarget();
+            if (currentTarget) {
+                log::info("IDRC - {}: Getting target from TDM: {} ({})", __func__, currentTarget.get()->GetName(), currentTarget.get()->GetFormID());
+                DragonStartCombat(currentTarget.get()->As<RE::Actor>());
+            }
         }
 
         if (!SyncCombatTarget(true)) {
@@ -302,7 +326,26 @@ namespace IDRC {
         // Final update in case the dragon has switched the combat target again (or target died) while resetting fast travel...
         target = _ts_SKSEFunctions::GetCombatTarget(dragonActor);
 
+//        if (!target) { // If no combat target, try to find a target in the camera direction
+        if (APIs::TrueDirectionalMovement && !APIs::TrueDirectionalMovement->GetTargetLockState()) {
+            std::vector<RE::Actor*> excludeActors;
+            excludeActors.push_back(dragonActor);
+
+            auto* selectedActor = _ts_SKSEFunctions::FindClosestActorInCameraDirection(7.0f, 5000.0f, true, excludeActors);
+            if (selectedActor) {
+                log::info("IDRC - {}: Found target in camera direction, starting combat with {} ({})", __func__, selectedActor->GetName(), selectedActor->GetFormID());
+                DragonStartCombat(selectedActor);
+                target = _ts_SKSEFunctions::GetCombatTarget(dragonActor);
+            }
+        }
+
         if (!target) {
+            log::info("IDRC - {}: Starting attack - no CombatTarget", __func__);
+            // Display attack notification
+            if (displayManager.GetDisplayFlyingMode() && displayManager.GetDisplayMessages()) {
+                RE::DebugNotification("Commanding Attack");
+            }
+
             // Use DragonTurnMarker as the target
             float angleZ = dragonActor->GetAngleZ();
             auto* dragonTurnMarker = flyingModeManager.GetDragonTurnMarker();
@@ -318,6 +361,11 @@ namespace IDRC {
 
             SetAttackMode(1); // Attack immediately
         } else {
+            log::info("IDRC - {}: Starting attack - CombatTarget: {} ({})", __func__, target->GetName(), target->GetFormID());
+            // Display attack notification
+            if (displayManager.GetDisplayFlyingMode() && displayManager.GetDisplayMessages()) {
+                RE::DebugNotification((std::string("Commanding Attack on ") + std::string(target->GetName())).c_str());
+            }
             SKSE::GetTaskInterface()->AddTask([dragonActor, target]() {
                 // When modifying Game objects, send task to TaskInterface to ensure thread safety
                 _ts_SKSEFunctions::SetLookAt(dragonActor, target, true);

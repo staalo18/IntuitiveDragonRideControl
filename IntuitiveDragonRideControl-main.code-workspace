@@ -112,7 +112,8 @@
 			"typeindex": "cpp",
 			"valarray": "cpp",
 			"coroutine": "cpp",
-			"resumable": "cpp"
+			"resumable": "cpp",
+			"*.in": "cpp"
 		}
 	}
 }

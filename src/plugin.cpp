@@ -4,6 +4,7 @@
 #include <thread>
 #include "SKSE/API.h"
 #include "RE/N/NativeLatentFunction.h"
+#include "SKSE/Interfaces.h"
 
 #include "_ts_SKSEFunctions.h"
 #include "FastTravelManager.h"
@@ -13,6 +14,8 @@
 #include "CombatManager.h"
 #include "ControlsManager.h"
 #include "IDRCUtils.h"
+#include "APIManager.h"
+#include "ModAPI.h"
 
 namespace IDRC {
     namespace Interface {
@@ -439,8 +442,37 @@ std::thread([a_vm, a_stackID, a_stopFastTravelTarget, a_height, a_timeout, a_wai
 } // namespace IDRC
 
 /******************************************************************************************/
+void MessageHandler(SKSE::MessagingInterface::Message* a_msg)
+{
+	// Try requesting APIs at multiple steps to try to work around the SKSE messaging bug
+	switch (a_msg->type) {
+	case SKSE::MessagingInterface::kDataLoaded:
+		APIs::RequestAPIs();
+		break;
+	case SKSE::MessagingInterface::kPostLoad:
+		APIs::RequestAPIs();
+		break;
+	case SKSE::MessagingInterface::kPostPostLoad:
+		APIs::RequestAPIs();
+		break;
+	case SKSE::MessagingInterface::kPreLoadGame:
+		break;
+	case SKSE::MessagingInterface::kPostLoadGame:
+	case SKSE::MessagingInterface::kNewGame:
+		APIs::RequestAPIs();
+		break;
+	}
+}
 
-SKSEPluginLoad(const LoadInterface* skse) {
+SKSEPluginInfo(
+    .Version = Plugin::VERSION,
+    .Name = Plugin::NAME,
+    .Author = "Staalo",
+    .RuntimeCompatibility = SKSE::PluginDeclaration::RuntimeCompatibility(SKSE::VersionIndependence::AddressLibrary),
+    .MinimumSKSEVersion = { 2, 2, 3 } // or 0 if you want to support all
+)
+
+extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* skse) {
     long logLevel = _ts_SKSEFunctions::GetValueFromINI(nullptr, 0, "LogLevel:Log", "SKSE/Plugins/IntuitiveDragonRideControl.ini", 3L);
     bool isLogLevelValid = true;
     if (logLevel < 0 || logLevel > 6) {
@@ -464,6 +496,11 @@ SKSEPluginLoad(const LoadInterface* skse) {
     }
 */
     Init(skse);
+    
+    auto messaging = SKSE::GetMessagingInterface();
+	if (!messaging->RegisterListener("SKSE", MessageHandler)) {
+		return false;
+	}
 
     if (!SKSE::GetPapyrusInterface()->Register(IDRC::Interface::IDRCFunctions)) {
         log::error("IDRC - {}: Failed to register Papyrus functions.", __func__);
@@ -472,4 +509,20 @@ SKSEPluginLoad(const LoadInterface* skse) {
         log::info("IDRC - {}: Registered Papyrus functions", __func__);
     }
     return true;
+}
+
+extern "C" DLLEXPORT void* SKSEAPI RequestPluginAPI(const IDRC_API::InterfaceVersion a_interfaceVersion)
+{
+	auto api = Messaging::IDRCInterface::GetSingleton();
+
+	log::info("IntuitiveDragonRideControl::RequestPluginAPI called, InterfaceVersion {}", static_cast<uint8_t>(a_interfaceVersion));
+
+	switch (a_interfaceVersion) {
+	case IDRC_API::InterfaceVersion::V1:
+		log::info("IntuitiveDragonRideControl::RequestPluginAPI returned the API singleton");
+		return static_cast<void*>(api);
+	}
+
+	log::info("IntuitiveDragonRideControl::RequestPluginAPI requested the wrong interface version");
+	return nullptr;
 }

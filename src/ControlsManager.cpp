@@ -3,6 +3,9 @@
 #include "DataManager.h"
 #include "_ts_SKSEFunctions.h"
 #include "ThumbstickTracer.h"
+#include "CombatTargetTracer.h"
+//#include "CrosshairTracer.h"
+//#include "MagicEffectTracer.h"
 
 
 namespace IDRC {
@@ -68,6 +71,10 @@ namespace IDRC {
             
             // start gamepad thumbstick tracing
             ThumbstickTracerHook::Install();
+            CombatTargetTracer::GetSingleton().Register();
+//            CrosshairTracer::GetSingleton().Register();
+//            MagicEffectTracer::GetSingleton().Register();
+  
 
             m_isRegistered = true;
             log::info("IDRC - {}: Registered for controls", __func__);
@@ -100,6 +107,10 @@ namespace IDRC {
 
             // stop keyboard tracing
             inputManager->RemoveEventSink(this);
+            CombatTargetTracer::GetSingleton().Unregister();
+ //           CrosshairTracer::GetSingleton().Unregister();
+ //            MagicEffectTracer::GetSingleton().Unregister();
+
 
             m_isRegistered = false;
             log::info("IDRC - {}: Unregistered for controls", __func__);
