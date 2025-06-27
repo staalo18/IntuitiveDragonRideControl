@@ -10,3 +10,5 @@ using namespace SKSE;
 using namespace SKSE::log;
 using namespace SKSE::stl;
 using namespace std::literals;
+
+#include "Version.h"

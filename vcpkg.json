@@ -1,9 +1,9 @@
 {
     "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
     "name": "intuitivedragonridecontrol",
-    "version-string": "3.3.0",
+    "version-string": "5.0.1",
     "dependencies": [
         "commonlibsse-ng",
         "simpleini"        
-    ]
+    ]  
 }
