@@ -132,8 +132,11 @@ namespace IDRC {
         }
 
         // stop ongoing fast travel if any
-        FastTravelManager::GetSingleton().StopFastTravel(a_target);
-
+        if (!FastTravelManager::GetSingleton().StopFastTravel(dragonActor)) {
+            log::info("IDRC - {}: Could not stop FastTravel, cancel DragonStartCombat", __func__);
+            return;
+        }
+        
         if (dragonActor->IsInCombat()) {
             SKSE::GetTaskInterface()->AddTask([dragonActor, a_target]() {
                 // When modifying Game objects, send task to TaskInterface to ensure thread safety
@@ -201,6 +204,7 @@ namespace IDRC {
     
         SetAttackMode(0); // No attack
         SetWaitForShout(false);
+        m_registeredForAttack = false;
     
         if (m_toggledAutoCombatAttack) {
             log::info("StopAttack: Resetting auto-combat to false");
@@ -216,12 +220,12 @@ namespace IDRC {
         });
     
         if (flyingModeManager.GetContinueFlyTo()) {
+            flyingModeManager.SetContinueFlyTo(false);
             if (dragonActor->AsActorState()->actorState2.allowFlying == 0) {
                 flyingModeManager.DragonLandPlayerRiding(dragonActor, false);
             } else if (flyingModeManager.DragonFlyTo(flyingModeManager.GetFlyToAngle(), false) == 0) {
                 flyingModeManager.DragonHoverPlayerRiding(dragonActor, false);
             }
-            flyingModeManager.SetContinueFlyTo(false);
         }
     
         return true;
@@ -267,13 +271,8 @@ namespace IDRC {
             if (controlsManager.GetIsKeyPressed(IDRCKey::kSneak)) {
                 std::this_thread::sleep_for(std::chrono::milliseconds(100));
             } else {
-                if (GetAttackMode() == 0) {
-                    StopAttack(true); // Force stop ongoing attack
-                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-                } else {
-                    log::info("IDRC - {}: Previous attack still ongoing - cancel attack", __func__);
-                    return false;
-                }
+                log::info("IDRC - {}: Previous attack still ongoing - cancel attack", __func__);
+                return false;
             }
             packageCheckResult = _ts_SKSEFunctions::CheckForPackage(dragonActor, m_combatTargetPackageList);
         }
@@ -298,11 +297,17 @@ namespace IDRC {
                   });
             }
         }
-        
+
+        bool bAttackNotificationDisplayed = false;
+       
         if (APIs::TrueDirectionalMovement) {
             auto currentTarget = APIs::TrueDirectionalMovement->GetCurrentTarget();
             if (currentTarget) {
                 log::info("IDRC - {}: Getting target from TDM: {} ({})", __func__, currentTarget.get()->GetName(), currentTarget.get()->GetFormID());
+                if (displayManager.GetDisplayFlyingMode() && displayManager.GetDisplayMessages()) {
+                    RE::DebugNotification((std::string("Commanding Attack on ") + std::string(currentTarget.get()->GetName())).c_str());
+                    bAttackNotificationDisplayed = true;
+                }
                 DragonStartCombat(currentTarget.get()->As<RE::Actor>());
             }
         }
@@ -334,6 +339,12 @@ namespace IDRC {
             auto* selectedActor = _ts_SKSEFunctions::FindClosestActorInCameraDirection(7.0f, 5000.0f, true, excludeActors);
             if (selectedActor) {
                 log::info("IDRC - {}: Found target in camera direction, starting combat with {} ({})", __func__, selectedActor->GetName(), selectedActor->GetFormID());
+
+                if (!bAttackNotificationDisplayed && displayManager.GetDisplayFlyingMode() && displayManager.GetDisplayMessages()) {
+                    RE::DebugNotification((std::string("Commanding Attack on ") + std::string(selectedActor->GetName())).c_str());
+                    bAttackNotificationDisplayed = true;
+                }
+
                 DragonStartCombat(selectedActor);
                 target = _ts_SKSEFunctions::GetCombatTarget(dragonActor);
             }
@@ -342,8 +353,9 @@ namespace IDRC {
         if (!target) {
             log::info("IDRC - {}: Starting attack - no CombatTarget", __func__);
             // Display attack notification
-            if (displayManager.GetDisplayFlyingMode() && displayManager.GetDisplayMessages()) {
+            if (!bAttackNotificationDisplayed && displayManager.GetDisplayFlyingMode() && displayManager.GetDisplayMessages()) {
                 RE::DebugNotification("Commanding Attack");
+                bAttackNotificationDisplayed = true;
             }
 
             // Use DragonTurnMarker as the target
@@ -363,8 +375,9 @@ namespace IDRC {
         } else {
             log::info("IDRC - {}: Starting attack - CombatTarget: {} ({})", __func__, target->GetName(), target->GetFormID());
             // Display attack notification
-            if (displayManager.GetDisplayFlyingMode() && displayManager.GetDisplayMessages()) {
+            if (!bAttackNotificationDisplayed && displayManager.GetDisplayFlyingMode() && displayManager.GetDisplayMessages()) {
                 RE::DebugNotification((std::string("Commanding Attack on ") + std::string(target->GetName())).c_str());
+                bAttackNotificationDisplayed = true;
             }
             SKSE::GetTaskInterface()->AddTask([dragonActor, target]() {
                 // When modifying Game objects, send task to TaskInterface to ensure thread safety
@@ -406,31 +419,51 @@ namespace IDRC {
                 SetShoutMode(2); // Set to Unrelenting Force
                 SetAttackMode(1); // Breath immediately
             } else {
-                SetAttackMode(0); // No shout package, let the dragon initiate combat
-                if (!dataManager.GetAutoCombat()) {
-                    dataManager.SetAutoCombat(true);
-                    m_toggledAutoCombatAttack = true;
+                // ensure dragon is not fast travelling
+                if (!FastTravelManager::GetSingleton().StopFastTravel(dragonActor)) {
+                    StopAttack(); 
+                    RE::DebugNotification("Could not attack - cancelling");
+                    m_registeredForAttack = false;
+                    return false;
                 }
 
-                float fHeight = flyingModeManager.GetMinHeight();
-                if (fHeight > 1000.0f) {
-                    fHeight = 1000.0f;
-                }
-                if (_ts_SKSEFunctions::IsFlying(target)) {
-                    fHeight = 0.0f;
+                // in case combat stopped while waiting for StopFastTravel to complete, re-initiate combat
+                if (_ts_SKSEFunctions::GetCombatState(dragonActor) == 0) {
+                    if (target && !target->IsDead() && !m_attackDisabled) {
+                        DragonStartCombat(target);
+                    } else {
+                        if (StopAttack()) { 
+                            RE::DebugNotification("Could not attack - cancelling");
+                            m_registeredForAttack = false;
+                            return false;
+                        }
+                    }
                 }
 
-                auto* orbitMarker = dataManager.GetOrbitMarker();
-                SKSE::GetTaskInterface()->AddTask([orbitMarker, target, fHeight]() {
-                    // When modifying Game objects, send task to TaskInterface to ensure thread safety
-                    _ts_SKSEFunctions::MoveTo(orbitMarker, target, 0.0f, 0.0f, fHeight);
-                  });
+                if (_ts_SKSEFunctions::GetFlyingState(dragonActor) == 3 && _ts_SKSEFunctions::GetDistance(dragonActor, target) < m_maxTargetDistance) {
+                    SetAttackMode(3); // Breath immediately from hover
+                } else {
+                    SetAttackMode(0); // No shout package, let the dragon initiate combat
+                    if (!dataManager.GetAutoCombat()) {
+                        dataManager.SetAutoCombat(true);
+                        m_toggledAutoCombatAttack = true;
+                    }
+                }
             }
         }
 
         SetWaitForShout(true);
 
-        log::info("IDRC - {}: DragonAttack: {}", __func__, GetAttackMode());
+        // another sync of the CombatTarget alias
+        if (!SyncCombatTarget(true)) {
+            // don't continue the attack if the CombatTarget alias cannot be sync'ed!
+            if (StopAttack()) {
+                m_registeredForAttack = false;
+                return false;
+            }
+        }
+
+        log::info("IDRC - {}: AttackMode: {}", __func__, GetAttackMode());
 
         auto* combatTargetActor = m_combatTargetAlias ? m_combatTargetAlias->GetActorReference() : nullptr;
         
@@ -483,12 +516,16 @@ namespace IDRC {
             count++;
             notificationCount++;
 
-            if (_ts_SKSEFunctions::GetCombatState(dragonActor) == 0 && target && !target->IsDead() && 
-                    target->GetParentCell()->IsAttached() && !m_attackDisabled) {
-                DragonStartCombat(target);
+            if (_ts_SKSEFunctions::GetCombatState(dragonActor) == 0) {
+                if (target && !target->IsDead() && !m_attackDisabled) {
+                    DragonStartCombat(target);
+                } else {
+                    SetWaitForShout(false);
+                    StopAttack();
+                }
             }
 
-            if (count > 140 || (GetAttackMode() > 0 && target && _ts_SKSEFunctions::GetDistance(dragonActor, target) > 8000)) {
+            if (count > 150) {
                 SetWaitForShout(false);
                 StopAttack();
                 RE::DebugNotification("Could not attack - cancelling");
@@ -501,6 +538,19 @@ namespace IDRC {
         }
 
         m_registeredForAttack = false;
+
+        if (dragonActor->AsActorState()->actorState2.allowFlying == 0 || 
+            flyingModeManager.GetRegisteredForLanding()) {
+            flyingModeManager.DragonLandPlayerRiding(dragonActor, false);
+        } else  {
+            auto* orbitMarker = dataManager.GetOrbitMarker();
+            if (!orbitMarker) {
+                log::error("IDRC - {}: OrbitMarker is null", __func__);
+                return false;
+            }
+            flyingModeManager.DragonHoverPlayerRiding(orbitMarker, false);
+        }
+
         return true;
     }
 
@@ -661,6 +711,10 @@ namespace IDRC {
     RE::BGSListForm* CombatManager::GetCombatTargetPackageList() {
         return m_combatTargetPackageList;
     }
+
+    bool CombatManager::IsAutoCombatAttackToggled() {
+        return m_toggledAutoCombatAttack;
+    }   
 
 } // namespace IDRC
 

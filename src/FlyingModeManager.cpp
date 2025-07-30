@@ -820,29 +820,33 @@ namespace IDRC {
     
             // Adjust the hover target's position
             float angleZ = a_hoverTarget->GetAngleZ();
-            RE::NiPoint3 angle = {0.0f, 0.0f, angleZ};
             float distance = 4600.0f;
-            _ts_SKSEFunctions::SetAngle(orbitMarker, angle);
 
             SKSE::GetTaskInterface()->AddTask([this, dragonActor, a_hoverTarget, orbitMarker, 
                                             distance, angleZ, dragonPosZ, heightAboveGround]() {
                 // When modifying Game objects, send task to TaskInterface to ensure thread safety
+                if (_ts_SKSEFunctions::GetFlyingState(dragonActor) != 3) { // not hovering
+                    RE::NiPoint3 angle = {0.0f, 0.0f, angleZ};
+                    _ts_SKSEFunctions::SetAngle(orbitMarker, angle);
 
-                // move Hover Target a bit ahead, so that dragon (hopefully) does not need to take a turn to reach the hover target
-                _ts_SKSEFunctions::MoveTo(orbitMarker, a_hoverTarget, distance * std::sin(angleZ), distance * std::cos(angleZ), 0.0f);
+                    // move Hover Target a bit ahead, so that dragon (hopefully) does not need to take a turn to reach the hover target
+                    _ts_SKSEFunctions::MoveTo(orbitMarker, a_hoverTarget, distance * std::sin(angleZ), distance * std::cos(angleZ), 0.0f);
 
-                float markerPosZ = _ts_SKSEFunctions::GetLandHeightWithWater(orbitMarker) + heightAboveGround;
+                    float markerPosZ = _ts_SKSEFunctions::GetLandHeightWithWater(orbitMarker) + heightAboveGround;
 
-                if (markerPosZ < dragonPosZ) {
-                    markerPosZ = (dragonPosZ + markerPosZ) / 2.0f;
+                    if (markerPosZ < dragonPosZ) {
+                        markerPosZ = (dragonPosZ + markerPosZ) / 2.0f;
+                    }
+
+                    // move the hover target to the calculated height
+                    orbitMarker->SetPosition(orbitMarker->GetPositionX(), orbitMarker->GetPositionY(), markerPosZ);
+                } else {
+                    _ts_SKSEFunctions::MoveTo(orbitMarker, dragonActor);
                 }
 
-                // move the hover target to the calculated height
-                orbitMarker->SetPosition(orbitMarker->GetPositionX(), orbitMarker->GetPositionY(), markerPosZ);
                 // move turn marker ahead of orbit marker to fix new look-at position
                 // see comments in DisplayManager::UpdateDisplay() for more information on why this is necessary
                 _ts_SKSEFunctions::MoveTo(this->m_dragonTurnMarker, orbitMarker, 2500.0f * std::sin(angleZ), 2500.0f * std::cos(angleZ), 0.0f);
-    
                 // Set the dragon to hover mode
                 dragonActor->AsActorValueOwner()->SetActorValue(RE::ActorValue::kVariable03, 3); // Hover package
                 dragonActor->EvaluatePackage();
@@ -1063,7 +1067,7 @@ namespace IDRC {
     
             // Handle auto-combat toggling
             m_toggledAutoCombatLand = false;
-            if (dataManager.GetAutoCombat()) {
+            if (dataManager.GetAutoCombat() && !combatManager.IsAutoCombatAttackToggled()) {
                 log::info("IDRC - {}: AutoCombat toggled to FALSE", __func__);
                 dataManager.SetAutoCombat(false);
                 m_toggledAutoCombatLand = true;

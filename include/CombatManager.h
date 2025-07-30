@@ -54,6 +54,8 @@ namespace IDRC {
 
         void SetBallShoutList(RE::BGSListForm* a_ballShoutList);
 
+        bool IsAutoCombatAttackToggled();
+
     private:
         CombatManager() = default;
         ~CombatManager() = default;
