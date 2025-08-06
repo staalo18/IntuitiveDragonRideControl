@@ -1,6 +1,7 @@
 #include "ModAPI.h"
 #include "DataManager.h"
 #include "_ts_SKSEFunctions.h"
+#include "TargetReticleManager.h"
 
 Messaging::IDRCInterface::IDRCInterface() noexcept {
 	apiTID = GetCurrentThreadId();
@@ -14,9 +15,12 @@ unsigned long Messaging::IDRCInterface::GetIDRCThreadId() const noexcept {
 
 RE::ActorHandle Messaging::IDRCInterface::GetCurrentTarget() const noexcept  {
     auto* dragonActor = IDRC::DataManager::GetSingleton().GetDragonActor();
-    if (dragonActor && dragonActor->GetActorRuntimeData().currentCombatTarget) {
-        return dragonActor->GetActorRuntimeData().currentCombatTarget;
- 	}
+    if (dragonActor) {
+        auto* currentTarget = IDRC::TargetReticleManager::GetSingleton().GetCurrentTarget();
+        if (currentTarget) {   
+            return currentTarget->GetHandle();
+        }
+    }
 
 	return RE::ActorHandle();
 }

@@ -7,6 +7,7 @@
 #include "IDRCUtils.h"
 #include "APIManager.h"
 #include "FastTravelManager.h"
+#include "TargetReticleManager.h"
 
 namespace IDRC {   
 
@@ -279,10 +280,21 @@ namespace IDRC {
 
         m_registeredForAttack = true;
         SetStopCombat(false);
+        bool bAttackNotificationDisplayed = false;
+
+        // get the combat target from the reticle (if active), and ensure dragon is in combat with that target
+        RE::Actor* combatTarget = TargetReticleManager::GetSingleton().GetCurrentTarget();
+        if (combatTarget) {
+            if (!bAttackNotificationDisplayed && displayManager.GetDisplayFlyingMode() && displayManager.GetDisplayMessages()) {
+                RE::DebugNotification((std::string("Commanding Attack on ") + std::string(combatTarget->GetName())).c_str());
+                bAttackNotificationDisplayed = true;
+            }
+            DragonStartCombat(combatTarget);
+        }
 
         // Get the dragon's combat target
         RE::Actor* target = _ts_SKSEFunctions::GetCombatTarget(dragonActor);
-        
+
         while (controlsManager.GetIsKeyPressed(IDRCKey::kSneak)) {
             _ts_SKSEFunctions::WaitWhileGameIsPaused();
 
@@ -297,10 +309,8 @@ namespace IDRC {
                   });
             }
         }
-
-        bool bAttackNotificationDisplayed = false;
        
-        if (APIs::TrueDirectionalMovement) {
+        if (APIs::TrueDirectionalMovement && APIs::TrueDirectionalMovement->GetTargetLockState()) {
             auto currentTarget = APIs::TrueDirectionalMovement->GetCurrentTarget();
             if (currentTarget) {
                 log::info("IDRC - {}: Getting target from TDM: {} ({})", __func__, currentTarget.get()->GetName(), currentTarget.get()->GetFormID());
@@ -330,25 +340,6 @@ namespace IDRC {
 
         // Final update in case the dragon has switched the combat target again (or target died) while resetting fast travel...
         target = _ts_SKSEFunctions::GetCombatTarget(dragonActor);
-
-//        if (!target) { // If no combat target, try to find a target in the camera direction
-        if (APIs::TrueDirectionalMovement && !APIs::TrueDirectionalMovement->GetTargetLockState()) {
-            std::vector<RE::Actor*> excludeActors;
-            excludeActors.push_back(dragonActor);
-
-            auto* selectedActor = _ts_SKSEFunctions::FindClosestActorInCameraDirection(7.0f, 5000.0f, true, excludeActors);
-            if (selectedActor) {
-                log::info("IDRC - {}: Found target in camera direction, starting combat with {} ({})", __func__, selectedActor->GetName(), selectedActor->GetFormID());
-
-                if (!bAttackNotificationDisplayed && displayManager.GetDisplayFlyingMode() && displayManager.GetDisplayMessages()) {
-                    RE::DebugNotification((std::string("Commanding Attack on ") + std::string(selectedActor->GetName())).c_str());
-                    bAttackNotificationDisplayed = true;
-                }
-
-                DragonStartCombat(selectedActor);
-                target = _ts_SKSEFunctions::GetCombatTarget(dragonActor);
-            }
-        }
 
         if (!target) {
             log::info("IDRC - {}: Starting attack - no CombatTarget", __func__);

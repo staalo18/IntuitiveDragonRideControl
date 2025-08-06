@@ -3,7 +3,8 @@
 #include "DataManager.h"
 #include "_ts_SKSEFunctions.h"
 #include "ThumbstickTracer.h"
-#include "CombatTargetTracer.h"
+#include "TargetReticleManager.h"
+//#include "CombatTargetTracer.h"
 //#include "CrosshairTracer.h"
 //#include "MagicEffectTracer.h"
 
@@ -22,6 +23,19 @@ namespace IDRC {
                 if (!buttonEvent || !buttonEvent->IsDown()) {
                     continue;
                 }
+
+                /*
+                auto playerControls = RE::PlayerControls::GetSingleton();
+                if (!playerControls) {
+                    log::error("IDRC - {}: PlayerControls is null", __func__);
+                    return;
+                }
+
+                playerControls->readyWeaponHandler->ProcessButton(
+                    buttonEvent, 
+                    &playerControls->data
+                );
+*/
 
                 IDRCKey idrcKey = GetMappedIDRCKey(buttonEvent);
                 if (idrcKey == kInvalid) {
@@ -43,7 +57,14 @@ namespace IDRC {
                     // ANY change to one of the Skyrim objects is executed on Skyrim's main thread.
                     // This is achieved by passing the corresponding statements to the main thread
                     // via SKSE::GetTaskInterface()->AddTask()
-                    FlyingModeManager::GetSingleton().OnKeyDown(idrcKey);
+
+                    if (idrcKey == IDRCKey::kToggleLockReticle) {
+                        TargetReticleManager::GetSingleton().ToggleLockReticle();
+                    } else if (idrcKey == IDRCKey::kPrimaryTargetMode) {
+                        TargetReticleManager::GetSingleton().TogglePrimaryTargetMode();
+                    } else {
+                        FlyingModeManager::GetSingleton().OnKeyDown(idrcKey);
+                    }
                 }).detach();
             }
         }
@@ -71,7 +92,7 @@ namespace IDRC {
             
             // start gamepad thumbstick tracing
             ThumbstickTracerHook::Install();
-            CombatTargetTracer::GetSingleton().Register();
+//            CombatTargetTracer::GetSingleton().Register();
 //            CrosshairTracer::GetSingleton().Register();
 //            MagicEffectTracer::GetSingleton().Register();
   
@@ -107,7 +128,8 @@ namespace IDRC {
 
             // stop keyboard tracing
             inputManager->RemoveEventSink(this);
-            CombatTargetTracer::GetSingleton().Unregister();
+            TargetReticleManager::GetSingleton().DisposeReticle();
+//            CombatTargetTracer::GetSingleton().Unregister();
  //           CrosshairTracer::GetSingleton().Unregister();
  //            MagicEffectTracer::GetSingleton().Unregister();
 
@@ -218,7 +240,9 @@ namespace IDRC {
             {"Jump", IDRCKey::kJump},
             {"ToggleAlwaysRun", IDRCKey::kToggleAlwaysRun},
             {"ToggleAutoCombat", IDRCKey::kToggleAutoCombat},
-            {"Activate", IDRCKey::kActivate}
+            {"Activate", IDRCKey::kActivate},
+            {"ToggleLockReticle", IDRCKey::kToggleLockReticle},
+            {"PrimaryTargetMode", IDRCKey::kPrimaryTargetMode}
         };
     
         if (a_mappedScanCode == InputMap::kMaxMacros) {
@@ -315,6 +339,14 @@ namespace IDRC {
             // Update keyMap (actual key value depends on device, and control mapping)
             SetKeyMapping("Activate", scanCode);
             return IDRCKey::kActivate;
+        } else if (a_buttonEvent->QUserEvent() == "ToggleLockReticle") {
+            // Update keyMap (actual key value depends on device, and control mapping)
+            SetKeyMapping("ToggleLockReticle", scanCode);
+            return IDRCKey::kToggleLockReticle;
+        } else if (a_buttonEvent->QUserEvent() == "PrimaryTargetMode") {
+            // Update keyMap (actual key value depends on device, and control mapping)
+            SetKeyMapping("PrimaryTargetMode", scanCode);
+            return IDRCKey::kPrimaryTargetMode;
         } else {
             // the other keys can be remapped by the user in the MCM
             // the mapping is stored in the keyMap

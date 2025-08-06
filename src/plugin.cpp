@@ -16,11 +16,13 @@
 #include "IDRCUtils.h"
 #include "APIManager.h"
 #include "ModAPI.h"
+#include "TargetReticleManager.h"
+#include "Hooks.h"
 
 namespace IDRC {
     namespace Interface {
         int GetIDRCPluginVersion(RE::StaticFunctionTag*) {
-            return 3;
+            return 4;
         }
 
         void SetINIVars_SKSE(RE::StaticFunctionTag*) {
@@ -59,6 +61,7 @@ namespace IDRC {
                 a_breathList, a_ballList, a_unrelentingForceShout, a_attackShout,
                 a_combatTargetAlias);  
             ControlsManager::GetSingleton().InitializeData();
+            TargetReticleManager::GetSingleton().Initialize();
         }
 
         void SetContinueFlyTo_SKSE(RE::StaticFunctionTag*, bool a_continue) {
@@ -175,6 +178,35 @@ namespace IDRC {
         void SetDisplayMessages_SKSE(RE::StaticFunctionTag*, bool a_display) {
             log::info("IDRC - {}: {}", __func__, a_display);
             DisplayManager::GetSingleton().SetDisplayMessages(a_display);
+        }
+
+        void SetTargetReticleEnabled_SKSE(RE::StaticFunctionTag*, bool a_enabled) {
+            log::info("IDRC - {}: {}", __func__, a_enabled);
+            TargetReticleManager::GetSingleton().Enable(a_enabled);
+        }
+        void SetPrimaryTargetMode_SKSE(RE::StaticFunctionTag*, int a_primaryTargetMode) {
+            log::info("IDRC - {}: {}", __func__, a_primaryTargetMode);
+            TargetReticleManager::GetSingleton().SetPrimaryTargetMode(static_cast<TargetReticleManager::TargetMode>(a_primaryTargetMode+1));
+        }
+        void SetMaxTargetDistance_SKSE(RE::StaticFunctionTag*, float a_distance) {
+            log::info("IDRC - {}: {}", __func__, a_distance);
+            TargetReticleManager::GetSingleton().SetMaxTargetDistance(a_distance);
+        }
+        void SetDistanceMultiplierSmall_SKSE(RE::StaticFunctionTag*, float a_multiplier) {
+            log::info("IDRC - {}: {}", __func__, a_multiplier);
+            TargetReticleManager::GetSingleton().SetDistanceMultiplierSmall(a_multiplier);
+        }
+        void SetDistanceMultiplierLarge_SKSE(RE::StaticFunctionTag*, float a_multiplier) {  
+            log::info("IDRC - {}: {}", __func__, a_multiplier);
+            TargetReticleManager::GetSingleton().SetDistanceMultiplierLarge(a_multiplier);
+        }
+        void SetDistanceMultiplierExtraLarge_SKSE(RE::StaticFunctionTag*, float a_multiplier) {
+            log::info("IDRC - {}: {}", __func__, a_multiplier);
+            TargetReticleManager::GetSingleton().SetDistanceMultiplierExtraLarge(a_multiplier);
+        }
+        void SetMaxTargetScanAngle_SKSE(RE::StaticFunctionTag*, float a_angle) {
+            log::info("IDRC - {}: {}", __func__, a_angle);
+            TargetReticleManager::GetSingleton().SetMaxTargetScanAngle(a_angle);
         }
 
         RE::BSScript::LatentStatus TriggerLand_SKSE_Latent(RE::BSScript::Internal::VirtualMachine* a_vm, RE::VMStackID a_stackID, RE::StaticFunctionTag*, RE::TESObjectREFR* a_landTarget) {
@@ -390,6 +422,13 @@ std::thread([a_vm, a_stackID, a_stopFastTravelTarget, a_height, a_timeout, a_wai
             a_vm->RegisterFunction("SetInitialAutoCombatMode_SKSE", "_ts_DR_RideControlScript", SetInitialAutoCombatMode_SKSE);
             a_vm->RegisterFunction("SetDragonSpeeds_SKSE", "_ts_DR_RideControlScript", SetDragonSpeeds_SKSE);
             a_vm->RegisterFunction("SetStopCombat_SKSE", "_ts_DR_RideControlScript", SetStopCombat_SKSE);
+            a_vm->RegisterFunction("SetTargetReticleEnabled_SKSE", "_ts_DR_RideControlScript", SetTargetReticleEnabled_SKSE);
+            a_vm->RegisterFunction("SetPrimaryTargetMode_SKSE", "_ts_DR_RideControlScript", SetPrimaryTargetMode_SKSE);
+            a_vm->RegisterFunction("SetMaxTargetDistance_SKSE", "_ts_DR_RideControlScript", SetMaxTargetDistance_SKSE);
+            a_vm->RegisterFunction("SetDistanceMultiplierSmall_SKSE", "_ts_DR_RideControlScript", SetDistanceMultiplierSmall_SKSE);
+            a_vm->RegisterFunction("SetDistanceMultiplierLarge_SKSE", "_ts_DR_RideControlScript", SetDistanceMultiplierLarge_SKSE);
+            a_vm->RegisterFunction("SetDistanceMultiplierExtraLarge_SKSE", "_ts_DR_RideControlScript", SetDistanceMultiplierExtraLarge_SKSE);
+            a_vm->RegisterFunction("SetMaxTargetScanAngle_SKSE", "_ts_DR_RideControlScript", SetMaxTargetScanAngle_SKSE);
 
             // Papyrus access to ts_SKSEFunctions
             a_vm->RegisterFunction("IsFlyingMountPatrolQueued", "_ts_DR_RideControlScript", IsFlyingMountPatrolQueued);
@@ -508,6 +547,13 @@ extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* sks
     } else {
         log::info("IDRC - {}: Registered Papyrus functions", __func__);
     }
+
+    log::info("IDRC - {}: Calling Install Hooks", __func__);
+
+    SKSE::AllocTrampoline(64);
+
+    Hooks::Install();
+
     return true;
 }
 

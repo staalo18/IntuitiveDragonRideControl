@@ -18,7 +18,9 @@ namespace IDRC {
         kJump = 11,
         kToggleAlwaysRun = 12,
         kToggleAutoCombat = 13,
-        kActivate = 14
+        kActivate = 14,
+        kToggleLockReticle = 15,
+        kPrimaryTargetMode = 16
     };
 
     struct DXScanCode{

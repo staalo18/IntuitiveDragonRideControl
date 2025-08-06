@@ -4,3 +4,4 @@
 build
 cmake-build*
 vcpkg_installed*
+squash-on-release_howto.md

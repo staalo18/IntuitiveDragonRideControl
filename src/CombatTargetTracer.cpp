@@ -20,27 +20,11 @@ namespace IDRC {
         RE::Actor* currentCombatTarget = dragonActor->GetActorRuntimeData().currentCombatTarget.get().get();
 
         if (currentCombatTarget != m_combatTarget) {
-            // Remove shader from old target if it exists
             if (m_combatTarget) {
-//                SKSE::GetTaskInterface()->AddTask([this]() {
-                // When modifying Game objects, send task to TaskInterface to ensure thread safety
-//                    this->m_combatTarget->ApplyEffectShader(nullptr);
-//                });
-
-                log::info("IDRC - {}: Previous CombatTarget: {} ({})", __func__, m_combatTarget->GetName(),  m_combatTarget->GetFormID());
+                log::info("IDRC - {}: Previous CombatTarget: {} ({} - {})", __func__, m_combatTarget->GetName(),  m_combatTarget->GetFormID(),  m_combatTarget->GetHandle().native_handle());
             } else {
                 log::info("IDRC - {}: No previous CombatTarget", __func__);
             }
-            // Apply shader to new target if it exists
-/*            if (currentCombatTarget && m_breathHitShader) {
-                SKSE::GetTaskInterface()->AddTask([this, currentCombatTarget]() {
-                // When modifying Game objects, send task to TaskInterface to ensure thread safety
-                    currentCombatTarget->ApplyEffectShader(this->m_breathHitShader);
-                });
-
-                log::info("IDRC - {}: Applied shader to new target {} ({})", __func__, currentCombatTarget->GetName(),  currentCombatTarget->GetFormID());
-            } */
- 
             m_combatTarget = currentCombatTarget;
         }
  
