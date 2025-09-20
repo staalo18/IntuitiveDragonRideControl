@@ -2,7 +2,7 @@
 #include "Offsets.h"
 #include "IDRCUtils.h"
 
-// The CombatTargetReticle class is basically a copy of the TargetLockReticle implementation from 'True Directional Movement':
+// The CombatTargetReticle class is based on the TargetLockReticle implementation from 'True Directional Movement':
 // https://github.com/ersh1/TrueDirectionalMovement
 // All credits go to the original author Ersh!
 
@@ -32,13 +32,11 @@ namespace IDRC
 		}
 
 		UpdatePosition();
-		UpdateInfo();
+		UpdateWidgetState();
 	}
 
 	void CombatTargetReticle::Initialize()
 	{
-		LoadConfig();
-
 		SetWidgetState(WidgetState::kActive);
 
 		RE::GRectF rect = _view->GetVisibleFrameRect();
@@ -46,32 +44,28 @@ namespace IDRC
 		_lastScreenPos.y = rect.bottom * 0.5f;
 	}
 
+	void CombatTargetReticle::WidgetReadyToRemove()
+	{
+		AddWidgetTask([=]() {
+			RE::GFxValue arg;
+			arg.SetBoolean(true);
+			_object.Invoke("setWidgetReadyToRemove", nullptr, &arg, 1);
+		});
+	}	
+
 	void CombatTargetReticle::Dispose()
 	{
 		_object.Invoke("cleanUp", nullptr, nullptr, 0);
 	}
 
-    void CombatTargetReticle::SetVisible(bool a_visible) 
-    {
-        AddWidgetTask([=]() {
-            RE::GFxValue::DisplayInfo displayInfo;
-            _object.GetDisplayInfo(&displayInfo);
-            displayInfo.SetVisible(a_visible);
-            _object.SetDisplayInfo(displayInfo);
-        });
-    }
-
 	void CombatTargetReticle::SetWidgetState(WidgetState a_widgetState)
 	{
 		_widgetState = a_widgetState;
 
-		// if the reticle is 'transforming' from vanilla crosshair, do the position interpolation
-		if (_reticleStyle == ReticleStyle::kSelectedActor) {
-			if (_widgetState == WidgetState::kActive) {
-				StartInterpolation(InterpMode::kCrosshairToTarget);
-			} else if (_widgetState == WidgetState::kPendingRemoval) {
-				StartInterpolation(InterpMode::kTargetToCrosshair);
-			}
+		if (_widgetState == WidgetState::kActive) {
+			StartInterpolation(InterpMode::kCrosshairToTarget);
+		} else if (_widgetState == WidgetState::kPendingRemoval) {
+			StartInterpolation(InterpMode::kTargetToCrosshair);
 		}
 	}
 
@@ -87,10 +81,10 @@ namespace IDRC
 
 				RE::GFxValue arg;
 				arg.SetBoolean(false);
-				_object.Invoke("setReadyToRemove", nullptr, &arg, 1);
+				_object.Invoke("setWidgetReadyToRemove", nullptr, &arg, 1);
 			} else {
 				StartInterpolation(InterpMode::kTargetToTarget);
-				_object.Invoke("playChangeTargetTimeline", nullptr, nullptr, 0);
+				_object.Invoke("changeTarget", nullptr, nullptr, 0);
 			}
 		});
 	}
@@ -128,7 +122,7 @@ namespace IDRC
 			screenPos = _desiredScreenPos;
 		}
 
-		float scale = 100.f; // * Settings::fReticleScale;
+		float scale = 100.f;
 
 		RE::GFxValue::DisplayInfo displayInfo;
 		displayInfo.SetPosition(screenPos.x, screenPos.y);
@@ -136,7 +130,7 @@ namespace IDRC
 		_object.SetDisplayInfo(displayInfo);
 	}
 
-	void CombatTargetReticle::UpdateInfo()
+	void CombatTargetReticle::UpdateWidgetState()
 	{
 		if (!_refHandle || !_refHandle.get()) {
 			_widgetState = WidgetState::kRemoved;
@@ -149,35 +143,12 @@ namespace IDRC
 			return;
 		}
 
-		RE::GFxValue arg;
-		arg.SetBoolean(_widgetState == kPendingRemoval ? true : false);
+		AddWidgetTask([=]() {
+			RE::GFxValue arg;
+			arg.SetBoolean(_widgetState == kPendingRemoval ? true : false);
 
-		_object.Invoke("updateData", nullptr, &arg, 1);
-	}
-
-	void CombatTargetReticle::LoadConfig()
-	{
-//log::info("IDRC - {}: Loading config - reticleStyle {}", __func__,  static_cast<uint32_t>(_reticleStyle));
-		RE::GFxValue args[2];
-// TODO: Use IDRC Reticle Style in the .swf file!
-uint32_t reticleStyle = static_cast<uint32_t>(_reticleStyle);
-//if (reticleStyle > 0) {
-	//TODO - remove once swf file is adapted to IDRC
-//	reticleStyle += 1; // convert to TDM reticle style for now (kCrosshair = 0, kCrosshairNoTransform = 1, kDot = 2, kGlow = 3)
-//}
-if (reticleStyle == 0) {
-	reticleStyle = 3; // kSelectedActor -> kGlow
-} else if (reticleStyle == 1) {
-	reticleStyle = 1; // kCombatTargetFound -> kCrosshairNoTransform
-} else if (reticleStyle == 2) {
-	reticleStyle = 1; // kCombatTargetSearching -> kCrosshairNoTransform
-} else { // fallback, should not get here
-	reticleStyle = 2; // unknown -> kDot
-}
-		args[0].SetNumber(reticleStyle);
-//		args[1].SetNumber((Settings::bReticleUseHUDOpacity ? *g_fHUDOpacity : Settings::fReticleOpacity) * 100.f);
-		args[1].SetNumber(100.f);
-		_object.Invoke("loadConfig", nullptr, args, 2);
+			_object.Invoke("updateWidgetState", nullptr, &arg, 1);
+		});		
 	}
 
 	void CombatTargetReticle::StartInterpolation(InterpMode a_interpMode)
@@ -198,14 +169,29 @@ if (reticleStyle == 0) {
 		_interpMode = a_interpMode;
 	}
 
-	void CombatTargetReticle::UpdateReticleStyle(ReticleStyle a_reticleStyle)
+	void CombatTargetReticle::UpdateState(bool a_isReticleLocked, bool a_isTDMLocked, int a_combatState)
 	{
-		if (_reticleStyle != a_reticleStyle) {
-			_reticleStyle = a_reticleStyle;
-			LoadConfig();
-			AddWidgetTask([this]() {
-				_object.Invoke("init", nullptr, nullptr, 0);
-			});
+		AddWidgetTask([this, a_isReticleLocked, a_isTDMLocked, a_combatState]() {
+			RE::GFxValue args[3];
+			args[0].SetBoolean(a_isReticleLocked);
+			args[1].SetBoolean(a_isTDMLocked);
+			args[2].SetNumber(static_cast<double>(a_combatState));
+			_object.Invoke("updateReticle", nullptr, args, 3);
+		});
+	}
+
+	void CombatTargetReticle::SetReticleLockAnimationStyle(int a_style)
+	{
+		// a_style == 0: "Rotate"; a_style == 1: "Expand"
+    	float circleInitZoom = 1.2f;
+		if (a_style == 1) {
+			circleInitZoom = 0.5f;
 		}
+
+		AddWidgetTask([this, circleInitZoom]() {
+			RE::GFxValue arg;
+			arg.SetNumber(circleInitZoom);
+			_object.Invoke("SetCircleInitZoom", nullptr, &arg, 1);
+		});
 	}
 }

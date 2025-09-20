@@ -310,7 +310,8 @@ namespace IDRC {
             }
         }
        
-        if (APIs::TrueDirectionalMovement && APIs::TrueDirectionalMovement->GetTargetLockState()) {
+        if (APIs::TrueDirectionalMovement && APIs::TrueDirectionalMovement->GetTargetLockState()
+            && !TargetReticleManager::GetSingleton().IsReticleLocked()) {
             auto currentTarget = APIs::TrueDirectionalMovement->GetCurrentTarget();
             if (currentTarget) {
                 log::info("IDRC - {}: Getting target from TDM: {} ({})", __func__, currentTarget.get()->GetName(), currentTarget.get()->GetFormID());

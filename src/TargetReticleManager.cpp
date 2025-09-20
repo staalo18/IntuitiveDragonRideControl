@@ -78,7 +78,7 @@ namespace IDRC {
 
     void TargetReticleManager::UpdateReticle() {
         if (!APIs::TrueHUD) {
-            log::warn("IDRC - {}: TrueHUD API not available", __func__);
+            log::info("IDRC - {}: TrueHUD API not available", __func__);
             return;
         }
 
@@ -86,22 +86,24 @@ namespace IDRC {
             return;
         }
 
-        if (!m_isEnabled) {
+        if (m_reticleMode == ReticleMode::kOff) {
             DisposeReticle();
             return;
         }
 
+        RE::Actor* newTarget = nullptr;
+        bool hasTDMTarget = false;
+
         if (IsTDMLocked()) {
-            DisposeReticle();
             if (APIs::TrueDirectionalMovement) {
-               auto targetHandle = APIs::TrueDirectionalMovement->GetCurrentTarget();
+                auto targetHandle = APIs::TrueDirectionalMovement->GetCurrentTarget();
                 if (targetHandle) {
-                     m_reticleTarget = targetHandle.get().get();
+                    newTarget = targetHandle.get().get();
                 } else {
-                    m_reticleTarget = nullptr;
+                    newTarget = nullptr;
                 }
+                hasTDMTarget = true;
             }
-            return;
         }
 
         auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
@@ -111,21 +113,21 @@ namespace IDRC {
             return;
         }
 
+        int newCombatState = GetCombatState();
+
         if (m_isReticleLocked) {
             if (m_reticleTarget && m_reticleTarget->GetDistance(dragonActor) <= m_maxReticleDistance * GetDistanceRaceSizeMultiplier(m_reticleTarget->GetRace()) && !m_reticleTarget->IsDead()) {
-                if(!m_isWidgetActive) {
+                if (!m_isWidgetActive || m_combatState != newCombatState) {
                     // re-enable reticle in case it was disposed during TDM target lock
-                    SetReticleTarget(GetReticleStyle(m_currentTargetMode));
+                    m_combatState = newCombatState;
+                    SetReticleTarget();
                 }
                 return;
             } else {
-                m_isReticleLocked = false;
-                std::string sMessage = "Target reticle unlocked.";
+                ToggleLockReticle();
             }
         }
 
-        RE::Actor* currentTarget = m_reticleTarget;        
-        int combatState = _ts_SKSEFunctions::GetCombatState(dragonActor);
         auto* selectedActor = GetSelectedActor();        
         RE::Actor* combatTarget = GetCombatTarget();
         
@@ -133,31 +135,46 @@ namespace IDRC {
         TargetMode newTargetMode = GetTargetMode((selectedActor != nullptr), (combatTarget != nullptr));
         
         // Determine appropriate target for the new target mode
-        RE::Actor* newTarget = nullptr;
-        if (newTargetMode == TargetMode::kCombatTarget) {
-            newTarget = combatTarget;
-            m_combatState = combatState;
-        } else if (newTargetMode == TargetMode::kSelectedActor) {
-            newTarget = selectedActor;
-        } else {
-            if (currentTarget != nullptr) {
-                DisposeReticle();
+        if (!hasTDMTarget) {
+            if (newTargetMode == TargetMode::kCombatTarget) {
+                newTarget = combatTarget;
+            } else if (newTargetMode == TargetMode::kSelectedActor) {
+                newTarget = selectedActor;
+            } else {
+                if (m_reticleTarget != nullptr) {
+                    DisposeReticle();
+                }
+                return;
             }
-            return;
         }
 
         if ((!m_isWidgetActive && newTarget) ||
-                m_currentTargetMode != newTargetMode || 
-                currentTarget != newTarget ||
-                (newTargetMode == TargetMode::kCombatTarget && m_combatState != combatState))
+             m_currentTargetMode != newTargetMode || 
+             m_reticleTarget != newTarget ||
+             m_combatState != newCombatState)
         {
             m_currentTargetMode = newTargetMode;
             m_reticleTarget = newTarget;
-            
-            SetReticleTarget(GetReticleStyle(m_currentTargetMode));
+            m_combatState = newCombatState;
+            SetReticleTarget();
         }
+
+        UpdateReticleState();
     }
 
+    int TargetReticleManager::GetCombatState() {
+        int combatState = 0;
+        auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
+        if (!dragonActor) {
+            log::warn("IDRC - {}: No dragon actor found", __func__);
+            return combatState;
+        }
+        if (m_reticleTarget ==  GetCombatTarget()) {
+            combatState = _ts_SKSEFunctions::GetCombatState(dragonActor);
+        }
+
+        return combatState;
+    }
 
     bool TargetReticleManager::IsTDMLocked() {
         bool isTDMLocked = false;
@@ -194,10 +211,26 @@ namespace IDRC {
             }
             else if (targetMode == TargetMode::kSelectedActor) {
                 currentTarget = combatTarget;
+            } else if (selectedActor) {  
+                // in case m_reticleMode == ReticleMode::kOnlyCombatTarget
+                // GetTargetMode() will never return  TargetMode::kSelectedActor
+                // make sure selected actor is used in that case - if available
+                currentTarget = selectedActor;
             }
         }
 
         return currentTarget; 
+    }
+
+    bool TargetReticleManager::GetUseTarget() const {
+        // This API function can be used to inform other mods that they should use IDRC's current combat target
+        // Currently in use in TrueDirectionalMovement: 
+        //     if GetUseTarget() returns true, the TDMLock will lock on the dragon's target when activated.
+        return m_useTarget;
+    }
+
+    void TargetReticleManager::SetUseTarget(bool a_useTarget) {
+        m_useTarget = a_useTarget;
     }
 
     RE::Actor* TargetReticleManager::GetSelectedActor() const {
@@ -286,7 +319,7 @@ namespace IDRC {
         TargetMode targetMode = TargetMode::kNone;
 
         // check for primary target, as defined by m_primaryTargetMode
-        if (m_primaryTargetMode == TargetMode::kCombatTarget) {
+        if (m_primaryTargetMode == TargetMode::kCombatTarget || m_reticleMode == ReticleMode::kOnlyCombatTarget) {
             targetMode = a_hasCombatTarget ? TargetMode::kCombatTarget : TargetMode::kNone;
         }
         else if (m_primaryTargetMode == TargetMode::kSelectedActor) {
@@ -294,7 +327,7 @@ namespace IDRC {
         }
 
         // If no primary target found, check for secondary target
-        if (targetMode == TargetMode::kNone) {
+        if (targetMode == TargetMode::kNone && m_reticleMode != ReticleMode::kOnlyCombatTarget) {
             if (m_primaryTargetMode == TargetMode::kCombatTarget) {
                 targetMode = a_hasSelectedActor ? TargetMode::kSelectedActor : TargetMode::kNone;
             }
@@ -306,10 +339,16 @@ namespace IDRC {
         return targetMode;
     }
 
+    bool TargetReticleManager::IsReticleLocked() const {
+        return m_isReticleLocked;
+    }
+
     void TargetReticleManager::ToggleLockReticle() {
-        if (IsTDMLocked()) {
+        if (!APIs::TrueHUD) {
+            log::info("IDRC - {}: TrueHUD API not available", __func__);
             return;
         }
+
         if (m_reticleTarget || m_isReticleLocked) {
             m_isReticleLocked = !m_isReticleLocked;
             std::string sMessage = "Target reticle " + std::string(m_isReticleLocked ? "locked on " + std::string(m_reticleTarget->GetName()) + "." : "unlocked.");
@@ -318,6 +357,23 @@ namespace IDRC {
             std::string sMessage = "No target to lock target reticle on.";
             RE::DebugNotification(sMessage.c_str());
         }
+
+        UpdateReticleState();
+    }
+
+    void TargetReticleManager::UpdateReticleState() {
+
+        if (!m_reticleTarget) {
+            DisposeReticle();
+            return;
+        }
+        
+        auto widget = m_TargetReticle.lock();
+        if (!widget) {
+            return;
+        }
+        
+        widget->UpdateState(m_isReticleLocked, IsTDMLocked(), m_combatState);
     }
 
     void TargetReticleManager::TogglePrimaryTargetMode() {
@@ -334,40 +390,34 @@ namespace IDRC {
 
     void TargetReticleManager::DisposeReticle() {
         if (!APIs::TrueHUD) {
-            log::warn("IDRC - {}: TrueHUD API not available", __func__);
+            log::info("IDRC - {}: TrueHUD API not available", __func__);
             return;
         }
 
         m_reticleTarget = nullptr;
 
         auto widget = m_TargetReticle.lock();
-        if (!widget) {
+        if (!widget || !m_isWidgetActive) {
             return;
         }
-        
+
+        widget->WidgetReadyToRemove();
+
         APIs::TrueHUD->RemoveWidget(SKSE::GetPluginHandle(), 'IDRC', 0, TRUEHUD_API::WidgetRemovalMode::Normal);
         m_isWidgetActive = false;
     }
-/*
-    void TargetReticleManager::ShowReticle(bool a_show) {
+
+    void TargetReticleManager::SetReticleLockAnimationStyle(int a_style) {
+        m_reticleLockAnimationStyle = a_style;
+        auto widget = m_TargetReticle.lock();
+        if (widget) {
+            widget->SetReticleLockAnimationStyle(m_reticleLockAnimationStyle);
+        }
+    }
+
+    void TargetReticleManager::SetReticleTarget() {
         if (!APIs::TrueHUD) {
             log::info("IDRC - {}: TrueHUD API not available", __func__);
-            return;
-        }
-
-        auto widget = m_TargetReticle.lock();
-        if (!widget) {
-            log::info("IDRC - {}: Reticle does not exist", __func__);
-            return;
-        }
-
-log::info("IDRC - {}: Show: {}", __func__, a_show);
-        widget->SetVisible(a_show);
-    }
-*/
-    void TargetReticleManager::SetReticleTarget(CombatTargetReticle::ReticleStyle a_reticleStyle) {
-        if (!APIs::TrueHUD) {
-            log::warn("IDRC - {}: TrueHUD API not available", __func__);
             return;
         }
 
@@ -379,25 +429,34 @@ log::info("IDRC - {}: Show: {}", __func__, a_show);
         auto actorHandle = m_reticleTarget->GetHandle();
         if (!actorHandle) {
             log::warn("IDRC - {}: Actor handle is invalid", __func__);
+            DisposeReticle();
             return;
         }
 
         auto targetPoint = GetTargetPoint(m_reticleTarget);
         if (!targetPoint) {
             log::warn("IDRC - {}: Target point is nullptr", __func__);
+            DisposeReticle();
             return;
         }
 
         auto widget = m_TargetReticle.lock();
         if (widget) {
-            widget->UpdateReticleStyle(a_reticleStyle);
             widget->ChangeTarget(actorHandle, targetPoint);
         } else {
-            widget = std::make_shared<CombatTargetReticle>(actorHandle.native_handle(), actorHandle, targetPoint, a_reticleStyle);
+            widget = std::make_shared<CombatTargetReticle>(actorHandle.native_handle(), actorHandle, targetPoint,
+                                                            m_reticleLockAnimationStyle);
+            if (!widget) {
+                log::warn("IDRC - {}: Failed to create CombatTargetReticle widget", __func__);
+                return;
+            }
+            
             m_TargetReticle = widget;
-            APIs::TrueHUD->AddWidget(SKSE::GetPluginHandle(), 'IDRC', 0, "TDM_TargetLockReticle", widget);
+            APIs::TrueHUD->AddWidget(SKSE::GetPluginHandle(), 'IDRC', 0, "IDRC_TargetReticle", widget);
         }
         m_isWidgetActive = true;
+        
+        UpdateReticleState();
     }
 
     RE::NiPointer<RE::NiAVObject> TargetReticleManager::GetTargetPoint(RE::Actor* a_actor) const {
@@ -422,35 +481,18 @@ log::info("IDRC - {}: Show: {}", __func__, a_show);
             return nullptr;
         }
     
-        RE::BGSBodyPart* bodyPart = bodyPartData->parts[RE::BGSBodyPartDefs::LIMB_ENUM::kHead];
-        if (!bodyPart) {
-            bodyPart = bodyPartData->parts[RE::BGSBodyPartDefs::LIMB_ENUM::kTorso];
-        }
+        RE::BGSBodyPart* bodyPart = bodyPartData->parts[RE::BGSBodyPartDefs::LIMB_ENUM::kTorso];
         if (!bodyPart) {
             bodyPart = bodyPartData->parts[RE::BGSBodyPartDefs::LIMB_ENUM::kTotal];
+        }
+        if (!bodyPart) {
+            bodyPart = bodyPartData->parts[RE::BGSBodyPartDefs::LIMB_ENUM::kHead];
         }
         if (bodyPart) {
             targetPoint = RE::NiPointer<RE::NiAVObject>(NiAVObject_LookupBoneNodeByName(actor3D, bodyPart->targetName, true));
         }
 
         return targetPoint;
-    }
-
-    CombatTargetReticle::ReticleStyle TargetReticleManager::GetReticleStyle(TargetMode a_targetMode) const {
-        CombatTargetReticle::ReticleStyle reticleStyle;
-        if (a_targetMode == TargetMode::kSelectedActor) {
-            reticleStyle = CombatTargetReticle::ReticleStyle::kSelectedActor;
-        } else if (a_targetMode == TargetMode::kCombatTarget) {
-            if (m_combatState == 1) {
-                reticleStyle = CombatTargetReticle::ReticleStyle::kCombatTargetFound;
-           } else {
-                reticleStyle = CombatTargetReticle::ReticleStyle::kCombatTargetSearching;
-            }
-        } else {
-            reticleStyle = CombatTargetReticle::ReticleStyle::kSelectedActor;
-            log::warn("IDRC - {}: Invalid ReticleType", __func__);
-        }
-        return reticleStyle;
     }
 
     // GetDistanceRaceSizeMultiplier() provides consistency with True Directional Movement's settings

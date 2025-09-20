@@ -180,9 +180,24 @@ namespace IDRC {
             DisplayManager::GetSingleton().SetDisplayMessages(a_display);
         }
 
-        void SetTargetReticleEnabled_SKSE(RE::StaticFunctionTag*, bool a_enabled) {
-            log::info("IDRC - {}: {}", __func__, a_enabled);
-            TargetReticleManager::GetSingleton().Enable(a_enabled);
+        void SetTargetReticleMode_SKSE(RE::StaticFunctionTag*, int a_mode) {
+            log::info("IDRC - {}: {}", __func__, a_mode);
+            TargetReticleManager::ReticleMode mode = TargetReticleManager::ReticleMode::kOff;
+            if (a_mode == 1) {
+                mode = TargetReticleManager::ReticleMode::kOn;
+            } else if (a_mode == 2) {
+                mode = TargetReticleManager::ReticleMode::kOnlyCombatTarget;
+            }
+            TargetReticleManager::GetSingleton().SetReticleMode(mode);
+        }
+        void SetReticleLockAnimationStyle_SKSE(RE::StaticFunctionTag*, int a_style) {
+            log::info("IDRC - {}: {}", __func__, a_style);
+            TargetReticleManager::GetSingleton().SetReticleLockAnimationStyle(a_style);
+        }
+        void SetTDMLock_SKSE(RE::StaticFunctionTag*, int a_lock) {
+            log::info("IDRC - {}: {}", __func__, a_lock);
+            bool useTarget = (a_lock != 0);
+            TargetReticleManager::GetSingleton().SetUseTarget(useTarget);
         }
         void SetPrimaryTargetMode_SKSE(RE::StaticFunctionTag*, int a_primaryTargetMode) {
             log::info("IDRC - {}: {}", __func__, a_primaryTargetMode);
@@ -422,7 +437,9 @@ std::thread([a_vm, a_stackID, a_stopFastTravelTarget, a_height, a_timeout, a_wai
             a_vm->RegisterFunction("SetInitialAutoCombatMode_SKSE", "_ts_DR_RideControlScript", SetInitialAutoCombatMode_SKSE);
             a_vm->RegisterFunction("SetDragonSpeeds_SKSE", "_ts_DR_RideControlScript", SetDragonSpeeds_SKSE);
             a_vm->RegisterFunction("SetStopCombat_SKSE", "_ts_DR_RideControlScript", SetStopCombat_SKSE);
-            a_vm->RegisterFunction("SetTargetReticleEnabled_SKSE", "_ts_DR_RideControlScript", SetTargetReticleEnabled_SKSE);
+            a_vm->RegisterFunction("SetTargetReticleMode_SKSE", "_ts_DR_RideControlScript", SetTargetReticleMode_SKSE);
+            a_vm->RegisterFunction("SetReticleLockAnimationStyle_SKSE", "_ts_DR_RideControlScript", SetReticleLockAnimationStyle_SKSE);
+            a_vm->RegisterFunction("SetTDMLock_SKSE", "_ts_DR_RideControlScript", SetTDMLock_SKSE);
             a_vm->RegisterFunction("SetPrimaryTargetMode_SKSE", "_ts_DR_RideControlScript", SetPrimaryTargetMode_SKSE);
             a_vm->RegisterFunction("SetMaxTargetDistance_SKSE", "_ts_DR_RideControlScript", SetMaxTargetDistance_SKSE);
             a_vm->RegisterFunction("SetDistanceMultiplierSmall_SKSE", "_ts_DR_RideControlScript", SetDistanceMultiplierSmall_SKSE);

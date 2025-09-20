@@ -31,6 +31,12 @@ namespace IDRC_API {
 		[[nodiscard]] virtual RE::ActorHandle GetCurrentTarget() const noexcept = 0;
 
 		/// <summary>
+		/// Propagates IDRC setting which defines if the dragon's current target should be used by other mods. Used in TrueDirectionalMovement
+		/// </summary>
+		/// <returns>True if current target (obtained via GetCurrentTarget() should be used according to IDRC's settings.</returns>
+		[[nodiscard]] virtual bool UseTarget() const noexcept = 0;
+
+		/// <summary>
 		/// Get the actor handle of the the currently ridden dragon. If case no dragon is currently being ridden, this will return an empty handle.
 		/// </summary>
 		/// <returns>The actor handle of the currently ridden dragon, or an empty handle if no dragon is ridden.</returns>

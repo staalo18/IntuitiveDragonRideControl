@@ -21,6 +21,7 @@ namespace Messaging
 		// InterfaceVersion1
         virtual unsigned long GetIDRCThreadId(void) const noexcept override;
 		virtual RE::ActorHandle GetCurrentTarget() const noexcept override;
+		virtual bool UseTarget() const noexcept override;
 		virtual RE::ActorHandle GetDragon() const noexcept override;
 
 	private:

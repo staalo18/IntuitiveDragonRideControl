@@ -12,6 +12,12 @@ namespace IDRC {
                 kCombatTarget = 2
             };
 
+            enum ReticleMode : std::uint32_t {
+                kOff = 0,
+                kOn = 1,
+                kOnlyCombatTarget = 2
+            };
+
             static TargetReticleManager& GetSingleton() {
                 static TargetReticleManager instance;
                 return instance;
@@ -30,7 +36,9 @@ namespace IDRC {
 
             void Update();
 
-            void Enable(bool a_enable) { m_isEnabled = a_enable; }
+            void SetReticleMode(ReticleMode a_mode) { m_reticleMode = a_mode; }
+
+            void SetReticleLockAnimationStyle(int a_style);
 
             void ToggleLockReticle();
 
@@ -39,15 +47,23 @@ namespace IDRC {
             void DisposeReticle();
 
             RE::Actor* GetCurrentTarget() const;
-    
+
+            bool GetUseTarget() const;
+
+            void SetUseTarget(bool a_useTarget);
+
+            bool IsReticleLocked () const;
+
         private:
             TargetReticleManager() = default;
 
             void UpdateReticle();
 
+            int GetCombatState();
+
             bool IsTDMLocked();
 
-//            void ShowReticle(bool a_show);
+            void UpdateReticleState();
 
             RE::Actor* GetSelectedActor() const;
 
@@ -55,17 +71,15 @@ namespace IDRC {
 
             TargetMode GetTargetMode(bool a_hasSelectedActor, bool a_hasCombatTarget) const;
 
-            void SetReticleTarget(CombatTargetReticle::ReticleStyle a_reticleStyle);
+            void SetReticleTarget();
 
             RE::NiPointer<RE::NiAVObject> GetTargetPoint(RE::Actor* a_actor) const;
-
-            CombatTargetReticle::ReticleStyle GetReticleStyle(TargetMode a_targetMode) const;
 
             float GetDistanceRaceSizeMultiplier(RE::TESRace* a_race) const;
 
             std::weak_ptr<CombatTargetReticle> m_TargetReticle;
             bool m_isInitialized = false;
-            bool m_isEnabled = true;
+            ReticleMode m_reticleMode = ReticleMode::kOn;
             bool m_isReticleLocked = false;
             bool m_isWidgetActive = false;
             int m_combatState = 0;
@@ -77,5 +91,7 @@ namespace IDRC {
             RE::Actor* m_reticleTarget = nullptr;
             TargetMode m_primaryTargetMode = TargetMode::kCombatTarget;
             TargetMode m_currentTargetMode = TargetMode::kNone;
+            int m_reticleLockAnimationStyle = 0;
+            bool m_useTarget = false;
     }; // class TargetReticleManager
 }  // namespace IDRC

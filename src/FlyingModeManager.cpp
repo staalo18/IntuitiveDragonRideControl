@@ -937,10 +937,10 @@ namespace IDRC {
             
             float angleZ = dragonActor->GetAngleZ();    
             RE::NiPoint3 angle = { dragonActor->GetAngleX(), dragonActor->GetAngleY(), angleZ };
-            _ts_SKSEFunctions::SetAngle(orbitMarker, angle);
             
-            SKSE::GetTaskInterface()->AddTask([this, orbitMarker, a_takeOffTarget, angleZ]() {
+            SKSE::GetTaskInterface()->AddTask([this, orbitMarker, angle, a_takeOffTarget, angleZ]() {
             // When modifying Game objects, send task to TaskInterface to ensure thread safety
+                _ts_SKSEFunctions::SetAngle(orbitMarker, angle);
                 _ts_SKSEFunctions::MoveTo(orbitMarker, a_takeOffTarget, 
                     100.0f * std::sin(angleZ), 100.0f * std::cos(angleZ),  this->GetMinHeight());
             });    
@@ -1170,7 +1170,10 @@ namespace IDRC {
     
             auto* orbitMarker = DataManager::GetSingleton().GetOrbitMarker();
             if (a_orbitTarget && orbitMarker) {
-                _ts_SKSEFunctions::MoveTo(orbitMarker, a_orbitTarget);
+                SKSE::GetTaskInterface()->AddTask([orbitMarker, a_orbitTarget]() {
+                // When modifying Game objects, send task to TaskInterface to ensure thread safety
+                    _ts_SKSEFunctions::MoveTo(orbitMarker, a_orbitTarget);
+                });
             } else {
                 log::info("IDRC - {}: No OrbitTarget provided - cancel orbit", __func__);
                 return false;

@@ -25,6 +25,15 @@ RE::ActorHandle Messaging::IDRCInterface::GetCurrentTarget() const noexcept  {
 	return RE::ActorHandle();
 }
 
+bool Messaging::IDRCInterface::UseTarget() const noexcept  {
+    auto* dragonActor = IDRC::DataManager::GetSingleton().GetDragonActor();
+    if (dragonActor) {
+        return IDRC::TargetReticleManager::GetSingleton().GetUseTarget();
+    }
+
+	return false;
+}
+
 RE::ActorHandle Messaging::IDRCInterface::GetDragon() const noexcept  {
     auto* dragonActor = IDRC::DataManager::GetSingleton().GetDragonActor();
     if (dragonActor) {
