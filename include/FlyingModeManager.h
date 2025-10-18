@@ -1,8 +1,7 @@
 #pragma once
 
 #include "ControlsManager.h"
-
-#define PI 3.1415926535f
+#include "IDRCUtils.h"
 
 namespace IDRC {
     class CombatManager;
@@ -70,7 +69,8 @@ namespace IDRC {
         void SetRegisteredForPerch(bool a_registeredForPerch);
 
         void ResetDragonHeight();
-        
+
+        bool DragonTurnPlayerRiding(float a_turnAngle);
     private:
         FlyingModeManager() = default;
         ~FlyingModeManager() = default;
@@ -135,8 +135,6 @@ namespace IDRC {
         bool DragonOrbitPlayerRiding(RE::TESObjectREFR* a_orbitTarget);
 
         bool DragonPerchPlayerRiding();
-
-        bool DragonTurnPlayerRiding(float a_turnAngle);
         
         bool TriggerTurn();
         

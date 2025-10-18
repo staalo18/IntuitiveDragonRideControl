@@ -95,8 +95,8 @@ namespace IDRC {
         bool hasTDMTarget = false;
 
         if (IsTDMLocked()) {
-            if (APIs::TrueDirectionalMovement) {
-                auto targetHandle = APIs::TrueDirectionalMovement->GetCurrentTarget();
+            if (APIs::TrueDirectionalMovementV1) {
+                auto targetHandle = APIs::TrueDirectionalMovementV1->GetCurrentTarget();
                 if (targetHandle) {
                     newTarget = targetHandle.get().get();
                 } else {
@@ -178,7 +178,7 @@ namespace IDRC {
 
     bool TargetReticleManager::IsTDMLocked() {
         bool isTDMLocked = false;
-        if (APIs::TrueDirectionalMovement && APIs::TrueDirectionalMovement->GetTargetLockState()) {
+        if (APIs::TrueDirectionalMovementV1 && APIs::TrueDirectionalMovementV1->GetTargetLockState()) {
             isTDMLocked = true;
         }
         return isTDMLocked;

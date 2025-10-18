@@ -1,5 +1,6 @@
 #include "Hooks.h"
 #include "TargetReticleManager.h"
+#include "CameraLockManager.h"
 
 namespace Hooks
 {
@@ -11,6 +12,7 @@ namespace Hooks
 
 		ReadyWeaponHook::Hook();
 		ExtraInteractionHook::Hook();
+		LookHook::Hook();
 //		GetMountHook::Hook();
 
 		log::info("...success");
@@ -86,6 +88,7 @@ namespace Hooks
 	{
 		_Nullsub();
 
+		IDRC::CameraLockManager::GetSingleton().Update();
 		IDRC::TargetReticleManager::GetSingleton().Update();
 	}
 
@@ -146,6 +149,32 @@ log::info("IDRC - {}: ReadyWeaponHook-ProcessButton called with event IDCode = {
 			log::info("IDRC - {}: IsNotEqual called, will return {}", __func__, _IsNotEqual(a_this, a_rhs) ? "true" : "false");
             return _IsNotEqual(a_this, a_rhs);
         }
+
+	void LookHook::ProcessThumbstick(RE::LookHandler* a_this, RE::ThumbstickEvent* a_event, RE::PlayerControlsData* a_data)
+	{
+		auto& cameraLockManager = IDRC::CameraLockManager::GetSingleton();
+		if (a_event && a_event->IsRight() && cameraLockManager.IsCameraLocked())
+		{
+			return;
+		}
+		else
+		{
+			_ProcessThumbstick(a_this, a_event, a_data);
+		}
+	}
+
+	void LookHook::ProcessMouseMove(RE::LookHandler* a_this, RE::MouseMoveEvent* a_event, RE::PlayerControlsData* a_data)
+	{
+		auto& cameraLockManager = IDRC::CameraLockManager::GetSingleton();
+		if (a_event && cameraLockManager.IsCameraLocked())
+		{
+			return;
+		}
+		else
+		{
+			_ProcessMouseMove(a_this, a_event, a_data);
+		}
+	}
 
 
 } // namespace Hooks

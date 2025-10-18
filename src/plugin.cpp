@@ -17,6 +17,7 @@
 #include "APIManager.h"
 #include "ModAPI.h"
 #include "TargetReticleManager.h"
+#include "CameraLockManager.h"
 #include "Hooks.h"
 
 namespace IDRC {
@@ -62,6 +63,10 @@ namespace IDRC {
                 a_combatTargetAlias);  
             ControlsManager::GetSingleton().InitializeData();
             TargetReticleManager::GetSingleton().Initialize();
+
+            if (!APIs::CheckTDMVersion()) {
+                RE::DebugMessageBox("You are using an older version of True Directional Movement (TDM), which does not support all features of Intuitive Dragon Ride Control. Consider updating TDM.");
+            }
         }
 
         void SetContinueFlyTo_SKSE(RE::StaticFunctionTag*, bool a_continue) {

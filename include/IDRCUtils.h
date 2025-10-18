@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Offsets.h"
+#define PI 3.1415926535f
 namespace IDRC {
     namespace Utils{
         
@@ -20,13 +22,29 @@ namespace IDRC {
 
         std::vector<WorldspaceIniData> LoadWorldspaceIniData(const std::string& a_iniFilename);
 
-        // InterpEaseIn() is a function from 'True Directional Movement':
+        float GetCameraYaw();
+
+        float GetAngleZ(const RE::NiPoint3& a_from, const RE::NiPoint3& a_to);
+
+        // Below functions are from 'True Directional Movement':
         // https://github.com/ersh1/TrueDirectionalMovement
         // All credits go to the original author Ersh!
+
+        RE::NiPoint3 GetCameraPos();
+
+//        float NormalAbsoluteAngle(float a_angle);
+
+        float NormalRelativeAngle(float a_angle);
+        
         [[nodiscard]] inline float InterpEaseIn(const float& A, const float& B, float alpha, float exp)
         {
             float const modifiedAlpha = std::pow(alpha, exp);
             return std::lerp(A, B, modifiedAlpha);
+        }
+
+        [[nodiscard]] inline float GetRealTimeDeltaTime()
+        {
+            return *g_deltaTimeRealTime;
         }
     } // namespace Utils
 } // namespace IDRC

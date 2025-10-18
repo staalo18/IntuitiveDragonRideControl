@@ -55,6 +55,24 @@ namespace Hooks
 		static inline REL::Relocation<decltype(Nullsub)> _Nullsub;		
 	};
 
+    class LookHook
+	{
+	public:
+		static void Hook()
+		{
+			REL::Relocation<std::uintptr_t> LookHandlerVtbl{ RE::VTABLE_LookHandler[0] };
+			_ProcessThumbstick = LookHandlerVtbl.write_vfunc(0x2, ProcessThumbstick);
+			_ProcessMouseMove = LookHandlerVtbl.write_vfunc(0x3, ProcessMouseMove);
+		}
+
+	private:
+		static void ProcessThumbstick(RE::LookHandler* a_this, RE::ThumbstickEvent* a_event, RE::PlayerControlsData* a_data);
+		static void ProcessMouseMove(RE::LookHandler* a_this, RE::MouseMoveEvent* a_event, RE::PlayerControlsData* a_data);
+
+		static inline REL::Relocation<decltype(ProcessThumbstick)> _ProcessThumbstick;
+		static inline REL::Relocation<decltype(ProcessMouseMove)> _ProcessMouseMove;
+	};
+
 /*
 #include <MinHook.h>
 

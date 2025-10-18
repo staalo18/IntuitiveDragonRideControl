@@ -281,10 +281,30 @@ namespace IDRC {
         m_registeredForAttack = true;
         SetStopCombat(false);
         bool bAttackNotificationDisplayed = false;
+        bool bTargetFromTDM = false;
+        
+        if (APIs::TrueDirectionalMovementV1 && APIs::TrueDirectionalMovementV1->GetTargetLockState()
+            && !TargetReticleManager::GetSingleton().IsReticleLocked()) {
+            auto currentTarget = APIs::TrueDirectionalMovementV1->GetCurrentTarget();
+            if (currentTarget) {
+                log::info("IDRC - {}: Getting target from TDM: {} ({})", __func__, currentTarget.get()->GetName(), currentTarget.get()->GetFormID());
+                if (displayManager.GetDisplayFlyingMode() && displayManager.GetDisplayMessages()) {
+                    RE::DebugNotification((std::string("Commanding Attack on ") + std::string(currentTarget.get()->GetName())).c_str());
+                    bAttackNotificationDisplayed = true;
+                }
+
+if (APIs::TrueDirectionalMovementV4) {
+bool isBehind = APIs::TrueDirectionalMovementV4->IsTargetLockBehindTarget();
+log::info("IDRC - {}: TDM Target Lock is behind target: {}", __func__, isBehind);
+}
+                DragonStartCombat(currentTarget.get()->As<RE::Actor>());
+                bTargetFromTDM = true;
+            }
+        }
 
         // get the combat target from the reticle (if active), and ensure dragon is in combat with that target
         RE::Actor* combatTarget = TargetReticleManager::GetSingleton().GetCurrentTarget();
-        if (combatTarget) {
+        if (combatTarget && !bTargetFromTDM) {
             if (!bAttackNotificationDisplayed && displayManager.GetDisplayFlyingMode() && displayManager.GetDisplayMessages()) {
                 RE::DebugNotification((std::string("Commanding Attack on ") + std::string(combatTarget->GetName())).c_str());
                 bAttackNotificationDisplayed = true;
@@ -307,19 +327,6 @@ namespace IDRC {
                     // When modifying Game objects, send task to TaskInterface to ensure thread safety
                     _ts_SKSEFunctions::SetLookAt(dragonActor, target, true);
                   });
-            }
-        }
-       
-        if (APIs::TrueDirectionalMovement && APIs::TrueDirectionalMovement->GetTargetLockState()
-            && !TargetReticleManager::GetSingleton().IsReticleLocked()) {
-            auto currentTarget = APIs::TrueDirectionalMovement->GetCurrentTarget();
-            if (currentTarget) {
-                log::info("IDRC - {}: Getting target from TDM: {} ({})", __func__, currentTarget.get()->GetName(), currentTarget.get()->GetFormID());
-                if (displayManager.GetDisplayFlyingMode() && displayManager.GetDisplayMessages()) {
-                    RE::DebugNotification((std::string("Commanding Attack on ") + std::string(currentTarget.get()->GetName())).c_str());
-                    bAttackNotificationDisplayed = true;
-                }
-                DragonStartCombat(currentTarget.get()->As<RE::Actor>());
             }
         }
 

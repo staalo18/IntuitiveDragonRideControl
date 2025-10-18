@@ -287,7 +287,10 @@ namespace IDRC {
                     if (m_mode == kLanded && _ts_SKSEFunctions::GetFlyingState(dragonActor) == 0) { // Landed
                         while (controlsManager.GetIsKeyPressed(a_key)) {
                             if (!(controlsManager.GetIsKeyPressed(kStrafeLeft) || controlsManager.GetIsKeyPressed(kStrafeRight))) {
-                                PlaceTravelToMarker(dragonActor, 500.0f, 0.0f, 0.0f);
+                                RE::NiPoint3 forwardVector{ 0.f, 1.f, 0.f };
+                                float angle = Utils::GetAngleZ(dragonActor->GetPosition() - m_dragonTurnMarker->GetPosition(), forwardVector);
+                                angle = Utils::NormalRelativeAngle(angle - dragonActor->GetAngleZ());
+                                PlaceTravelToMarker(dragonActor, 500.0f, angle, 0.0f);
                                 DragonTravelTo(m_dragonTravelToMarker);
                             }
                             std::this_thread::sleep_for(std::chrono::milliseconds(500));
