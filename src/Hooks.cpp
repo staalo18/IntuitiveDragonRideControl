@@ -1,6 +1,7 @@
 #include "Hooks.h"
 #include "TargetReticleManager.h"
 #include "CameraLockManager.h"
+#include "IDRCUtils.h"
 
 namespace Hooks
 {
@@ -159,6 +160,7 @@ log::info("IDRC - {}: ReadyWeaponHook-ProcessButton called with event IDCode = {
 		}
 		else
 		{
+			cameraLockManager.SetUserTurning(true);
 			_ProcessThumbstick(a_this, a_event, a_data);
 		}
 	}
@@ -172,6 +174,7 @@ log::info("IDRC - {}: ReadyWeaponHook-ProcessButton called with event IDCode = {
 		}
 		else
 		{
+			cameraLockManager.SetUserTurning(true);
 			_ProcessMouseMove(a_this, a_event, a_data);
 		}
 	}

@@ -5,6 +5,7 @@
 #include "DisplayManager.h"
 #include "FastTravelManager.h"
 #include "IDRCUtils.h"
+#include "APIManager.h"
 
 #include "RE/Skyrim.h"
 #include "SKSE/API.h"
@@ -559,6 +560,9 @@ namespace IDRC {
                 }
             }
             float direction = controlsManager.GetIsKeyPressed(kStrafeLeft) ? -1.0f : 1.0f;
+            if (APIs::TrueDirectionalMovementV4 && APIs::TrueDirectionalMovementV4->IsTargetLockBehindTarget()) {
+                direction *= -1.0f;
+            }
             turnFactor *= direction;
         }
         turnFactor *= GetRunFactor();
