@@ -4,6 +4,7 @@
 #include "_ts_SKSEFunctions.h"
 #include "ThumbstickTracer.h"
 #include "TargetReticleManager.h"
+#include "CameraLockManager.h"
 //#include "CombatTargetTracer.h"
 //#include "CrosshairTracer.h"
 //#include "MagicEffectTracer.h"
@@ -62,6 +63,8 @@ namespace IDRC {
                         TargetReticleManager::GetSingleton().ToggleLockReticle();
                     } else if (idrcKey == IDRCKey::kPrimaryTargetMode) {
                         TargetReticleManager::GetSingleton().TogglePrimaryTargetMode();
+                    } else if (idrcKey == IDRCKey::kToggleCameraLock) {
+                        CameraLockManager::GetSingleton().SetEnabled(!CameraLockManager::GetSingleton().IsEnabled());
                     } else {
                         FlyingModeManager::GetSingleton().OnKeyDown(idrcKey);
                     }
@@ -104,6 +107,8 @@ namespace IDRC {
         }
 
         FlyingModeManager::GetSingleton().ResetDragonHeight();
+
+        CameraLockManager::GetSingleton().ResetEnabled();
         
         if (!a_reRegisterOnLoad){
             DataManager::GetSingleton().SetAutoCombat(m_initialAutoCombatMode);
@@ -242,7 +247,8 @@ namespace IDRC {
             {"ToggleAutoCombat", IDRCKey::kToggleAutoCombat},
             {"Activate", IDRCKey::kActivate},
             {"ToggleLockReticle", IDRCKey::kToggleLockReticle},
-            {"PrimaryTargetMode", IDRCKey::kPrimaryTargetMode}
+            {"PrimaryTargetMode", IDRCKey::kPrimaryTargetMode},
+            {"ToggleCameraLock", IDRCKey::kToggleCameraLock}
         };
     
         if (a_mappedScanCode == InputMap::kMaxMacros) {
@@ -347,6 +353,10 @@ namespace IDRC {
             // Update keyMap (actual key value depends on device, and control mapping)
             SetKeyMapping("PrimaryTargetMode", scanCode);
             return IDRCKey::kPrimaryTargetMode;
+        } else if (a_buttonEvent->QUserEvent() == "ToggleCameraLock") {
+            // Update keyMap (actual key value depends on device, and control mapping)
+            SetKeyMapping("ToggleCameraLock", scanCode);
+            return IDRCKey::kToggleCameraLock;
         } else {
             // the other keys can be remapped by the user in the MCM
             // the mapping is stored in the keyMap

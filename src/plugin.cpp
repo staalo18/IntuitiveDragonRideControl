@@ -23,7 +23,7 @@
 namespace IDRC {
     namespace Interface {
         int GetIDRCPluginVersion(RE::StaticFunctionTag*) {
-            return 4;
+            return 5;
         }
 
         void SetINIVars_SKSE(RE::StaticFunctionTag*) {
@@ -50,7 +50,8 @@ namespace IDRC {
                                 RE::TESObjectREFR* a_dragonTravelToMarker,
                                 RE::TESObjectREFR* a_flyToTargetMarker,
                                 RE::SpellItem* a_noFlyAbility,
-                                std::string a_dragonName) {
+                                std::string a_dragonName,
+                                bool cameraLockInitiallyEnabled) {
             log::info("IDRC - {}", __func__);
             DataManager::GetSingleton().InitializeData(a_rideQuest, a_orbitMarker, a_dragonAlias, a_dragonName, a_findPerchQuest, 
                                             a_wordWallPerch, a_towerPerch, a_rockPerch, a_perchTarget);
@@ -63,6 +64,8 @@ namespace IDRC {
                 a_combatTargetAlias);  
             ControlsManager::GetSingleton().InitializeData();
             TargetReticleManager::GetSingleton().Initialize();
+            CameraLockManager::GetSingleton().SetInitiallyEnabled(cameraLockInitiallyEnabled);
+            CameraLockManager::GetSingleton().ResetEnabled();
 
             if (!APIs::CheckTDMVersion()) {
                 RE::DebugMessageBox("You are using an older version of True Directional Movement (TDM), which does not support all features of Intuitive Dragon Ride Control. Consider updating TDM.");
@@ -227,6 +230,11 @@ namespace IDRC {
         void SetMaxTargetScanAngle_SKSE(RE::StaticFunctionTag*, float a_angle) {
             log::info("IDRC - {}: {}", __func__, a_angle);
             TargetReticleManager::GetSingleton().SetMaxTargetScanAngle(a_angle);
+        }
+
+        void SetCameraLockInitiallyEnabled_SKSE(RE::StaticFunctionTag*, bool a_enabled) {
+            log::info("IDRC - {}: {}", __func__, a_enabled);
+            CameraLockManager::GetSingleton().SetInitiallyEnabled(a_enabled);
         }
 
         RE::BSScript::LatentStatus TriggerLand_SKSE_Latent(RE::BSScript::Internal::VirtualMachine* a_vm, RE::VMStackID a_stackID, RE::StaticFunctionTag*, RE::TESObjectREFR* a_landTarget) {
@@ -451,6 +459,7 @@ std::thread([a_vm, a_stackID, a_stopFastTravelTarget, a_height, a_timeout, a_wai
             a_vm->RegisterFunction("SetDistanceMultiplierLarge_SKSE", "_ts_DR_RideControlScript", SetDistanceMultiplierLarge_SKSE);
             a_vm->RegisterFunction("SetDistanceMultiplierExtraLarge_SKSE", "_ts_DR_RideControlScript", SetDistanceMultiplierExtraLarge_SKSE);
             a_vm->RegisterFunction("SetMaxTargetScanAngle_SKSE", "_ts_DR_RideControlScript", SetMaxTargetScanAngle_SKSE);
+            a_vm->RegisterFunction("SetCameraLockInitiallyEnabled_SKSE", "_ts_DR_RideControlScript", SetCameraLockInitiallyEnabled_SKSE);
 
             // Papyrus access to ts_SKSEFunctions
             a_vm->RegisterFunction("IsFlyingMountPatrolQueued", "_ts_DR_RideControlScript", IsFlyingMountPatrolQueued);

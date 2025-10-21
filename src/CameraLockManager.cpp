@@ -16,13 +16,18 @@ namespace IDRC {
             return;
         }
 
+        if (!m_isEnabled) {
+            m_cameraLocked = false;
+            return;
+        }
+
         auto& controlsManager = ControlsManager::GetSingleton();
         auto& flyingModeManager = FlyingModeManager::GetSingleton();
         auto& dataManager = DataManager::GetSingleton();
         
         auto* dragonActor = dataManager.GetDragonActor();
         if (!dragonActor) {
-            log::warn("IDRC - {}: No dragon actor found", __func__);
+            m_cameraLocked = false;
             return;
         }
 
@@ -33,9 +38,11 @@ namespace IDRC {
             dragonCameraState = static_cast<RE::ThirdPersonState*>(playerCamera->currentState.get());
             if (!dragonCameraState) {
                 log::warn("IDRC - {}: Dragon camera state is null", __func__);
+                m_cameraLocked = false;
                 return;
             }
         } else {
+            m_cameraLocked = false;
             return;
         }
 
@@ -70,11 +77,13 @@ namespace IDRC {
         auto* orbitMarker = DataManager::GetSingleton().GetOrbitMarker();
         if (!orbitMarker) {
             log::warn("IDRC - {}: Could not obtain OrbitMarker", __func__);
+            m_cameraLocked = false;
             return;
         }
         auto* turnMarker = flyingModeManager.GetDragonTurnMarker();
         if (!turnMarker) {
             log::warn("IDRC - {}: Could not obtain TurnMarker", __func__);
+            m_cameraLocked = false;
             return;
         }
 
@@ -142,7 +151,32 @@ m_turnOngoing, 180.f/PI * currentDragonYaw, 180.f/PI * targetDragonYaw, 180.f/PI
             m_cameraLocked = false;
         }
 
-        m_isUserTurning = false; // reset flag. Is set to true in LookHook::ProcessMouseMove() in case of user movement
+        m_isUserTurning = false; // reset flag. Is set to true in LookHook::ProcessMouseMove() in case of user-triggered camera rotation
+    }
+
+    void CameraLockManager::SetInitiallyEnabled(bool a_enabled)
+    {
+        m_initiallyEnabled = a_enabled;
+    }
+
+    bool const CameraLockManager::IsInitiallyEnabled() const
+    {
+        return m_initiallyEnabled;
+    }
+
+    void CameraLockManager::SetEnabled(bool a_enabled)
+    {
+        m_isEnabled = a_enabled;
+    }
+
+    bool const CameraLockManager::IsEnabled() const
+    {
+        return m_isEnabled;
+    }
+
+    void CameraLockManager::ResetEnabled()
+    {
+        m_isEnabled = m_initiallyEnabled;
     }
 
     bool const CameraLockManager::IsCameraLocked() const

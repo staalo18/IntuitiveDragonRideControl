@@ -20,7 +20,8 @@ namespace IDRC {
         kToggleAutoCombat = 13,
         kActivate = 14,
         kToggleLockReticle = 15,
-        kPrimaryTargetMode = 16
+        kPrimaryTargetMode = 16,
+        kToggleCameraLock = 17
     };
 
     struct DXScanCode{

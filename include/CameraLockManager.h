@@ -13,6 +13,14 @@ namespace IDRC {
 
             void Update();
 
+            void SetInitiallyEnabled(bool a_enabled);
+            bool const IsInitiallyEnabled() const;
+
+            void SetEnabled(bool a_enabled);
+            bool const IsEnabled() const;
+
+            void ResetEnabled();
+
             bool const IsCameraLocked() const;
 
             void SetUserTurning(bool a_moved);
@@ -22,6 +30,8 @@ namespace IDRC {
 
             void LockTurn(int a_lockTime);
 
+            bool m_initiallyEnabled = true;
+            bool m_isEnabled = true;
             bool m_turnLocked = false;
             bool m_turnOngoing = false;
             bool m_cameraLocked = false;
