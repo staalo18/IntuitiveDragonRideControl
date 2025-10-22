@@ -70,6 +70,8 @@ namespace IDRC {
 
         void ResetDragonHeight();
 
+        void ChangeDragonHeight(float a_upDown);
+
         bool DragonTurnPlayerRiding(float a_turnAngle);
     private:
         FlyingModeManager() = default;
@@ -127,8 +129,6 @@ namespace IDRC {
         void SetRegisteredForLanding(bool a_registeredForLanding);
 
         void PlaceTravelToMarker(RE::TESObjectREFR* a_ref, float a_distance = 0.0f, float a_angle = 0.0f, float a_offsetZ = 0.0f);
-
-        void SetDragonHeight(int a_upDown);
 
         bool DragonNewDirection(float a_angle, bool a_displayMode = false);
 

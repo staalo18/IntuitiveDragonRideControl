@@ -54,7 +54,7 @@ namespace IDRC {
         _ts_SKSEFunctions::UpdateIniSetting("fFlyingMountFastTravelArrivalHeight:General", m_arrivalHeight);
     }
 
-    void FlyingModeManager::SetDragonHeight(int a_upDown) {
+    void FlyingModeManager::ChangeDragonHeight(float a_upDown) {
         log::info("IDRC - {}", __func__);
     
         // Calculate the height change
@@ -91,14 +91,14 @@ namespace IDRC {
             if (orbitMarker) {
                 SKSE::GetTaskInterface()->AddTask([orbitMarker, changeHeight]() {
                 // When modifying Game objects, send task to TaskInterface to ensure thread safety
-                    _ts_SKSEFunctions::MoveTo(orbitMarker, orbitMarker, 0.0f, 0.0f, changeHeight);
+//                    _ts_SKSEFunctions::MoveTo(orbitMarker, orbitMarker, 0.0f, 0.0f, changeHeight);
                 });
             }
-    
+/*    
             // Update the dragon's direction
             SKSE::GetTaskInterface()->AddTask([this, dragonActor]() {
                 this->DragonNewDirection(dragonActor->GetAngleZ());
-            });
+            }); */
         }
     }
 
@@ -314,7 +314,7 @@ namespace IDRC {
                     if (_ts_SKSEFunctions::GetFlyingState(dragonActor) == 2 && 
                             (m_mode == kFlying || m_mode == kOrbiting)) { // Orbiting or flying
                         while (controlsManager.GetIsKeyPressed(kUp) && m_minHeight < 10000) {
-                            SetDragonHeight(1);
+                            ChangeDragonHeight(1.f);
                             std::this_thread::sleep_for(std::chrono::milliseconds(100));
                         }
                     } else if ((m_mode == kLanded && _ts_SKSEFunctions::GetFlyingState(dragonActor) == 0) || 
@@ -328,7 +328,7 @@ namespace IDRC {
                 } else if (a_key == kDown && _ts_SKSEFunctions::GetFlyingState(dragonActor) == 2 
                             && (m_mode == kFlying || m_mode == kOrbiting)) { // Orbiting or flying
                     while (controlsManager.GetIsKeyPressed(kDown) && m_minHeight > 100) {
-                        SetDragonHeight(-1);
+                        ChangeDragonHeight(-1.f);
                         std::this_thread::sleep_for(std::chrono::milliseconds(100));
                     }
                 } else if (a_key == kDisplayHealth) {
@@ -395,7 +395,7 @@ namespace IDRC {
             }
     
             while (controlsManager.GetIsKeyPressed(IDRCKey::kUp) && mode == FlyingMode::kFlying && _ts_SKSEFunctions::GetFlyingState(dragonActor) == 2 && m_minHeight < 10000) {
-                SetDragonHeight(1);
+                ChangeDragonHeight(1.f);
                 std::this_thread::sleep_for(std::chrono::milliseconds(100));
             }
     

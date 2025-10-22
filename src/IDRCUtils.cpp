@@ -278,6 +278,28 @@ namespace IDRC {
             }
             return 0.0f;
         }
+
+        float GetCameraPitch() {
+            auto playerCamera = RE::PlayerCamera::GetSingleton();
+            if (playerCamera && playerCamera->cameraRoot) {
+                RE::NiNode* root = playerCamera->cameraRoot.get();
+                if (root) {
+                    auto forwardVector = root->world.rotate.GetVectorZ();
+                    auto upVector = root->world.rotate.GetVectorY();
+
+                    float cameraPitch = NormalRelativeAngle( 0.5f*PI - std::atan2(forwardVector.z, 
+                        std::sqrt(forwardVector.x * forwardVector.x + forwardVector.y * forwardVector.y)));
+
+                    if (upVector.z < 0) {
+                        // Camera is upside down due to quaternion flip
+                        cameraPitch = -cameraPitch;
+                    }
+
+                    return cameraPitch;
+                }
+            }
+            return 0.0f;
+        }
 /*
         float NormalAbsoluteAngle(float a_angle)
         {

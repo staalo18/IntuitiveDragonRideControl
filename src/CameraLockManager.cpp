@@ -62,6 +62,32 @@ namespace IDRC {
 
         int flyState = _ts_SKSEFunctions::GetFlyingState(dragonActor);
         auto flyMode = flyingModeManager.GetFlyingMode();
+        
+        bool changeHeightTriggered = false;
+        if (flyState == 2) {
+           if (!m_heightLocked) {
+                // dragon height adjustment according to camera pitch
+                float cameraPitch = Utils::GetCameraPitch();
+                float dragonPitch = -dragonActor->GetAngleX();
+log::info("IDRC - {}: CameraPitch: {}, DragonPitch: {}", __func__, 180.f/PI * cameraPitch, 180.f/PI * dragonPitch);
+                if (cameraPitch < -15.f * PI / 180.f) { // looking down
+                    
+                    float change = (cameraPitch + 15.f * PI / 180.f) / (0.25f * PI); // change == 0 @ 15 deg <-> change == 1 @ 60 deg
+                    flyingModeManager.ChangeDragonHeight(change);
+                    changeHeightTriggered = true;
+                    LockHeight(50);
+//log::info("IDRC - {}: CameraPitch: {}, change: {}", __func__, 180.f/PI * cameraPitch, change);
+                }
+                else if (cameraPitch > 10.f * PI / 180.f) { // looking up
+                    
+                    float change = (cameraPitch - 10.f * PI / 180.f) / (0.25f * PI); // change == 0 @ 10 deg <-> change == 1 @ 55 deg
+                    flyingModeManager.ChangeDragonHeight(change);
+                    changeHeightTriggered = true;
+                    LockHeight(50);
+//log::info("IDRC - {}: CameraPitch: {}, change: {}", __func__, 180.f/PI * cameraPitch, change);
+                } 
+            }
+        }
 
         bool isTDMLocked = false;
         if (APIs::TrueDirectionalMovementV1) {
@@ -100,8 +126,8 @@ namespace IDRC {
             m_turnOngoing = false;
         }
 
-log::info("IDRC - {}: m_turnOngoing: {}, currentDragonYaw: {}, targetDragonYaw: {}, targetDragonYawOffset: {}, currentCameraYaw: {}", __func__,
-m_turnOngoing, 180.f/PI * currentDragonYaw, 180.f/PI * targetDragonYaw, 180.f/PI * targetDragonYawOffset, 180.f/PI * currentCameraYaw);
+//log::info("IDRC - {}: m_turnOngoing: {}, currentDragonYaw: {}, targetDragonYaw: {}, targetDragonYawOffset: {}, currentCameraYaw: {}", __func__,
+//m_turnOngoing, 180.f/PI * currentDragonYaw, 180.f/PI * targetDragonYaw, 180.f/PI * targetDragonYawOffset, 180.f/PI * currentCameraYaw);
 
         if (flyState != m_flyState) { // reset turnMarker to avoid dragon rotation after reaching new state
             if (flyState == 0) { // landed
@@ -115,6 +141,7 @@ m_turnOngoing, 180.f/PI * currentDragonYaw, 180.f/PI * targetDragonYaw, 180.f/PI
         }
         m_flyState = flyState;
 
+        bool turnTriggered = false;
         if ( !m_turnLocked  // don't spam the Turn calls
              && (m_isUserTurning || m_turnOngoing) // only if user is actively triggering a turn (via mouse or gamepad), or such auser-triggered turn is not yet completed
              && (fabs(currentDragonYawOffset) > 2.f * PI / 180.f) // ignore turn angles smaller than 2 degrees
@@ -127,12 +154,20 @@ m_turnOngoing, 180.f/PI * currentDragonYaw, 180.f/PI * targetDragonYaw, 180.f/PI
 
             // dragon yaw follows user-triggered camera rotation
             flyingModeManager.DragonTurnPlayerRiding(180.f / PI * currentDragonYawOffset);
+            turnTriggered = true;
             m_turnOngoing = true;
             int lockTime = 30;
             if (flyState == 2) {
                 lockTime = 300; // longer lock time when flying
             }
             LockTurn(lockTime); // Prevent next DragonTurnPlayerRiding() call for lockTime ms
+        }
+
+        if (changeHeightTriggered && !turnTriggered) {
+            // ensures height change is immediately applied (via FastTravel call in DragonTurnPlayerRiding)
+            // and fly direction is up-to-date
+log::info("IDRC - {}: Forcing fly to after turn/height change", __func__);
+            flyingModeManager.DragonTurnPlayerRiding(180.f / PI * currentDragonYawOffset);
         }
 
         if (isDragonTurning && !m_isUserTurning && !isTDMLocked && !m_turnLocked) {
@@ -202,4 +237,19 @@ m_turnOngoing, 180.f/PI * currentDragonYaw, 180.f/PI * targetDragonYaw, 180.f/PI
             this->m_turnLocked = false;
         }).detach();
     }    
+
+    void CameraLockManager::LockHeight(int a_lockTime)
+    {
+        m_heightLocked = true;
+
+        std::thread([this, a_lockTime]() {
+            int singleWait = 10;
+            int maxCount = a_lockTime / singleWait;
+            for (int i = 0; i < maxCount; i++) {
+                _ts_SKSEFunctions::WaitWhileGameIsPaused();
+                std::this_thread::sleep_for(std::chrono::milliseconds(singleWait));
+            }
+            this->m_heightLocked = false;
+        }).detach();
+    }   
 }  // namespace IDRC

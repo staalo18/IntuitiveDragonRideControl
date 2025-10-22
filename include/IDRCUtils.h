@@ -24,6 +24,8 @@ namespace IDRC {
 
         float GetCameraYaw();
 
+        float GetCameraPitch();
+
         float GetAngleZ(const RE::NiPoint3& a_from, const RE::NiPoint3& a_to);
 
         // Below functions are from 'True Directional Movement':
