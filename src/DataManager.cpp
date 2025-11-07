@@ -112,9 +112,11 @@ namespace IDRC {
             log::warn("IDRC - {}: Speed multiplier out of range. Resetting to default (1.0)", __func__);
             mult = 1.0f;
         }
-
-        _ts_SKSEFunctions::UpdateIniSetting("fPlayerFlyingMountBaseTargetSpeed:General", m_baseSpeed * mult);
-        _ts_SKSEFunctions::UpdateIniSetting("fPlayerFlyingMountFastBaseTargetSpeed:General",  m_fastBaseSpeed * mult);
+        SKSE::GetTaskInterface()->AddTask([this, mult]() {
+            // When modifying Game objects, send task to TaskInterface to ensure thread safety
+            _ts_SKSEFunctions::UpdateIniSetting("fPlayerFlyingMountBaseTargetSpeed:General", this->m_baseSpeed * mult);
+            _ts_SKSEFunctions::UpdateIniSetting("fPlayerFlyingMountFastBaseTargetSpeed:General",  this->m_fastBaseSpeed * mult);
+        });
     }
 
 }  // namespace IDRC

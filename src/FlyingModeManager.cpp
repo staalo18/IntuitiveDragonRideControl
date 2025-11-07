@@ -49,16 +49,21 @@ namespace IDRC {
         m_maxHeight = 1000.0f;
         m_arrivalHeight = 1000.0f;
     
-        _ts_SKSEFunctions::UpdateIniSetting("fPlayerFlyingMountTravelMinHeight:General", m_minHeight);
-        _ts_SKSEFunctions::UpdateIniSetting("fPlayerFlyingMountTravelMaxHeight:General", m_maxHeight);
-        _ts_SKSEFunctions::UpdateIniSetting("fFlyingMountFastTravelArrivalHeight:General", m_arrivalHeight);
-    }
+        SKSE::GetTaskInterface()->AddTask([this]() {
+            // When modifying Game objects, send task to TaskInterface to ensure thread safety
+            _ts_SKSEFunctions::UpdateIniSetting("fPlayerFlyingMountTravelMinHeight:General", this->m_minHeight);
+            _ts_SKSEFunctions::UpdateIniSetting("fPlayerFlyingMountTravelMaxHeight:General", this->m_maxHeight);
+            _ts_SKSEFunctions::UpdateIniSetting("fFlyingMountFastTravelArrivalHeight:General", this->m_arrivalHeight);
+        });    }
 
-    void FlyingModeManager::ChangeDragonHeight(float a_upDown) {
+    void FlyingModeManager::ChangeDragonHeight(float a_upDown, bool a_isAbsoluteValue) {
         log::info("IDRC - {}", __func__);
     
         // Calculate the height change
-        float changeHeight = static_cast<float>(a_upDown) * 50.0f;
+        float changeHeight = a_upDown;
+        if (!a_isAbsoluteValue) {
+            changeHeight *= 50.0f;
+        }
         m_minHeight += changeHeight * GetRunFactor();
     
         // Clamp m_minHeight to the valid range [100, 10000]
@@ -71,10 +76,13 @@ namespace IDRC {
         // Synchronize other height-related variables
         m_maxHeight = m_minHeight;
         m_arrivalHeight = m_minHeight;
-    
-        _ts_SKSEFunctions::UpdateIniSetting("fPlayerFlyingMountTravelMinHeight:General", m_minHeight);
-        _ts_SKSEFunctions::UpdateIniSetting("fPlayerFlyingMountTravelMaxHeight:General", m_maxHeight);
-        _ts_SKSEFunctions::UpdateIniSetting("fFlyingMountFastTravelArrivalHeight:General", m_arrivalHeight);
+
+        SKSE::GetTaskInterface()->AddTask([this]() {
+            // When modifying Game objects, send task to TaskInterface to ensure thread safety
+            _ts_SKSEFunctions::UpdateIniSetting("fPlayerFlyingMountTravelMinHeight:General", this->m_minHeight);
+            _ts_SKSEFunctions::UpdateIniSetting("fPlayerFlyingMountTravelMaxHeight:General", this->m_maxHeight);
+            _ts_SKSEFunctions::UpdateIniSetting("fFlyingMountFastTravelArrivalHeight:General", this->m_arrivalHeight);
+        });
     
         // Get the dragon actor
         auto* dragonActor = DataManager::GetSingleton().GetDragonActor();

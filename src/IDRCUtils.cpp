@@ -13,17 +13,20 @@ namespace IDRC {
     namespace Utils{
 
         void SetINIVars(){
-            _ts_SKSEFunctions::UpdateIniSetting("fFlyingMountFastTravelDragonSpeed:General", 8500.0000f);
-            _ts_SKSEFunctions::UpdateIniSetting("fFlyingMountFastTravelArrivalHeight:General", 100.0000f) ;
-            _ts_SKSEFunctions::UpdateIniSetting("fFlyingMountLandingRequestTimer:General", 1.5000f);
-            _ts_SKSEFunctions::UpdateIniSetting("fFlyingMountSlowestSpeedMult:General", 1.2500f);
-            _ts_SKSEFunctions::UpdateIniSetting("iFlyingMountSlowestQueuedRefCount:General", 250);
-            _ts_SKSEFunctions::UpdateIniSetting("fPlayerFlyingMountNothingLoadingMult:General", 10.0000f);
-            _ts_SKSEFunctions::UpdateIniSetting("fPlayerFlyingMountFastBaseTargetSpeed:General", 1800.0000f) ;
-            _ts_SKSEFunctions::UpdateIniSetting("fPlayerFlyingMountBaseTargetSpeed:General", 1100.0000f) ;
-            _ts_SKSEFunctions::UpdateIniSetting("bFlyingMountFastTravelCruiseEnabled:General", true);
-            _ts_SKSEFunctions::UpdateIniSetting("fPlayerFlyingMountTravelMaxHeight:General", 100.0000f) ;
-            _ts_SKSEFunctions::UpdateIniSetting("fPlayerFlyingMountTravelMinHeight:General", 100.0000f) ; 
+            SKSE::GetTaskInterface()->AddTask([]() {
+            // When modifying Game objects, send task to TaskInterface to ensure thread safety
+                _ts_SKSEFunctions::UpdateIniSetting("fFlyingMountFastTravelDragonSpeed:General", 8500.0000f);
+                _ts_SKSEFunctions::UpdateIniSetting("fFlyingMountFastTravelArrivalHeight:General", 100.0000f) ;
+                _ts_SKSEFunctions::UpdateIniSetting("fFlyingMountLandingRequestTimer:General", 1.5000f);
+                _ts_SKSEFunctions::UpdateIniSetting("fFlyingMountSlowestSpeedMult:General", 1.2500f);
+                _ts_SKSEFunctions::UpdateIniSetting("iFlyingMountSlowestQueuedRefCount:General", 250);
+                _ts_SKSEFunctions::UpdateIniSetting("fPlayerFlyingMountNothingLoadingMult:General", 10.0000f);
+                _ts_SKSEFunctions::UpdateIniSetting("fPlayerFlyingMountFastBaseTargetSpeed:General", 1800.0000f) ;
+                _ts_SKSEFunctions::UpdateIniSetting("fPlayerFlyingMountBaseTargetSpeed:General", 1100.0000f) ;
+                _ts_SKSEFunctions::UpdateIniSetting("bFlyingMountFastTravelCruiseEnabled:General", true);
+                _ts_SKSEFunctions::UpdateIniSetting("fPlayerFlyingMountTravelMaxHeight:General", 100.0000f) ;
+                _ts_SKSEFunctions::UpdateIniSetting("fPlayerFlyingMountTravelMinHeight:General", 100.0000f) ; 
+            });
         }
 
         

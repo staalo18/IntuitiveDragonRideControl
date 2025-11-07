@@ -1,6 +1,7 @@
 #include "CameraLockManager.h"
 #include "DataManager.h"
 #include "FlyingModeManager.h"
+#include "FastTravelManager.h"
 #include "ControlsManager.h"
 #include "_ts_SKSEFunctions.h"
 #include "APIManager.h"
@@ -55,39 +56,13 @@ namespace IDRC {
 
         float currentDragonYaw = dragonActor->GetAngleZ();
         float currentDragonYawOffset = currentCameraYaw - currentDragonYaw;
-            if (isCameraBehindTarget) {
-                currentDragonYawOffset += PI;
-            }
+        if (isCameraBehindTarget) {
+            currentDragonYawOffset += PI;
+        }
         currentDragonYawOffset = Utils::NormalRelativeAngle(currentDragonYawOffset);
 
         int flyState = _ts_SKSEFunctions::GetFlyingState(dragonActor);
         auto flyMode = flyingModeManager.GetFlyingMode();
-        
-        bool changeHeightTriggered = false;
-        if (flyState == 2) {
-           if (!m_heightLocked) {
-                // dragon height adjustment according to camera pitch
-                float cameraPitch = Utils::GetCameraPitch();
-                float dragonPitch = -dragonActor->GetAngleX();
-log::info("IDRC - {}: CameraPitch: {}, DragonPitch: {}", __func__, 180.f/PI * cameraPitch, 180.f/PI * dragonPitch);
-                if (cameraPitch < -15.f * PI / 180.f) { // looking down
-                    
-                    float change = (cameraPitch + 15.f * PI / 180.f) / (0.25f * PI); // change == 0 @ 15 deg <-> change == 1 @ 60 deg
-                    flyingModeManager.ChangeDragonHeight(change);
-                    changeHeightTriggered = true;
-                    LockHeight(50);
-//log::info("IDRC - {}: CameraPitch: {}, change: {}", __func__, 180.f/PI * cameraPitch, change);
-                }
-                else if (cameraPitch > 10.f * PI / 180.f) { // looking up
-                    
-                    float change = (cameraPitch - 10.f * PI / 180.f) / (0.25f * PI); // change == 0 @ 10 deg <-> change == 1 @ 55 deg
-                    flyingModeManager.ChangeDragonHeight(change);
-                    changeHeightTriggered = true;
-                    LockHeight(50);
-//log::info("IDRC - {}: CameraPitch: {}, change: {}", __func__, 180.f/PI * cameraPitch, change);
-                } 
-            }
-        }
 
         bool isTDMLocked = false;
         if (APIs::TrueDirectionalMovementV1) {
@@ -126,9 +101,6 @@ log::info("IDRC - {}: CameraPitch: {}, DragonPitch: {}", __func__, 180.f/PI * ca
             m_turnOngoing = false;
         }
 
-//log::info("IDRC - {}: m_turnOngoing: {}, currentDragonYaw: {}, targetDragonYaw: {}, targetDragonYawOffset: {}, currentCameraYaw: {}", __func__,
-//m_turnOngoing, 180.f/PI * currentDragonYaw, 180.f/PI * targetDragonYaw, 180.f/PI * targetDragonYawOffset, 180.f/PI * currentCameraYaw);
-
         if (flyState != m_flyState) { // reset turnMarker to avoid dragon rotation after reaching new state
             if (flyState == 0) { // landed
                 flyingModeManager.DragonTurnPlayerRiding(180.f / PI * currentDragonYawOffset);
@@ -141,33 +113,54 @@ log::info("IDRC - {}: CameraPitch: {}, DragonPitch: {}", __func__, 180.f/PI * ca
         }
         m_flyState = flyState;
 
-        bool turnTriggered = false;
-        if ( !m_turnLocked  // don't spam the Turn calls
-             && (m_isUserTurning || m_turnOngoing) // only if user is actively triggering a turn (via mouse or gamepad), or such auser-triggered turn is not yet completed
-             && (fabs(currentDragonYawOffset) > 2.f * PI / 180.f) // ignore turn angles smaller than 2 degrees
-             && ( (flyState == 3 && flyMode == FlyingMode::kHovering ) ||
-                  (flyState == 0 && flyMode == FlyingMode::kLanded) ||
-                  (flyState == 2 && flyMode == FlyingMode::kFlying) )  // only trigger turns if dragon is in one of these flying states 
-             && !controlsManager.GetIsKeyPressed(kStrafeLeft)
-             && !controlsManager.GetIsKeyPressed(kStrafeRight)  // movement commands override camera-based turning
-           ) {
-
-            // dragon yaw follows user-triggered camera rotation
-            flyingModeManager.DragonTurnPlayerRiding(180.f / PI * currentDragonYawOffset);
-            turnTriggered = true;
-            m_turnOngoing = true;
-            int lockTime = 30;
-            if (flyState == 2) {
-                lockTime = 300; // longer lock time when flying
-            }
-            LockTurn(lockTime); // Prevent next DragonTurnPlayerRiding() call for lockTime ms
+        if (!m_dragonPosInitialized) {
+            m_dragonPos = dragonActor->GetPosition();
+            m_dragonPosInitialized = true;
         }
 
-        if (changeHeightTriggered && !turnTriggered) {
-            // ensures height change is immediately applied (via FastTravel call in DragonTurnPlayerRiding)
-            // and fly direction is up-to-date
-log::info("IDRC - {}: Forcing fly to after turn/height change", __func__);
-            flyingModeManager.DragonTurnPlayerRiding(180.f / PI * currentDragonYawOffset);
+        RE::NiPoint3 travelledVec = dragonActor->GetPosition() - m_dragonPos;
+        m_dragonPos = dragonActor->GetPosition();
+
+        if (( (flyState == 3 && flyMode == FlyingMode::kHovering ) ||
+              (flyState == 0 && flyMode == FlyingMode::kLanded) ||
+              (flyState == 2 && flyMode == FlyingMode::kFlying) )  // only trigger camera-induced movements if dragon is in one of these flying states 
+           ) {
+
+            // Height control
+            if (flyState == 2 && 
+                 !controlsManager.GetIsKeyPressed(kStrafeLeft) && !controlsManager.GetIsKeyPressed(kStrafeRight) &&
+                 !controlsManager.GetIsKeyPressed(kUp) && !controlsManager.GetIsKeyPressed(kDown)) {
+
+                float travelledDistance = travelledVec.Length();
+                float travelledZ = travelledVec.z;
+                float travelledXY = std::sqrt(travelledVec.x * travelledVec.x + travelledVec.y * travelledVec.y);
+                float travelledPitch = std::atan2(travelledZ, travelledXY);
+                float cameraPitch = Utils::GetCameraPitch();
+
+                DampenPitch(cameraPitch, travelledPitch);
+
+//                float cameraHeightChange = travelledXY * std::tan(cameraPitch);
+                float cameraHeightChange = travelledDistance * std::sin(cameraPitch);
+                float effectiveHeightChange = cameraHeightChange - 0.5f*travelledZ;
+
+                flyingModeManager.ChangeDragonHeight(effectiveHeightChange, true);
+            }
+
+            // Turning
+            if  ( !m_turnLocked  // don't spam the Turn calls
+                  && (m_isUserTurning || m_turnOngoing || flyState == 2) // only if user is actively triggering a turn (via mouse or gamepad), or such auser-triggered turn is not yet completed
+                  && (flyState == 2 ||fabs(currentDragonYawOffset) > 2.f * PI / 180.f) // ignore turn angles smaller than 2 degrees
+                  && !controlsManager.GetIsKeyPressed(kStrafeLeft) && !controlsManager.GetIsKeyPressed(kStrafeRight)
+                ) {
+                // dragon yaw follows user-triggered camera rotation
+                flyingModeManager.DragonTurnPlayerRiding(180.f / PI * currentDragonYawOffset);
+                m_turnOngoing = true;
+                int lockTime = 30;
+                if (flyState == 2) {
+                    lockTime = 300; // longer lock time when flying
+                }
+                LockTurn(lockTime); // Prevent next DragonTurnPlayerRiding() call for lockTime ms
+            } 
         }
 
         if (isDragonTurning && !m_isUserTurning && !isTDMLocked && !m_turnLocked) {
@@ -221,6 +214,28 @@ log::info("IDRC - {}: Forcing fly to after turn/height change", __func__);
 
     void CameraLockManager::SetUserTurning(bool a_moved) {
         m_isUserTurning = a_moved;
+    }
+
+
+    void CameraLockManager::DampenPitch(float a_cameraPitch, float a_travelledPitch) {
+        auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
+        if (!dragonActor) {
+            return;
+        }
+
+        RE::NiPoint3 dragonAngle = dragonActor->GetAngle();
+
+        float groundHeight = _ts_SKSEFunctions::GetLandHeightWithWater(dragonActor);
+        float groundFactor= std::clamp((dragonActor->GetPosition().z - groundHeight - 1000.f)/2000.f, 0.f, 1.f);
+
+        float targetPitch = 0.3f * dragonAngle.x - 0.6f * a_cameraPitch - 0.1f * a_travelledPitch;
+        targetPitch = (1.f -  groundFactor) * dragonAngle.x +  groundFactor * targetPitch;
+
+        dragonAngle.x = targetPitch;
+//        SKSE::GetTaskInterface()->AddTask([this, dragonActor, dragonAngle]() {
+        // When modifying Game objects, send task to TaskInterface to ensure thread safety
+        dragonActor->SetAngle(dragonAngle);
+//        });
     }
 
     void CameraLockManager::LockTurn(int a_lockTime)

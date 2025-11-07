@@ -28,6 +28,7 @@ namespace IDRC {
         private:
             CameraLockManager() = default;
 
+            void DampenPitch(float a_cameraPitch, float a_travelledPitch);
             void LockTurn(int a_lockTime);
             void LockHeight(int a_lockTime);
 
@@ -40,7 +41,7 @@ namespace IDRC {
             bool m_isUserTurning = false;
             float m_dragonYaw = 0.0f;
             int m_flyState = -1;
-std::deque<float> m_pitchHistory;  // Store recent pitch values
-float m_lastHeightChange = 0.0f;   // Remember last change applied
+            RE::NiPoint3 m_dragonPos;
+            bool m_dragonPosInitialized = false;
     }; // class CameraLockManager
 }  // namespace IDRC

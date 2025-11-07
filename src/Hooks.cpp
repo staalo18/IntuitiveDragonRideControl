@@ -11,8 +11,8 @@ namespace Hooks
 
 		MainUpdateHook::Hook();
 
-		ReadyWeaponHook::Hook();
-		ExtraInteractionHook::Hook();
+//		ReadyWeaponHook::Hook();
+//		ExtraInteractionHook::Hook();
 		LookHook::Hook();
 //		GetMountHook::Hook();
 

@@ -70,7 +70,7 @@ namespace IDRC {
 
         void ResetDragonHeight();
 
-        void ChangeDragonHeight(float a_upDown);
+        void ChangeDragonHeight(float a_upDown, bool a_isAbsoluteValue = false);
 
         bool DragonTurnPlayerRiding(float a_turnAngle);
     private:
