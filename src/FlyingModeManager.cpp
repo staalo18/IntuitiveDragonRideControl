@@ -57,7 +57,7 @@ namespace IDRC {
         });    }
 
     void FlyingModeManager::ChangeDragonHeight(float a_upDown, bool a_isAbsoluteValue) {
-        log::info("IDRC - {}", __func__);
+//        log::info("IDRC - {}", __func__);
     
         // Calculate the height change
         float changeHeight = a_upDown;
@@ -285,7 +285,7 @@ namespace IDRC {
         bool flyingModeNotification = false;
         WorldSpaceData worldSpaceData; 
         worldSpaceData = WorldSpaceData(dragonActor->GetWorldspace()); 
-        if (!controlsManager.GetControlBlocked() && _ts_SKSEFunctions::IsPlayerInRegion(worldSpaceData.m_borderRegionName)) {
+        if (!controlsManager.GetControlBlocked() && IsInBorderRegion(worldSpaceData.m_borderRegionName)) {
             if (dragonActor->IsBeingRidden()) {
                 if ((a_key == kForward || a_key == kBack) && 
                         dataManager.GetAutoCombat() && _ts_SKSEFunctions::GetCombatState(dragonActor) > 0) {
@@ -1445,7 +1445,7 @@ namespace IDRC {
 
         float distance = GetDistanceToRegionBoundingBox(worldSpaceData, posX, posY, angleNorm);
 
-        if(_ts_SKSEFunctions::IsPlayerInRegion(worldSpaceData.m_borderRegionName) == false){
+        if(!IsInBorderRegion(worldSpaceData.m_borderRegionName)){
             log::info("IDRC - {}: Player is not in border region {} - cancel FlyTo...", __func__, worldSpaceData.m_borderRegionName);
             return false;
         }  
@@ -1701,6 +1701,17 @@ log::info("IDRC - {}: Worldspace {} - BorderRegion: {} / {}", __func__, region->
         } else {
             log::error("IDRC - {}: Trying to use dragon fast travel in invalid worldspace!", __func__);
        }
+    }
+
+    bool FlyingModeManager::IsInBorderRegion(std::string a_regionName) const {
+        bool isInBorderRegion = _ts_SKSEFunctions::IsPlayerInRegion(a_regionName);
+
+        if (!isInBorderRegion && a_regionName == "BorderRegionSkyrim") {
+            // if in Worldspace Tamriel / Skyrim, also check for Castle Volkihar
+            isInBorderRegion = _ts_SKSEFunctions::IsPlayerInRegion("DLC1BorderRegionSkyrim");
+        }
+
+        return isInBorderRegion;
     }
 
     float FlyingModeManager::NormalizeAngle(float a_angle){
