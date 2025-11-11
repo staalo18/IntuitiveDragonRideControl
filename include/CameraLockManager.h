@@ -1,5 +1,6 @@
 #pragma once
 
+#include "IDRCUtils.h"
 namespace IDRC {
     class CameraLockManager {
         public:
@@ -25,6 +26,8 @@ namespace IDRC {
 
             void SetUserTurning(bool a_moved);
 
+            void SetIgnoredCameraPitch(float a_pitch);
+
         private:
             CameraLockManager() = default;
 
@@ -43,5 +46,7 @@ namespace IDRC {
             int m_flyState = -1;
             RE::NiPoint3 m_dragonPos;
             bool m_dragonPosInitialized = false;
+            float m_ignoredCameraPitch = -8.f * PI / 180.f;
+            float m_transitionalPitchRange = -5.f * PI / 180.f;
     }; // class CameraLockManager
 }  // namespace IDRC

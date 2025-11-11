@@ -6,7 +6,6 @@
 #include "_ts_SKSEFunctions.h"
 #include "APIManager.h"
 #include "DataManager.h"
-#include "IDRCUtils.h"
 
 
 namespace IDRC {
@@ -136,11 +135,20 @@ namespace IDRC {
                 float travelledXY = std::sqrt(travelledVec.x * travelledVec.x + travelledVec.y * travelledVec.y);
                 float travelledPitch = std::atan2(travelledZ, travelledXY);
                 float cameraPitch = Utils::GetCameraPitch();
+                if (cameraPitch < 0) {
+                    // ignore camera downward pitch up to m_ignoredCameraPitch, then ramp up cameraPitch smoothly
+                    if (cameraPitch > m_ignoredCameraPitch) {
+                        cameraPitch = 0.0f;
+                    }  else if (cameraPitch > (m_ignoredCameraPitch + m_transitionalPitchRange)) {
+                        cameraPitch = (m_ignoredCameraPitch + m_transitionalPitchRange) * (cameraPitch - m_ignoredCameraPitch) / m_transitionalPitchRange;
+                    }
+                }
 
                 DampenPitch(cameraPitch, travelledPitch);
 
 //                float cameraHeightChange = travelledXY * std::tan(cameraPitch);
                 float cameraHeightChange = travelledDistance * std::sin(cameraPitch);
+                
                 float effectiveHeightChange = cameraHeightChange - 0.5f*travelledZ;
 
                 flyingModeManager.ChangeDragonHeight(effectiveHeightChange, true);
@@ -216,6 +224,9 @@ namespace IDRC {
         m_isUserTurning = a_moved;
     }
 
+    void CameraLockManager::SetIgnoredCameraPitch(float a_pitch) {
+        m_ignoredCameraPitch = -a_pitch * PI / 180.f;
+    }
 
     void CameraLockManager::DampenPitch(float a_cameraPitch, float a_travelledPitch) {
         auto* dragonActor = DataManager::GetSingleton().GetDragonActor();

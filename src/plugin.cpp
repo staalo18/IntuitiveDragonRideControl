@@ -235,6 +235,10 @@ namespace IDRC {
         void SetCameraLockInitiallyEnabled_SKSE(RE::StaticFunctionTag*, bool a_enabled) {
             log::info("IDRC - {}: {}", __func__, a_enabled);
             CameraLockManager::GetSingleton().SetInitiallyEnabled(a_enabled);
+        }        
+        void SetIgnoredCameraPitch_SKSE(RE::StaticFunctionTag*, float a_pitch) {
+            log::info("IDRC - {}: {}", __func__, a_pitch);
+            CameraLockManager::GetSingleton().SetIgnoredCameraPitch(a_pitch);
         }
 
         RE::BSScript::LatentStatus TriggerLand_SKSE_Latent(RE::BSScript::Internal::VirtualMachine* a_vm, RE::VMStackID a_stackID, RE::StaticFunctionTag*, RE::TESObjectREFR* a_landTarget) {
@@ -460,6 +464,7 @@ std::thread([a_vm, a_stackID, a_stopFastTravelTarget, a_height, a_timeout, a_wai
             a_vm->RegisterFunction("SetDistanceMultiplierExtraLarge_SKSE", "_ts_DR_RideControlScript", SetDistanceMultiplierExtraLarge_SKSE);
             a_vm->RegisterFunction("SetMaxTargetScanAngle_SKSE", "_ts_DR_RideControlScript", SetMaxTargetScanAngle_SKSE);
             a_vm->RegisterFunction("SetCameraLockInitiallyEnabled_SKSE", "_ts_DR_RideControlScript", SetCameraLockInitiallyEnabled_SKSE);
+            a_vm->RegisterFunction("SetIgnoredCameraPitch_SKSE", "_ts_DR_RideControlScript", SetIgnoredCameraPitch_SKSE);
 
             // Papyrus access to ts_SKSEFunctions
             a_vm->RegisterFunction("IsFlyingMountPatrolQueued", "_ts_DR_RideControlScript", IsFlyingMountPatrolQueued);
