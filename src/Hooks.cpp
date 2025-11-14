@@ -14,6 +14,7 @@ namespace Hooks
 //		ReadyWeaponHook::Hook();
 //		ExtraInteractionHook::Hook();
 		LookHook::Hook();
+		DragonCameraStateHook::Hook();
 //		GetMountHook::Hook();
 
 		log::info("...success");
@@ -177,6 +178,51 @@ log::info("IDRC - {}: ReadyWeaponHook-ProcessButton called with event IDCode = {
 			cameraLockManager.SetUserTurning(true);
 			_ProcessMouseMove(a_this, a_event, a_data);
 		}
+	}
+
+	void DragonCameraStateHook::OnEnterState(RE::DragonCameraState* a_this)
+	{
+		_OnEnterState(a_this);
+
+		RE::Actor* dragon = nullptr;
+		dragon = static_cast<RE::Actor*>(a_this->dragonRefHandle.get().get());
+
+		if (dragon) {
+			a_this->dragonCurrentDirection = dragon->GetHeading(false);
+
+			// TODO: also update pitch? What is the best pitch at the end of the mount animation...
+		}
+	}
+
+	void DragonCameraStateHook::UpdateRotation(RE::DragonCameraState* a_this)
+	{
+//		auto directionalMovementHandler = DirectionalMovementHandler::GetSingleton();
+//		if (directionalMovementHandler->GetFreeCameraEnabled() && !directionalMovementHandler->IFPV_IsFirstPerson() && !directionalMovementHandler->ImprovedCamera_IsFirstPerson()) {
+			float dragonCurrentDirection = a_this->dragonCurrentDirection;
+			float freeRotationX = a_this->freeRotation.x;
+
+			a_this->freeRotationEnabled = true;
+
+			_UpdateRotation(a_this);
+
+			a_this->dragonCurrentDirection = dragonCurrentDirection;
+			a_this->freeRotation.x = freeRotationX;
+
+			if (a_this->dragonRefHandle) {
+				RE::Actor* dragon = nullptr;
+				dragon = static_cast<RE::Actor*>(a_this->dragonRefHandle.get().get());
+				if (dragon) {
+					float heading = dragon->GetHeading(false);
+
+					a_this->freeRotation.x += a_this->dragonCurrentDirection - heading;
+
+					NiQuaternion_SomeRotationManipulation(a_this->rotation, -a_this->freeRotation.y, 0.f, heading + a_this->freeRotation.x);
+					a_this->dragonCurrentDirection = heading;
+				}
+			}
+//		} else {
+//			_UpdateRotation(a_this);
+//		}
 	}
 
 

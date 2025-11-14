@@ -1,5 +1,6 @@
 #pragma once
 
+#include "DragonCameraState.h"
 namespace Hooks
 {
 	class ReadyWeaponHook
@@ -73,6 +74,23 @@ namespace Hooks
 		static inline REL::Relocation<decltype(ProcessMouseMove)> _ProcessMouseMove;
 	};
 
+	class DragonCameraStateHook
+	{
+	public:
+		static void Hook()
+		{
+			REL::Relocation<std::uintptr_t> DragonCameraStateVtbl{ RE::VTABLE_DragonCameraState[0] };
+			_OnEnterState = DragonCameraStateVtbl.write_vfunc(0x1, OnEnterState);
+			_UpdateRotation = DragonCameraStateVtbl.write_vfunc(0xE, UpdateRotation);
+		}
+
+	private:
+		static void OnEnterState(RE::DragonCameraState* a_this);
+		static void UpdateRotation(RE::DragonCameraState* a_this);
+
+		static inline REL::Relocation<decltype(OnEnterState)> _OnEnterState;
+		static inline REL::Relocation<decltype(UpdateRotation)> _UpdateRotation;
+	};
 /*
 #include <MinHook.h>
 

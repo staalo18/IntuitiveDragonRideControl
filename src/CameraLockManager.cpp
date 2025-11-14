@@ -156,7 +156,7 @@ namespace IDRC {
 
             // Turning
             if  ( !m_turnLocked  // don't spam the Turn calls
-                  && (m_isUserTurning || m_turnOngoing || flyState == 2) // only if user is actively triggering a turn (via mouse or gamepad), or such auser-triggered turn is not yet completed
+                  && (isTDMLocked || m_isUserTurning || m_turnOngoing || flyState == 2) // only if user is actively triggering a turn (via mouse or gamepad, or TDM Lock), or such a user-triggered turn is not yet completed
                   && (flyState == 2 ||fabs(currentDragonYawOffset) > 2.f * PI / 180.f) // ignore turn angles smaller than 2 degrees
                   && !controlsManager.GetIsKeyPressed(kStrafeLeft) && !controlsManager.GetIsKeyPressed(kStrafeRight)
                 ) {
