@@ -1,6 +1,6 @@
 #include "CombatTargetReticle.h"
 #include "Offsets.h"
-#include "IDRCUtils.h"
+#include "_ts_SKSEFunctions.h"
 
 // The CombatTargetReticle class is based on the TargetLockReticle implementation from 'True Directional Movement':
 // https://github.com/ersh1/TrueDirectionalMovement
@@ -116,8 +116,8 @@ namespace IDRC
 
 		// if we're interpolating, lerp between the positions
 		if (_interpTimer > 0) {
-			screenPos.x = Utils::InterpEaseIn(_lastScreenPos.x, _desiredScreenPos.x, _interpAlpha, 2);
-			screenPos.y = Utils::InterpEaseIn(_lastScreenPos.y, _desiredScreenPos.y, _interpAlpha, 2);
+			screenPos.x = _ts_SKSEFunctions::InterpEaseIn(_lastScreenPos.x, _desiredScreenPos.x, _interpAlpha, 2);
+			screenPos.y = _ts_SKSEFunctions::InterpEaseIn(_lastScreenPos.y, _desiredScreenPos.y, _interpAlpha, 2);
 		} else {
 			screenPos = _desiredScreenPos;
 		}

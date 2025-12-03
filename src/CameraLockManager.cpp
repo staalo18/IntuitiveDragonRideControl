@@ -46,8 +46,7 @@ namespace IDRC {
             return;
         }
 
-        float currentCameraYaw = Utils::GetCameraYaw();
-
+        float currentCameraYaw = _ts_SKSEFunctions::GetYaw(dragonCameraState->rotation);
         bool isCameraBehindTarget = false;
         if (APIs::TrueDirectionalMovementV4) {
             isCameraBehindTarget = APIs::TrueDirectionalMovementV4->IsTargetLockBehindTarget();
@@ -58,7 +57,7 @@ namespace IDRC {
         if (isCameraBehindTarget) {
             currentDragonYawOffset += PI;
         }
-        currentDragonYawOffset = Utils::NormalRelativeAngle(currentDragonYawOffset);
+        currentDragonYawOffset = _ts_SKSEFunctions::NormalRelativeAngle(currentDragonYawOffset);
 
         int flyState = _ts_SKSEFunctions::GetFlyingState(dragonActor);
         auto flyMode = flyingModeManager.GetFlyingMode();
@@ -69,7 +68,7 @@ namespace IDRC {
         }
 
         bool isDragonTurning = false;
-        if (fabs(Utils::NormalRelativeAngle(currentDragonYaw - m_dragonYaw)) > 0.1f * PI / 180.f) {
+        if (fabs(_ts_SKSEFunctions::NormalRelativeAngle(currentDragonYaw - m_dragonYaw)) > 0.1f * PI / 180.f) {
             isDragonTurning = true;
         }
         m_dragonYaw = currentDragonYaw;
@@ -89,12 +88,12 @@ namespace IDRC {
 
         float targetDragonYaw = currentDragonYaw;
         if (flyState == 0 || flyState == 3) { // hovering or landed
-            targetDragonYaw = Utils::GetAngleZ(dragonActor->GetPosition(), turnMarker->GetPosition());
+            targetDragonYaw = _ts_SKSEFunctions::GetAngleZ(dragonActor->GetPosition(), turnMarker->GetPosition());
         } else if (flyState == 2) {  // flying
-            targetDragonYaw = Utils::GetAngleZ(dragonActor->GetPosition(), orbitMarker->GetPosition());
+            targetDragonYaw = _ts_SKSEFunctions::GetAngleZ(dragonActor->GetPosition(), orbitMarker->GetPosition());
         }
         float targetDragonYawOffset = currentDragonYaw - targetDragonYaw;
-        targetDragonYawOffset = Utils::NormalRelativeAngle(targetDragonYawOffset);
+        targetDragonYawOffset = _ts_SKSEFunctions::NormalRelativeAngle(targetDragonYawOffset);
 
         if (m_turnOngoing && fabs(targetDragonYawOffset) < 2.f * PI / 180.f) {
             m_turnOngoing = false;
@@ -134,7 +133,7 @@ namespace IDRC {
                 float travelledZ = travelledVec.z;
                 float travelledXY = std::sqrt(travelledVec.x * travelledVec.x + travelledVec.y * travelledVec.y);
                 float travelledPitch = std::atan2(travelledZ, travelledXY);
-                float cameraPitch = Utils::GetCameraPitch();
+                float cameraPitch = _ts_SKSEFunctions::GetPitch(dragonCameraState->rotation);
                 if (cameraPitch < 0) {
                     // ignore camera downward pitch up to m_ignoredCameraPitch, then ramp up cameraPitch smoothly
                     if (cameraPitch > m_ignoredCameraPitch) {
@@ -174,15 +173,15 @@ namespace IDRC {
         if (isDragonTurning && !m_isUserTurning && !isTDMLocked && !m_turnLocked) {
             // camera rotation follows dragon yaw
             m_cameraLocked = true;
-            float currentCameraRotation = Utils::NormalRelativeAngle(dragonCameraState->freeRotation.x);
-            float realTimeDeltaTime = Utils::GetRealTimeDeltaTime() < 0.05f ? Utils::GetRealTimeDeltaTime() : 0.05f;
+            float currentCameraRotation = _ts_SKSEFunctions::NormalRelativeAngle(dragonCameraState->freeRotation.x);
+            float realTimeDeltaTime = _ts_SKSEFunctions::GetRealTimeDeltaTime() < 0.05f ? _ts_SKSEFunctions::GetRealTimeDeltaTime() : 0.05f;
             float damping = 1.0f - 2.5f * realTimeDeltaTime;
-            float newCameraRotation =  Utils::NormalRelativeAngle(damping *currentCameraRotation);
+            float newCameraRotation =  _ts_SKSEFunctions::NormalRelativeAngle(damping *currentCameraRotation);
 
-            SKSE::GetTaskInterface()->AddTask([dragonCameraState, newCameraRotation]() {
+//            SKSE::GetTaskInterface()->AddTask([dragonCameraState, newCameraRotation]() {
                 // When modifying Game objects, send task to TaskInterface to ensure thread safety
                 dragonCameraState->freeRotation.x = newCameraRotation;
-            });
+//            });
         } else {
             m_cameraLocked = false;
         }

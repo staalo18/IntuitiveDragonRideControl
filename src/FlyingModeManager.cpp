@@ -297,8 +297,8 @@ namespace IDRC {
                         while (controlsManager.GetIsKeyPressed(a_key)) {
                             if (!(controlsManager.GetIsKeyPressed(kStrafeLeft) || controlsManager.GetIsKeyPressed(kStrafeRight))) {
                                 RE::NiPoint3 forwardVector{ 0.f, 1.f, 0.f };
-                                float angle = Utils::GetAngleZ(dragonActor->GetPosition() - m_dragonTurnMarker->GetPosition(), forwardVector);
-                                angle = Utils::NormalRelativeAngle(angle - dragonActor->GetAngleZ());
+                                float angle = _ts_SKSEFunctions::GetAngleZ(dragonActor->GetPosition() - m_dragonTurnMarker->GetPosition(), forwardVector);
+                                angle = _ts_SKSEFunctions::NormalRelativeAngle(angle - dragonActor->GetAngleZ());
                                 PlaceTravelToMarker(dragonActor, 500.0f, angle, 0.0f);
                                 DragonTravelTo(m_dragonTravelToMarker);
                             }

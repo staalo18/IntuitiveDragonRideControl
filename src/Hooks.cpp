@@ -196,6 +196,8 @@ log::info("IDRC - {}: ReadyWeaponHook-ProcessButton called with event IDCode = {
 
 	void DragonCameraStateHook::UpdateRotation(RE::DragonCameraState* a_this)
 	{
+		// This is copied from True Directional Movement. All credits go to the original author Ersh!
+
 //		auto directionalMovementHandler = DirectionalMovementHandler::GetSingleton();
 //		if (directionalMovementHandler->GetFreeCameraEnabled() && !directionalMovementHandler->IFPV_IsFirstPerson() && !directionalMovementHandler->ImprovedCamera_IsFirstPerson()) {
 			float dragonCurrentDirection = a_this->dragonCurrentDirection;

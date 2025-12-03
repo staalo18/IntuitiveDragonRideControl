@@ -1,6 +1,6 @@
 #pragma once
 
-#include "IDRCUtils.h"
+#include "_ts_SKSEFunctions.h"
 namespace IDRC {
     class CameraLockManager {
         public:

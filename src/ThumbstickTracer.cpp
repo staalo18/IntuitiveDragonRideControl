@@ -2,7 +2,7 @@
 #include <math.h>
 #include "FlyingModeManager.h"
 #include "ControlsManager.h"
-
+#include "_ts_SKSEFunctions.h"
 
 // ThumbstickTracer and ThumbstickTracerHook implementations are modified copies of
 // the DTryKeyUtils movementInputTracer and hook_movement classes
