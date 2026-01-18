@@ -9,6 +9,7 @@
 
 #include "RE/Skyrim.h"
 #include "SKSE/API.h"
+#include "CLIBUtil/EditorID.hpp"
 
 
 namespace IDRC {
@@ -1682,16 +1683,18 @@ log::info("IDRC - {}: Worldspace {} - BorderRegion: {} / {}", __func__, region->
             log::error("IDRC - {}: Worldspace is null", __func__);
             return;
         }
+        
+        std::string worldspace_EDID = clib_util::editorID::get_editorID(a_worldSpace);
 
         // The Border region of the worldSpace MUST be completely within the bounding box defined by fMinX, fMaxX, fMinY, fMaxY
-        if (strcmp(a_worldSpace->GetFullName(), "Skyrim") == 0) {
+        if (strcmp(worldspace_EDID.c_str(), "Tamriel") == 0) {
             m_minX = -220000;
             m_maxX = 240000;
             m_minY = -150000;
             m_maxY = 200000;
             m_seaLevel = -14000;
             m_borderRegionName = "BorderRegionSkyrim";
-        } else if (strcmp(a_worldSpace->GetFullName(), "Solstheim") == 0) {
+        }  else if (strcmp(worldspace_EDID.c_str(), "DLC2SolstheimWorld") == 0) {
             m_minX = -20000;
             m_maxX = 140000;
             m_minY = -20000;
@@ -1699,7 +1702,7 @@ log::info("IDRC - {}: Worldspace {} - BorderRegion: {} / {}", __func__, region->
             m_seaLevel = 0;
             m_borderRegionName = "DLC2SolstheimBorderRegion";
         } else {
-            log::error("IDRC - {}: Trying to use dragon fast travel in invalid worldspace!", __func__);
+            log::error("IDRC - {}: Trying to use dragon fast travel in invalid worldspace: {}!", __func__, worldspace_EDID.c_str());
        }
     }
 
