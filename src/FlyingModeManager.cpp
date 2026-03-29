@@ -195,9 +195,9 @@ namespace IDRC {
         // Display notification if flying mode display is enabled
         if (DisplayManager::GetSingleton().GetDisplayFlyingMode()) {
             if (dataManager.GetAutoCombat()) {
-                RE::DebugNotification("Combat - Auto");
+                RE::SendHUDMessage::ShowHUDMessage("Combat - Auto");
             } else {
-                RE::DebugNotification("Combat - Manual");
+                RE::SendHUDMessage::ShowHUDMessage("Combat - Manual");
             }
         }
     
@@ -250,9 +250,9 @@ namespace IDRC {
 
             if (displayManager.GetDisplayFlyingMode()) {
                 if (m_toggleAlwaysRun) {
-                    RE::DebugNotification("Fast Mode - On");
+                    RE::SendHUDMessage::ShowHUDMessage("Fast Mode - On");
                 } else {
-                    RE::DebugNotification("Fast Mode - Off");
+                    RE::SendHUDMessage::ShowHUDMessage("Fast Mode - Off");
                 }
             }
         } else if (a_key == kToggleAutoCombat) {
@@ -276,7 +276,7 @@ namespace IDRC {
     
             if (m_registeredForLanding && a_key == kForward) {
                 if (CancelDragonLandPlayerRiding()) {
-                    RE::DebugNotification("Commanding Hovering Mode - Landing cancelled");
+                    RE::SendHUDMessage::ShowHUDMessage("Commanding Hovering Mode - Landing cancelled");
                     controlsManager.SetControlBlocked(false);
                     std::this_thread::sleep_for(std::chrono::milliseconds(500));
                 }
@@ -1002,7 +1002,7 @@ namespace IDRC {
             }
         } else if (a_displayMode) {
             log::info("IDRC - {}: Dragon health is low - cannot take off", __func__);
-            RE::DebugNotification("Dragon health is low - cannot take off");
+            RE::SendHUDMessage::ShowHUDMessage("Dragon health is low - cannot take off");
             return false;
         }
     
@@ -1130,7 +1130,7 @@ namespace IDRC {
                     log::info("IDRC - {}: Timeout - Trying to cancel Land", __func__);
                     if (CancelDragonLandPlayerRiding()) {
                         if (!timeoutMessage.empty()) {
-                            RE::DebugNotification(timeoutMessage.c_str());
+                            RE::SendHUDMessage::ShowHUDMessage(timeoutMessage.c_str());
                         }
                         log::info("IDRC - {}: Cancelled Land", __func__);
                         return false;
@@ -1138,7 +1138,7 @@ namespace IDRC {
                 }
     
                 if (a_displayMode && notificationCount >= 50) {
-                    RE::DebugNotification(searchMessage.c_str());
+                    RE::SendHUDMessage::ShowHUDMessage(searchMessage.c_str());
                     notificationCount = 0;
                 }
     

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "DragonCameraState.h"
+#include "RE/D/DragonCameraState.h"
 namespace Hooks
 {
 	class ReadyWeaponHook

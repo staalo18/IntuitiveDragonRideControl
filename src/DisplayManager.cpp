@@ -50,7 +50,7 @@ namespace IDRC {
             }
     
             // Display the notification
-            RE::DebugNotification(sMessage.c_str());
+            RE::SendHUDMessage::ShowHUDMessage(sMessage.c_str());
         }
     }
 
@@ -82,7 +82,7 @@ namespace IDRC {
         float healthPercentage = _ts_SKSEFunctions::GetHealthPercentage(dragonActor) * 100.0f;
         int roundedHealth = static_cast<int>(std::round(healthPercentage));
     
-        RE::DebugNotification((DataManager::GetSingleton().GetDragonName() + " Health: " + std::to_string(roundedHealth) + "%").c_str());
+        RE::SendHUDMessage::ShowHUDMessage((DataManager::GetSingleton().GetDragonName() + " Health: " + std::to_string(roundedHealth) + "%").c_str());
     }
 
     void  DisplayManager::DisplayHoverStatus(const bool a_displayMode) {
@@ -115,7 +115,7 @@ namespace IDRC {
                 (mode == FlyingMode::kPerching && dragonFlyingState == 5)) {
 
                 if (GetDisplayFlyingMode()) {
-                    RE::DebugNotification(("Entered " + GetFlyingModeName(mode) + " Mode").c_str());
+                    RE::SendHUDMessage::ShowHUDMessage(("Entered " + GetFlyingModeName(mode) + " Mode").c_str());
                 }
 
                 auto* turnMarker = FlyingModeManager::GetSingleton().GetDragonTurnMarker();
@@ -147,7 +147,7 @@ namespace IDRC {
                     m_hoverStatusCount++;
                     if (mode == FlyingMode::kFlying && dragonFlyingState != 3 && m_hoverStatusCount > 10) {
                         if (GetDisplayFlyingMode()) {
-                            RE::DebugNotification("The dragon is still approaching hover position");
+                            RE::SendHUDMessage::ShowHUDMessage("The dragon is still approaching hover position");
                         }
                         m_hoverStatusCount = 0;
                     }

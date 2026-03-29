@@ -367,7 +367,7 @@ std::thread([a_vm, a_stackID, a_stopFastTravelTarget, a_height, a_timeout, a_wai
                 ", VMDaysPassed: " + std::to_string(VMDaysPassed) + 
                 ", VMMenuModeTime: " + std::to_string(VMMenuModeTime) + 
                 ", VMTime: " + std::to_string(VMTime);
-            RE::DebugNotification(message.c_str());
+            RE::SendHUDMessage::ShowHUDMessage(message.c_str());
             _ts_SKSEFunctions::RegisterForSingleUpdate(handle, 0.5f);
 
             DataManager::GetSingleton().SetAutoCombat(true);
@@ -493,11 +493,6 @@ std::thread([a_vm, a_stackID, a_stopFastTravelTarget, a_height, a_timeout, a_wai
                 Patch in the NativeLatentFunction constructor:
                     from original: this->_retType = GetRawType<latentR>();
                     to patched:  this->_retType = GetRawType<latentR>()();
-
-                Downloaded version is:
-                    "repository": "https://gitlab.com/colorglass/vcpkg-colorglass",
-                    "baseline": "6309841a1ce770409708a67a9ba5c26c537d2937",
-                    "packages": ["commonlibsse-ng"]
             */
             a_vm->RegisterLatentFunction<bool>("TriggerLand_SKSE", "_ts_DR_RideControlScript", TriggerLand_SKSE_Latent);
             a_vm->RegisterLatentFunction<bool>("ForceHover_SKSE", "_ts_DR_RideControlScript", ForceHover_SKSE_Latent);

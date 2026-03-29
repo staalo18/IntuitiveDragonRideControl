@@ -289,7 +289,7 @@ namespace IDRC {
             if (currentTarget) {
                 log::info("IDRC - {}: Getting target from TDM: {} ({})", __func__, currentTarget.get()->GetName(), currentTarget.get()->GetFormID());
                 if (displayManager.GetDisplayFlyingMode() && displayManager.GetDisplayMessages()) {
-                    RE::DebugNotification((std::string("Commanding Attack on ") + std::string(currentTarget.get()->GetName())).c_str());
+                    RE::SendHUDMessage::ShowHUDMessage((std::string("Commanding Attack on ") + std::string(currentTarget.get()->GetName())).c_str());
                     bAttackNotificationDisplayed = true;
                 }
 
@@ -306,7 +306,7 @@ log::info("IDRC - {}: TDM Target Lock is behind target: {}", __func__, isBehind)
         RE::Actor* combatTarget = TargetReticleManager::GetSingleton().GetCurrentTarget();
         if (combatTarget && !bTargetFromTDM) {
             if (!bAttackNotificationDisplayed && displayManager.GetDisplayFlyingMode() && displayManager.GetDisplayMessages()) {
-                RE::DebugNotification((std::string("Commanding Attack on ") + std::string(combatTarget->GetName())).c_str());
+                RE::SendHUDMessage::ShowHUDMessage((std::string("Commanding Attack on ") + std::string(combatTarget->GetName())).c_str());
                 bAttackNotificationDisplayed = true;
             }
             DragonStartCombat(combatTarget);
@@ -353,7 +353,7 @@ log::info("IDRC - {}: TDM Target Lock is behind target: {}", __func__, isBehind)
             log::info("IDRC - {}: Starting attack - no CombatTarget", __func__);
             // Display attack notification
             if (!bAttackNotificationDisplayed && displayManager.GetDisplayFlyingMode() && displayManager.GetDisplayMessages()) {
-                RE::DebugNotification("Commanding Attack");
+                RE::SendHUDMessage::ShowHUDMessage("Commanding Attack");
                 bAttackNotificationDisplayed = true;
             }
 
@@ -375,7 +375,7 @@ log::info("IDRC - {}: TDM Target Lock is behind target: {}", __func__, isBehind)
             log::info("IDRC - {}: Starting attack - CombatTarget: {} ({})", __func__, target->GetName(), target->GetFormID());
             // Display attack notification
             if (!bAttackNotificationDisplayed && displayManager.GetDisplayFlyingMode() && displayManager.GetDisplayMessages()) {
-                RE::DebugNotification((std::string("Commanding Attack on ") + std::string(target->GetName())).c_str());
+                RE::SendHUDMessage::ShowHUDMessage((std::string("Commanding Attack on ") + std::string(target->GetName())).c_str());
                 bAttackNotificationDisplayed = true;
             }
             SKSE::GetTaskInterface()->AddTask([dragonActor, target]() {
@@ -392,7 +392,7 @@ log::info("IDRC - {}: TDM Target Lock is behind target: {}", __func__, isBehind)
                 }
             } else if (dragonActor->AsActorState()->actorState2.allowFlying == 0) {
                 if (!target->GetParentCell()->IsAttached() || _ts_SKSEFunctions::GetDistance(dragonActor, target) > 8000) {
-                    RE::DebugNotification("The target is too far away - Cancelling attack");
+                    RE::SendHUDMessage::ShowHUDMessage("The target is too far away - Cancelling attack");
                     if (StopAttack()) {
                         m_registeredForAttack = false;
                         return false;
@@ -408,7 +408,7 @@ log::info("IDRC - {}: TDM Target Lock is behind target: {}", __func__, isBehind)
                 SetAttackMode(1); // Breath immediately
             } else if (dragonActor->HasShout(m_unrelentingForceShout) && (isAlternateAttack || controlsManager.GetIsKeyPressed(IDRCKey::kRun))) {
                 if (!target->GetParentCell()->IsAttached() || _ts_SKSEFunctions::GetDistance(dragonActor, target) > 8000) {
-                    RE::DebugNotification("The target is too far away - Cancelling attack");
+                    RE::SendHUDMessage::ShowHUDMessage("The target is too far away - Cancelling attack");
                     if (StopAttack()) {
                         m_registeredForAttack = false;
                         return false;
@@ -421,7 +421,7 @@ log::info("IDRC - {}: TDM Target Lock is behind target: {}", __func__, isBehind)
                 // ensure dragon is not fast travelling
                 if (!FastTravelManager::GetSingleton().StopFastTravel(dragonActor)) {
                     StopAttack(); 
-                    RE::DebugNotification("Could not attack - cancelling");
+                    RE::SendHUDMessage::ShowHUDMessage("Could not attack - cancelling");
                     m_registeredForAttack = false;
                     return false;
                 }
@@ -432,7 +432,7 @@ log::info("IDRC - {}: TDM Target Lock is behind target: {}", __func__, isBehind)
                         DragonStartCombat(target);
                     } else {
                         if (StopAttack()) { 
-                            RE::DebugNotification("Could not attack - cancelling");
+                            RE::SendHUDMessage::ShowHUDMessage("Could not attack - cancelling");
                             m_registeredForAttack = false;
                             return false;
                         }
@@ -475,9 +475,9 @@ log::info("IDRC - {}: TDM Target Lock is behind target: {}", __func__, isBehind)
                 m_registeredForAttack = false;
        
                 if (target && target->IsDead()) {
-                    RE::DebugNotification("Target is dead - Cancelling attack");
+                    RE::SendHUDMessage::ShowHUDMessage("Target is dead - Cancelling attack");
                 } else if (flyingModeManager.GetRegisteredForLanding()) {
-                    RE::DebugNotification("Landing triggered - Stopping attack");
+                    RE::SendHUDMessage::ShowHUDMessage("Landing triggered - Stopping attack");
                 }
         
                 return false;
@@ -527,11 +527,11 @@ log::info("IDRC - {}: TDM Target Lock is behind target: {}", __func__, isBehind)
             if (count > 150) {
                 SetWaitForShout(false);
                 StopAttack();
-                RE::DebugNotification("Could not attack - cancelling");
+                RE::SendHUDMessage::ShowHUDMessage("Could not attack - cancelling");
             }
 
             if (displayManager.GetDisplayFlyingMode() && notificationCount >= 25) {
-                RE::DebugNotification("Attack in progress");
+                RE::SendHUDMessage::ShowHUDMessage("Attack in progress");
                 notificationCount = 0;
             }
         }

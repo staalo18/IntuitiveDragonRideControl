@@ -104,7 +104,7 @@ namespace IDRC {
             // In that case the dragon is still in a shout package when the engine switches to dragon-FastTravel state.
             if (!EnsureFastTravelPackageIsActive(a_timeout, a_timeoutMessage)) {
                 if (!a_timeoutMessage.empty() && !m_cancelStopFastTravelTriggered) {                 
-                    RE::DebugNotification(a_timeoutMessage.c_str());
+                    RE::SendHUDMessage::ShowHUDMessage(a_timeoutMessage.c_str());
                 }
                 m_stopFastTravelOngoing = false;
                 return false;
@@ -152,7 +152,7 @@ namespace IDRC {
                 if (messageCount > 50) {
                     messageCount = 0;
                     if (!a_waitMessage.empty()) {
-                        RE::DebugNotification(a_waitMessage.c_str());
+                        RE::SendHUDMessage::ShowHUDMessage(a_waitMessage.c_str());
                     }
                 }
             }
@@ -169,7 +169,7 @@ namespace IDRC {
                     _ts_SKSEFunctions::IsFlyingMountFastTravelling(dragonActor))) {
                 log::info("IDRC - {}: ERROR: Timeout - aborting StopFastTravel(). TimeoutMessage: {}", __func__, a_timeoutMessage);
                 if (!a_timeoutMessage.empty()) {
-                    RE::DebugNotification(a_timeoutMessage.c_str());
+                    RE::SendHUDMessage::ShowHUDMessage(a_timeoutMessage.c_str());
                 }
                 m_stopFastTravelOngoing = false;
                 return false;
@@ -229,7 +229,7 @@ namespace IDRC {
         if (iFTCheckCount >= a_timeout && !CheckFastTravelConditions()) {
             log::info("IDRC - {}: Error - CheckFastTravel timed out!", __func__);
             if (!a_timeoutMessage.empty()) {
-                RE::DebugNotification(a_timeoutMessage.c_str());
+                RE::SendHUDMessage::ShowHUDMessage(a_timeoutMessage.c_str());
             }
             return false;
         }

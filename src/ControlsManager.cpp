@@ -473,7 +473,7 @@ namespace IDRC {
     
         // Iterate over a range of possible keyCodes
         for (uint32_t keyCode = 0; keyCode <= a_maxKeyCode; ++keyCode) {
-            if (deviceManager->GetDeviceKeyMapping(a_device->device, keyCode, mapping)) {
+            if (deviceManager->GetDeviceButtonNameFromID(a_device->device, keyCode, mapping)) {
                 log::info("IDRC - {}: keyCode: {}, Mapping: {}", __func__, keyCode, mapping.c_str());
             }
         }

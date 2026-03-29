@@ -352,10 +352,10 @@ namespace IDRC {
         if (m_reticleTarget || m_isReticleLocked) {
             m_isReticleLocked = !m_isReticleLocked;
             std::string sMessage = "Target reticle " + std::string(m_isReticleLocked ? "locked on " + std::string(m_reticleTarget->GetName()) + "." : "unlocked.");
-            RE::DebugNotification(sMessage.c_str());
+            RE::SendHUDMessage::ShowHUDMessage(sMessage.c_str());
         } else {
             std::string sMessage = "No target to lock target reticle on.";
-            RE::DebugNotification(sMessage.c_str());
+            RE::SendHUDMessage::ShowHUDMessage(sMessage.c_str());
         }
 
         UpdateReticleState();
@@ -379,10 +379,10 @@ namespace IDRC {
     void TargetReticleManager::TogglePrimaryTargetMode() {
         if (m_primaryTargetMode == TargetMode::kCombatTarget) {
             m_primaryTargetMode = TargetMode::kSelectedActor;
-            RE::DebugNotification("Primary target: picked from screen center.");
+            RE::SendHUDMessage::ShowHUDMessage("Primary target: picked from screen center.");
         } else if (m_primaryTargetMode == TargetMode::kSelectedActor) {
             m_primaryTargetMode = TargetMode::kCombatTarget;
-            RE::DebugNotification("Primary target: the dragon's current combat target.");
+            RE::SendHUDMessage::ShowHUDMessage("Primary target: the dragon's current combat target.");
         } else {
             m_primaryTargetMode = TargetMode::kSelectedActor;
         }

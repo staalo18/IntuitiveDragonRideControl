@@ -185,10 +185,10 @@ log::info("IDRC - {}: ReadyWeaponHook-ProcessButton called with event IDCode = {
 		_OnEnterState(a_this);
 
 		RE::Actor* dragon = nullptr;
-		dragon = static_cast<RE::Actor*>(a_this->dragonRefHandle.get().get());
+		dragon = static_cast<RE::Actor*>(a_this->dragonHandle.get().get());
 
 		if (dragon) {
-			a_this->dragonCurrentDirection = dragon->GetHeading(false);
+			reinterpret_cast<float&>(a_this->unkEC) = dragon->GetHeading(false); //dragonCurrentDirection
 
 			// TODO: also update pitch? What is the best pitch at the end of the mount animation...
 		}
@@ -200,26 +200,26 @@ log::info("IDRC - {}: ReadyWeaponHook-ProcessButton called with event IDCode = {
 
 //		auto directionalMovementHandler = DirectionalMovementHandler::GetSingleton();
 //		if (directionalMovementHandler->GetFreeCameraEnabled() && !directionalMovementHandler->IFPV_IsFirstPerson() && !directionalMovementHandler->ImprovedCamera_IsFirstPerson()) {
-			float dragonCurrentDirection = a_this->dragonCurrentDirection;
+			float dragonCurrentDirection = reinterpret_cast<float&>(a_this->unkEC);
 			float freeRotationX = a_this->freeRotation.x;
 
 			a_this->freeRotationEnabled = true;
 
 			_UpdateRotation(a_this);
 
-			a_this->dragonCurrentDirection = dragonCurrentDirection;
+			reinterpret_cast<float&>(a_this->unkEC) = dragonCurrentDirection;
 			a_this->freeRotation.x = freeRotationX;
 
-			if (a_this->dragonRefHandle) {
+			if (a_this->dragonHandle) {
 				RE::Actor* dragon = nullptr;
-				dragon = static_cast<RE::Actor*>(a_this->dragonRefHandle.get().get());
+				dragon = static_cast<RE::Actor*>(a_this->dragonHandle.get().get());
 				if (dragon) {
 					float heading = dragon->GetHeading(false);
 
-					a_this->freeRotation.x += a_this->dragonCurrentDirection - heading;
+					a_this->freeRotation.x += reinterpret_cast<float&>(a_this->unkEC) - heading;
 
 					NiQuaternion_SomeRotationManipulation(a_this->rotation, -a_this->freeRotation.y, 0.f, heading + a_this->freeRotation.x);
-					a_this->dragonCurrentDirection = heading;
+					reinterpret_cast<float&>(a_this->unkEC) = heading;
 				}
 			}
 //		} else {
