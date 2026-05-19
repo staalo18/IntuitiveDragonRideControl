@@ -50,7 +50,13 @@ namespace IDRC {
             void SendPropertyUpdateEvent(std::string a_propertyName, bool a_bValue = false, 
                 float a_fValue = 0.0f, int a_iValue = 0);
 
-            void SetDragonSpeeds(float a_speedMult); 
+            void SetDragonSpeeds(float a_speedMult);
+
+            float GetRollAmplitude();
+            void  SetRollAmplitude(float a_rollAmplitude);
+
+            float GetRollSmoothTime();
+            void  SetRollSmoothTime(float a_rollSmoothTime);
         private:
             DataManager() = default;
             RE::TESObjectREFR* m_orbitMarker = nullptr;
@@ -65,5 +71,7 @@ namespace IDRC {
             const float m_baseSpeed = 1100.0;
             const float m_fastBaseSpeed = 1800.0;
             std::string m_dragonName = "";
+            float m_rollAmplitude = 0.5f;
+            float m_rollSmoothTime    = 0.5f;
     }; // class DataManager
 }  // namespace IDRC

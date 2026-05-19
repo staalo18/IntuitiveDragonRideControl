@@ -104,6 +104,24 @@ namespace IDRC {
         });
     }
 
+    float DataManager::GetRollAmplitude() {
+        return m_rollAmplitude;
+    }
+
+    void DataManager::SetRollAmplitude(float a_rollAmplitude) {
+        log::info("IDRC - {}: {}", __func__, a_rollAmplitude);
+        m_rollAmplitude = a_rollAmplitude;
+    }
+
+    float DataManager::GetRollSmoothTime() {
+        return m_rollSmoothTime;
+    }
+
+    void DataManager::SetRollSmoothTime(float a_rollSmoothTime) {
+        log::info("IDRC - {}: {}", __func__, a_rollSmoothTime);
+        m_rollSmoothTime = a_rollSmoothTime;
+    }
+
     void DataManager::SetDragonSpeeds(float a_speedMult) {
         log::info("IDRC - {}: Multiplier = {}", __func__, a_speedMult);
 

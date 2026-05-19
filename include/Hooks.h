@@ -54,6 +54,7 @@ namespace Hooks
 	private:
 		static void Nullsub();
 		static inline REL::Relocation<decltype(Nullsub)> _Nullsub;		
+		static void UpdateRotationMatrixDisplay(RE::NiAVObject* m_reference3D); // for debugging
 	};
 
     class LookHook
@@ -82,14 +83,17 @@ namespace Hooks
 			REL::Relocation<std::uintptr_t> DragonCameraStateVtbl{ RE::VTABLE_DragonCameraState[0] };
 			_OnEnterState = DragonCameraStateVtbl.write_vfunc(0x1, OnEnterState);
 			_UpdateRotation = DragonCameraStateVtbl.write_vfunc(0xE, UpdateRotation);
+        	_GetCurrentRotation  = DragonCameraStateVtbl.write_vfunc(0x4, GetCurrentRotation);
 		}
 
 	private:
 		static void OnEnterState(RE::DragonCameraState* a_this);
 		static void UpdateRotation(RE::DragonCameraState* a_this);
+		static void GetCurrentRotation(RE::DragonCameraState* a_this, RE::NiQuaternion& a_out);
 
 		static inline REL::Relocation<decltype(OnEnterState)> _OnEnterState;
 		static inline REL::Relocation<decltype(UpdateRotation)> _UpdateRotation;
+		static inline REL::Relocation<decltype(GetCurrentRotation)> _GetCurrentRotation;
 	};
 /*
 #include <MinHook.h>

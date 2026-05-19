@@ -23,7 +23,7 @@
 namespace IDRC {
     namespace Interface {
         int GetIDRCPluginVersion(RE::StaticFunctionTag*) {
-            return 5;
+            return 6;
         }
 
         void SetINIVars_SKSE(RE::StaticFunctionTag*) {
@@ -134,6 +134,16 @@ namespace IDRC {
         void SetDragonSpeeds_SKSE(RE::StaticFunctionTag*, float a_speedMult) {
             log::info("IDRC - {}: {}", __func__, a_speedMult);
             DataManager::GetSingleton().SetDragonSpeeds(a_speedMult);
+        }
+
+        void SetRollAmplitude_SKSE(RE::StaticFunctionTag*, float a_rollAmplitude) {
+            log::info("IDRC - {}: {}", __func__, a_rollAmplitude);
+            DataManager::GetSingleton().SetRollAmplitude(a_rollAmplitude);
+        }
+
+        void SetRollSmoothTime_SKSE(RE::StaticFunctionTag*, float a_rollSmoothTime) {
+            log::info("IDRC - {}: {}", __func__, a_rollSmoothTime);
+            DataManager::GetSingleton().SetRollSmoothTime(a_rollSmoothTime);
         }
 
         void SetStopCombat_SKSE(RE::StaticFunctionTag*, bool a_stop) {
@@ -453,6 +463,8 @@ std::thread([a_vm, a_stackID, a_stopFastTravelTarget, a_height, a_timeout, a_wai
             a_vm->RegisterFunction("UpdateDisplay_SKSE", "_ts_DR_RideControlScript", UpdateDisplay_SKSE);
             a_vm->RegisterFunction("SetInitialAutoCombatMode_SKSE", "_ts_DR_RideControlScript", SetInitialAutoCombatMode_SKSE);
             a_vm->RegisterFunction("SetDragonSpeeds_SKSE", "_ts_DR_RideControlScript", SetDragonSpeeds_SKSE);
+            a_vm->RegisterFunction("SetRollAmplitude_SKSE", "_ts_DR_RideControlScript", SetRollAmplitude_SKSE);
+            a_vm->RegisterFunction("SetRollSmoothTime_SKSE", "_ts_DR_RideControlScript", SetRollSmoothTime_SKSE);
             a_vm->RegisterFunction("SetStopCombat_SKSE", "_ts_DR_RideControlScript", SetStopCombat_SKSE);
             a_vm->RegisterFunction("SetTargetReticleMode_SKSE", "_ts_DR_RideControlScript", SetTargetReticleMode_SKSE);
             a_vm->RegisterFunction("SetReticleLockAnimationStyle_SKSE", "_ts_DR_RideControlScript", SetReticleLockAnimationStyle_SKSE);
