@@ -124,35 +124,6 @@ namespace IDRC {
               (flyState == 2 && flyMode == FlyingMode::kFlying) )  // only trigger camera-induced movements if dragon is in one of these flying states 
            ) {
 
-            // Height control
-            if (flyState == 2 && 
-                 !controlsManager.GetIsKeyPressed(kStrafeLeft) && !controlsManager.GetIsKeyPressed(kStrafeRight) &&
-                 !controlsManager.GetIsKeyPressed(kUp) && !controlsManager.GetIsKeyPressed(kDown)) {
-
-                float travelledDistance = travelledVec.Length();
-                float travelledZ = travelledVec.z;
-                float travelledXY = std::sqrt(travelledVec.x * travelledVec.x + travelledVec.y * travelledVec.y);
-                float travelledPitch = std::atan2(travelledZ, travelledXY);
-                float cameraPitch = _ts_SKSEFunctions::GetPitch(dragonCameraState->rotation);
-                if (cameraPitch < 0) {
-                    // ignore camera downward pitch up to m_ignoredCameraPitch, then ramp up cameraPitch smoothly
-                    if (cameraPitch > m_ignoredCameraPitch) {
-                        cameraPitch = 0.0f;
-                    }  else if (cameraPitch > (m_ignoredCameraPitch + m_transitionalPitchRange)) {
-                        cameraPitch = (m_ignoredCameraPitch + m_transitionalPitchRange) * (cameraPitch - m_ignoredCameraPitch) / m_transitionalPitchRange;
-                    }
-                }
-
-                DampenPitch(cameraPitch, travelledPitch);
-
-//                float cameraHeightChange = travelledXY * std::tan(cameraPitch);
-                float cameraHeightChange = travelledDistance * std::sin(cameraPitch);
-                
-                float effectiveHeightChange = cameraHeightChange - 0.5f*travelledZ;
-
-                flyingModeManager.ChangeDragonHeight(effectiveHeightChange, true);
-            }
-
             // Turning
             if  ( !m_turnLocked  // don't spam the Turn calls
                   && (isTDMLocked || m_isUserTurning || m_turnOngoing || flyState == 2) // only if user is actively triggering a turn (via mouse or gamepad, or TDM Lock), or such a user-triggered turn is not yet completed

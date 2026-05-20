@@ -18,6 +18,7 @@ namespace Hooks
 		LookHook::Hook();
 		DragonCameraStateHook::Hook();
 //		GetMountHook::Hook();
+		FlightSetPathHook::Hook();
 
 		log::info("...success");
 	}
@@ -350,5 +351,116 @@ log::info("IDRC - {}: ReadyWeaponHook-ProcessButton called with event IDCode = {
 		a_out.x =  q.x * c - q.z * s;
 		a_out.y =  q.w * s + q.y * c;
 		a_out.z =  q.x * s + q.z * c;
+	}
+
+
+	void FlightSetPathHook::SetPath(std::uintptr_t  a_subPtr, std::uintptr_t* a_newNode, std::uintptr_t* a_newData) {
+
+	// This hook fires per-frame for each dragon this is in flyingstate == 2 (Flying)
+	// regardless if it's mounted or not
+
+		if (_SetPath == 0) {
+			log::error("{}: trampoline not initialized!", __FUNCTION__);
+			return;
+
+		}
+
+		// call the original function
+		using FuncType = decltype(&SetPath);
+		reinterpret_cast<FuncType>(_SetPath)(a_subPtr, a_newNode, a_newData);
+
+		// Now adjusting the first 4 waypoints' heights in the new path data to consider camera-relative height control.
+		// The engine is using a Bezier curve to interpolate between waypoints,
+		// so adjusting 4 points to impact the immediate path. 
+		// Other waypoints do not be adjusted in this frame,
+		// because they do not impact the form of the interpolated path btw dragon and waypoints 0 and 1.  
+
+		if(!IDRC::CameraLockManager::GetSingleton().IsEnabled()) {
+			return;
+		}
+
+		// Read waypoints from agent+0x48 (pathData_48), which is now set
+		// a_subPtr + 0x28 = agent+0x48 = pathData_48
+		auto* pathData = reinterpret_cast<std::byte*>(
+			*reinterpret_cast<std::uintptr_t*>(a_subPtr + 0x28));
+
+		if (!pathData) {
+			return;
+		}
+
+		// pathData + 0x90 = waypointArray_90 (float* base)
+		// pathData + 0xA0 = waypointCount_A0 (uint32)
+		auto* wpBase  = *reinterpret_cast<float**>(pathData + 0x90);
+		auto  wpCount = *reinterpret_cast<std::uint32_t*>(pathData + 0xA0);
+
+		if (!wpBase || wpCount == 0) {
+			return;
+		}
+
+		auto* dragonActor = IDRC::DataManager::GetSingleton().GetDragonActor();
+		if (!dragonActor) {
+			return;
+		}
+
+		// Filter: verify this path belongs to the mounted dragon by checking that
+		// waypoint[0] (the agent's current position) is close to the mounted dragon.
+		// Any other flying dragon's starting point usually is further away from the mounted dragon.
+		// Risk here is that the mounted dragon's first waypoint is further than 1000 units from the mounted dragon,
+		// but I've never seen that in my testing (usually distance is about 100).
+		// Other risk is that another dragon is closer in the x/y plane than 1000 units.
+		// in that case that dragon's height will be adjusted as an unwanted side effect 
+		// for the duration of the other dragon being closer than 1000 units.
+
+		auto& wpStart  = *reinterpret_cast<RE::NiPoint3*>(&wpBase[0]);
+		const RE::NiPoint3 dragonPos = dragonActor->GetPosition();
+		const float dxStart  = wpStart.x - dragonPos.x;
+		const float dyStart  = wpStart.y - dragonPos.y;
+		constexpr float checkDistSq = 1000.f * 1000.f;
+		if (dxStart * dxStart + dyStart * dyStart > checkDistSq) {
+			return;
+		}
+
+		auto* playerCamera = RE::PlayerCamera::GetSingleton();
+		RE::ThirdPersonState* dragonCameraState = nullptr;
+
+		if (playerCamera && playerCamera->currentState && (playerCamera->currentState->id == RE::CameraState::kDragon)) {
+			dragonCameraState = static_cast<RE::ThirdPersonState*>(playerCamera->currentState.get());
+			if (!dragonCameraState) {
+				log::warn("IDRC - {}: Dragon camera state is null", __func__);
+				return;
+			}
+		} else {
+			log::warn("IDRC - {}: Player camera state is not DragonCameraState", __func__);
+			return;
+		}
+
+		float cameraPitch = _ts_SKSEFunctions::GetPitch(dragonCameraState->rotation);
+
+		// Each entry is 0x48 bytes; XYZ floats at byte offsets +0, +4, +8
+		constexpr std::size_t kStride = 0x48 / sizeof(float);  // = 0x12 floats
+		for (std::uint32_t i = 0; i < std::min(wpCount, 4u); ++i) {
+			// Update z value of the first 4 waypoints in the path data
+			auto& wpUpdate = *reinterpret_cast<RE::NiPoint3*>(&wpBase[i * kStride]);
+			UpdateHeight(wpUpdate, cameraPitch);
+		}
+	}
+
+
+	void FlightSetPathHook::UpdateHeight(RE::NiPoint3& a_updatePoint, float a_cameraPitch) {
+        auto* dragonActor = IDRC::DataManager::GetSingleton().GetDragonActor();
+        if (!dragonActor) {
+            return;
+        }
+		RE::NiPoint3 dragonPos = dragonActor->GetPosition();
+
+		float dxUpdate = a_updatePoint.x - dragonPos.x;
+		float dyUpdate = a_updatePoint.y - dragonPos.y;
+		float distanceToUpdate = std::sqrt(dxUpdate * dxUpdate + dyUpdate * dyUpdate);
+		float cameraZ = dragonPos.z + distanceToUpdate * std::tan(a_cameraPitch);
+
+		float landHeight = _ts_SKSEFunctions::GetLandHeightWithWater(a_updatePoint, true);
+		float minHeightAboveGround = 500.f;
+
+		a_updatePoint.z = std::max(cameraZ, landHeight + minHeightAboveGround);
 	}
 } // namespace Hooks
