@@ -98,7 +98,7 @@ namespace Hooks
 	};
 
 
-	class FlightSetPathHook
+	class FlightPathHook
 	{
 	public:
 		static void Hook()
@@ -114,6 +114,24 @@ namespace Hooks
 		static void UpdateHeight(RE::NiPoint3& a_updatePoint, float a_cameraPitch);
 		static inline std::uintptr_t _SetPath{ 0 };
 	};
+
+
+	class GroundPathHook
+	{
+	public:
+		static void Hook()
+		{
+			_SetPath = _ts_SKSEFunctions::WriteFunctionHook(
+				REL::VariantID(88302, 90713, 0),
+				5,
+				reinterpret_cast<std::uintptr_t>(SetPath));
+		}
+
+	private:
+		static void SetPath(std::uintptr_t  a_subPtr, std::uintptr_t* a_newNode, std::uintptr_t* a_newData);
+		static inline std::uintptr_t _SetPath{ 0 };
+	};
+
 
 /*
 #include <MinHook.h>
