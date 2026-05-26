@@ -19,6 +19,7 @@ namespace Hooks
 		LookHook::Hook();
 		DragonCameraStateHook::Hook();
 //		GetMountHook::Hook();
+//		FlightGoalHook::Hook();
 		FlightPathHook::Hook();
 		GroundPathHook::Hook();
 
@@ -355,6 +356,45 @@ log::info("IDRC - {}: ReadyWeaponHook-ProcessButton called with event IDCode = {
 		a_out.z =  q.x * s + q.z * c;
 	}
 
+/*
+	bool FlightGoalHook::SetGoal(std::uintptr_t* a_this, RE::BSPathingRequest** a_request)
+	{
+///////////
+// NOT USED
+///////////
+		if (_SetGoal == 0) {
+			log::error("{}: trampoline not initialized!", __FUNCTION__);
+			return false;
+		}
+
+		// call the original function
+		using FuncType = decltype(&SetGoal);
+		auto result = reinterpret_cast<FuncType>(_SetGoal)(a_this, a_request);
+		auto* dragonActor = IDRC::DataManager::GetSingleton().GetDragonActor();
+
+		if (dragonActor) {
+			if (IDRC::FlyingModeManager::GetSingleton().GetFlyingMode() == IDRC::FlyingMode::kFlying) {
+				if (_ts_SKSEFunctions::GetFlyingState(dragonActor) == 2) {
+					if (a_request && *a_request) {
+						auto& startPos = (*a_request)->start.location.location;
+						float distanceToDragon = (dragonActor->GetPosition()).GetDistance(startPos);
+						if (distanceToDragon == 0.f) {
+							log::info("IDRC - {}: Start position: ({}, {}, {}), distance to Dragon: {}", __func__, startPos.x, startPos.y, startPos.z, (dragonActor->GetPosition()).GetDistance(startPos));
+							auto& goalPos = (*a_request)->goal.targetPoint;
+							log::info("IDRC - {}: Goal position: ({}, {}, {})", __func__, goalPos.x, goalPos.y, goalPos.z);
+							log::info("IDRC - {}: Result: {}", __func__, result ? "true" : "false");
+						}
+					} else {
+						log::warn("IDRC - {}: Pathing request pointer is null", __func__);
+					}
+				}
+			}
+		}
+
+		return result;
+	}
+*/
+
 
 	void FlightPathHook::SetPath(std::uintptr_t  a_subPtr, std::uintptr_t* a_newNode, std::uintptr_t* a_newData) {
 
@@ -364,7 +404,6 @@ log::info("IDRC - {}: ReadyWeaponHook-ProcessButton called with event IDCode = {
 		if (_SetPath == 0) {
 			log::error("{}: trampoline not initialized!", __FUNCTION__);
 			return;
-
 		}
 
 		// call the original function
@@ -423,8 +462,8 @@ log::info("IDRC - {}: ReadyWeaponHook-ProcessButton called with event IDCode = {
 
 		auto& firstWaypoint  = *reinterpret_cast<RE::NiPoint3*>(&wayPointBase[0]);
 		const RE::NiPoint3 dragonPos = dragonActor->GetPosition();
-		const float dx  = firstWaypoint.x - dragonPos.x;
-		const float dy  = firstWaypoint.y - dragonPos.y;
+		float dx  = firstWaypoint.x - dragonPos.x;
+		float dy  = firstWaypoint.y - dragonPos.y;
 		constexpr float checkDistSq = 1000.f * 1000.f;
 		if (dx * dx + dy * dy > checkDistSq) {
 			return;
@@ -444,34 +483,38 @@ log::info("IDRC - {}: ReadyWeaponHook-ProcessButton called with event IDCode = {
 			return;
 		}
 
-		float cameraPitch = _ts_SKSEFunctions::GetPitch(dragonCameraState->rotation);
+		const float cameraPitch = _ts_SKSEFunctions::GetPitch(dragonCameraState->rotation);
+		const float cameraYaw = _ts_SKSEFunctions::GetYaw(dragonCameraState->rotation);
+		const float sinYaw = std::sin(cameraYaw);
+		const float cosYaw = std::cos(cameraYaw);
+		const float tanPitch = std::tan(cameraPitch);
+		const float minHeightAboveGround = 500.f;
 
 		// Each entry is 0x48 bytes; XYZ floats at byte offsets +0, +4, +8
 		constexpr std::size_t kStride = 0x48 / sizeof(float);  // = 0x12 floats
-		for (std::uint32_t i = 0; i < std::min(wayPointCount, 4u); ++i) {
-			// Update z value of the first 4 waypoints in the path data
+		for (std::uint32_t i = 0; i < std::min(wayPointCount - 1, 8u); ++i) {
+			// Update the first 8 waypoints in the path data
+			// to keep dragon on straight line
 			auto& waypointToUpdate = *reinterpret_cast<RE::NiPoint3*>(&wayPointBase[i * kStride]);
-			UpdateHeight(waypointToUpdate, cameraPitch);
+			dx = waypointToUpdate.x - dragonPos.x;
+			dy = waypointToUpdate.y - dragonPos.y;
+			float distanceToUpdate = std::sqrt(dx * dx + dy * dy);
+
+			waypointToUpdate.x = dragonPos.x + distanceToUpdate * sinYaw;
+			waypointToUpdate.y = dragonPos.y + distanceToUpdate * cosYaw;
+			
+			if (i < 4) {
+				// only update height for the first 4 waypoints
+				// to keep sensitivity for upcoming obstacles
+				float cameraZ = dragonPos.z + distanceToUpdate * tanPitch;
+				float landHeight = _ts_SKSEFunctions::GetLandHeightWithWater(waypointToUpdate, true);
+				waypointToUpdate.z = std::max(cameraZ, landHeight + minHeightAboveGround);
+			}
+
+//if (APIs::TrueHUD) {
+//	APIs::TrueHUD->DrawPoint(waypointToUpdate, 5.0f, 0.1f, 0xFF0000FF);
+//}
 		}
-	}
-
-
-	void FlightPathHook::UpdateHeight(RE::NiPoint3& a_updatePoint, float a_cameraPitch) {
-        auto* dragonActor = IDRC::DataManager::GetSingleton().GetDragonActor();
-        if (!dragonActor) {
-            return;
-        }
-		RE::NiPoint3 dragonPos = dragonActor->GetPosition();
-
-		float dx = a_updatePoint.x - dragonPos.x;
-		float dy = a_updatePoint.y - dragonPos.y;
-		float distanceToUpdate = std::sqrt(dx * dx + dy * dy);
-		float cameraZ = dragonPos.z + distanceToUpdate * std::tan(a_cameraPitch);
-
-		float landHeight = _ts_SKSEFunctions::GetLandHeightWithWater(a_updatePoint, true);
-		float minHeightAboveGround = 500.f;
-
-		a_updatePoint.z = std::max(cameraZ, landHeight + minHeightAboveGround);
 	}
 
 

@@ -134,9 +134,7 @@ namespace IDRC {
                 flyingModeManager.DragonTurnPlayerRiding(180.f / PI * currentDragonYawOffset);
                 m_turnOngoing = true;
                 int lockTime = 30;
-                if (flyState == 2) {
-                    lockTime = 300; // longer lock time when flying
-                }
+                // TBD: Probably no longer needed...
                 LockTurn(lockTime); // Prevent next DragonTurnPlayerRiding() call for lockTime ms
             } 
         }

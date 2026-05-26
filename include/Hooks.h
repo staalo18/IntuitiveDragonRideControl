@@ -97,7 +97,23 @@ namespace Hooks
 		static inline REL::Relocation<decltype(GetCurrentRotation)> _GetCurrentRotation;
 	};
 
+/* UNUSED
+	class FlightGoalHook
+	{
+	public:
+		static void Hook()
+		{
+			_SetGoal = _ts_SKSEFunctions::WriteFunctionHook(
+				REL::VariantID(88429, 90853, 0),
+				5,
+				reinterpret_cast<std::uintptr_t>(SetGoal));
+		}
 
+	private:
+		static bool SetGoal(std::uintptr_t* a_this, RE::BSPathingRequest** a_request);
+		static inline std::uintptr_t _SetGoal{ 0 };
+	};
+*/
 	class FlightPathHook
 	{
 	public:
@@ -111,7 +127,6 @@ namespace Hooks
 
 	private:
 		static void SetPath(std::uintptr_t  a_subPtr, std::uintptr_t* a_newNode, std::uintptr_t* a_newData);
-		static void UpdateHeight(RE::NiPoint3& a_updatePoint, float a_cameraPitch);
 		static inline std::uintptr_t _SetPath{ 0 };
 	};
 
