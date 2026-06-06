@@ -14,3 +14,10 @@ static REL::Relocation<tNiAVObject_LookupBoneNodeByName> NiAVObject_LookupBoneNo
 
 typedef void(__fastcall* tNiQuaternion_SomeRotationManipulation)(RE::NiQuaternion& a1, float a2, float a3, float a4);
 static REL::Relocation<tNiQuaternion_SomeRotationManipulation> NiQuaternion_SomeRotationManipulation{ RELOCATION_ID(69466, 70843) };
+
+typedef bool*(__fastcall* StartVoiceShoutCast_t)(
+    RE::Character* a_caster,
+    RE::TESShout* a_shout,
+    std::uint32_t a_wordIndex,
+    RE::Actor* a_target);
+static REL::Relocation<StartVoiceShoutCast_t> StartVoiceShoutCast{ RELOCATION_ID(37850, 38804) };

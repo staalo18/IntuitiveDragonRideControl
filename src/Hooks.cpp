@@ -22,7 +22,16 @@ namespace Hooks
 //		FlightGoalHook::Hook();
 		FlightPathHook::Hook();
 		GroundPathHook::Hook();
-
+/* UNUSED HOOKS:
+		VoiceSpellCastHook::Hook();
+		VoiceShoutCastHook::Hook();
+		StartCastHook::Hook();
+		CastSpellImmediateHook::Hook();
+		ApplyCastHook::Hook();
+		TestCastHook::Hook();
+		ProcedureShoutHook::Hook();
+		StartVoiceShoutCastHook::Hook();
+*/
 		log::info("...success");
 	}
 
@@ -598,4 +607,174 @@ log::info("IDRC - {}: ReadyWeaponHook-ProcessButton called with event IDCode = {
 			wayPointBase[i * kStride + 2] = currentWayPoint.z;
 		}
 	}
+
+/* UNUSED HOOKS:	
+	bool VoiceSpellCastHook::HandleVoiceSpellCast(std::uintptr_t  a_this, RE::Actor* a_caster) {
+		if (_HandleVoiceSpellCast == 0) {
+			log::error("{}: trampoline not initialized!", __FUNCTION__);
+			return false;
+		}
+
+log::info("IDRC - {}: HandleVoiceSpellCast called for caster {}", __func__, a_caster ? a_caster->GetName() : "null");
+
+			// call the original function
+		auto result = reinterpret_cast<decltype(&HandleVoiceSpellCast)>(_HandleVoiceSpellCast)(a_this, a_caster);
+
+		return result;
+	}
+
+	void VoiceShoutCastHook::VoiceShoutCast(RE::Actor* a_caster) {
+		if (_VoiceShoutCast == 0) {
+			log::error("{}: trampoline not initialized!", __FUNCTION__);
+			return;
+		}
+log::info("IDRC - {}: VoiceShoutCast called", __func__);
+
+		if(a_caster) {
+			log::info("IDRC - {}: Caster is {}", __func__, a_caster->GetFormID());
+		} else {
+			log::warn("IDRC - {}: Caster is null", __func__);
+		}
+		// call the original function
+		reinterpret_cast<decltype(&VoiceShoutCast)>(_VoiceShoutCast)(a_caster);
+log::info("IDRC - {}: VoiceShoutCast original function returned", __func__);
+	}
+
+	bool StartCastHook::StartCast(RE::Actor* a_caster, RE::MagicSystem::CastingSource a_source) {
+		if (_StartCast == 0) {
+			log::error("{}: trampoline not initialized!", __FUNCTION__);
+			return false;
+		}
+log::info("IDRC - {}: StartCast called ...", __func__);
+		// call the original function
+		auto result = reinterpret_cast<decltype(&StartCast)>(_StartCast)(a_caster, a_source);
+
+		return result;
+	}
+
+	void CastSpellImmediateHook::CastSpellImmediate(RE::MagicCaster* _a_magicCaster,
+													RE::MagicItem* _a_spell,
+													bool _a_loadCast,
+													RE::TESObjectREFR* _a_desiredTargetRef,
+													float _a_effectivenessMult,
+													bool _a_adjustOnlyHostileEffectiveness,
+													float _a_magnitudeOverride) {		
+		
+		if (_CastSpellImmediate == 0) {
+			log::error("{}: trampoline not initialized!", __FUNCTION__);
+			return;
+		}
+log::info("IDRC - {}: CastSpellImmediate called ", __func__);
+		// call the original function
+		reinterpret_cast<decltype(&CastSpellImmediate)>(_CastSpellImmediate)(_a_magicCaster, _a_spell, _a_loadCast, _a_desiredTargetRef, _a_effectivenessMult, _a_adjustOnlyHostileEffectiveness, _a_magnitudeOverride);
+log::info("IDRC - {}: CastSpellImmediate original function returned", __func__);
+	}
+
+	bool ApplyCastHook::ApplyCast(RE::MagicCaster* _a_magicCaster,
+								float _a_effectivenessMult,
+								std::uint32_t* _a_targetCount,
+								RE::TESBoundObject* _a_source,
+								bool _a_loadCast,
+								bool _a_adjustOnlyHostileEffectiveness) {
+		if (_ApplyCast == 0) {
+			log::error("{}: trampoline not initialized!", __FUNCTION__);
+			return false;
+		}
+
+if (_a_source) {
+	log::info("IDRC - {}: ApplyCast called with source {} ({}) with min ({}, {}, {}), max ({}, {}, {})", __func__, 
+		_a_source->GetFormID(), _a_source->GetName(), _a_source->boundData.boundMin.x, _a_source->boundData.boundMin.y, _a_source->boundData.boundMin.z, _a_source->boundData.boundMax.x, _a_source->boundData.boundMax.y, _a_source->boundData.boundMax.z);
+} else {
+	log::warn("IDRC - {}: ApplyCast called with null source", __func__);
+}
+
+bool hasMagicCaster = false;
+if (!_a_magicCaster) {
+	log::warn("IDRC - {}: ApplyCast called with null magic caster", __func__);
+} else {
+	log::info("IDRC - {}: ApplyCast called with magic caster {}", __func__, _a_magicCaster->GetCasterAsActor() ? _a_magicCaster->GetCasterAsActor()->GetName() : "null");
+	hasMagicCaster = true;
+}
+
+		// call the original function
+		auto result = reinterpret_cast<decltype(&ApplyCast)>(_ApplyCast)(_a_magicCaster, _a_effectivenessMult, _a_targetCount, _a_source, _a_loadCast, _a_adjustOnlyHostileEffectiveness);
+log::info("IDRC - {}: ApplyCast original function returned", __func__);
+		return result;
+	}
+
+	bool TestCastHook::TestCast(RE::MagicCaster* a_magicCaster,
+								RE::MagicItem* a_spell,
+								RE::Actor* a_target,
+								RE::TESBoundObject* a_source,
+								bool a_loadCast) {
+		if (_TestCast == 0) {
+			log::error("{}: trampoline not initialized!", __FUNCTION__);
+			return false;
+		}
+log::info("IDRC - {}: TestCast called ", __func__);
+		// call the original function
+auto actorMagicCaster = static_cast<RE::ActorMagicCaster*>(a_magicCaster);
+if (actorMagicCaster) {
+	auto node = actorMagicCaster->magicNode;
+	if (node) {
+auto head = _ts_SKSEFunctions::GetTargetPoint(actorMagicCaster->GetCasterAsActor(),  RE::BGSBodyPartDefs::LIMB_ENUM::kHead);
+
+if (!head) {
+    log::error("IDRC - {}: Error: Could not get head node for dragonActor", __func__);
+    return false;
+}
+actorMagicCaster->magicNode = head->AsNode(); // for testing, temporarily set magicNode to head node, to see if that fixes the issue with dragon's magic hands not being visible in the shout animation
+
+		log::info("IDRC - {}: Magic caster node set to head!!", __func__);
+	} else {
+		log::warn("IDRC - {}: Magic caster node is null", __func__);
+	}
+} else {
+	log::warn("IDRC - {}: Magic caster is null", __func__);
+}
+		auto result = reinterpret_cast<decltype(&TestCast)>(_TestCast)(a_magicCaster, a_spell, a_target, a_source, a_loadCast);
+log::info("IDRC - {}: TestCast original function returned", __func__);
+		return result;
+	}
+
+	void ProcedureShoutHook::Initiate(std::uint64_t*  a_this,     // param_1: BGSProcedureShout*
+    							std::uint64_t*  a_context) {
+		if (_Initiate == 0) {
+			log::error("{}: trampoline not initialized!", __FUNCTION__);
+			return;
+		}
+log::info("IDRC - {}: ProcedureShoutHook::Initiate called ", __func__);
+		// call the original function
+		reinterpret_cast<decltype(&Initiate)>(_Initiate)(a_this, a_context);
+log::info("IDRC - {}: ProcedureShoutHook::Initiate original function returned", __func__);
+	}
+
+	void ProcedureShoutHook::SetupExecState(std::uint64_t*  a_this,     // param_1: BGSProcedureShout*
+								std::uint64_t*  a_context) {
+		if (_SetupExecState == 0) {
+			log::error("{}: trampoline not initialized!", __FUNCTION__);
+			return;
+		}
+log::info("IDRC - {}: ProcedureShoutHook::SetupExecState called ", __func__);
+		// call the original function
+		reinterpret_cast<decltype(&SetupExecState)>(_SetupExecState)(a_this, a_context);
+log::info("IDRC - {}: ProcedureShoutHook::SetupExecState original function returned", __func__);
+	}
+
+	bool StartVoiceShoutCastHook::StartVoiceShoutCast(RE::Character* a_caster,
+													RE::TESShout* a_shout,
+													std::uint32_t a_wordIndex,
+													RE::Actor* a_target) {
+		if (_StartVoiceShoutCast == 0) {
+			log::error("{}: trampoline not initialized!", __FUNCTION__);
+			return false;
+		}
+log::info("IDRC - {}: StartVoiceShoutCast called, caster: {}, shout: {}, wordIndex: {}, target: {}", __func__,
+	 a_caster ? a_caster->GetName() : "null", a_shout ? a_shout->GetName() : "null", a_wordIndex, a_target ? a_target->GetName() : "null");
+		// call the original function
+		auto result = reinterpret_cast<decltype(&StartVoiceShoutCast)>(_StartVoiceShoutCast)(a_caster, a_shout, a_wordIndex, a_target);
+log::info("IDRC - {}: StartVoiceShoutCast original function returned {}", __func__, result ? "true" : "false");
+		return result; 
+	}
+*/
 } // namespace Hooks

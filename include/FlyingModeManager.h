@@ -52,13 +52,9 @@ namespace IDRC {
 
         bool DragonFlyTo(float a_angle, bool a_displayMode = false);
 
-        bool GetContinueFlyTo();
-
         float GetFlyToAngle();
 
         FlyingMode GetFlyingMode();
-
-        void SetContinueFlyTo(bool a_continue);
 
         void SetFlyingModeFromPapyrus(int a_flyingState);
 
@@ -84,7 +80,6 @@ namespace IDRC {
         float m_minHeight = 1000.0f;  
         float m_maxHeight = 1000.0f;
         float m_arrivalHeight = 1000.0f;
-        bool m_continueFlyTo = false;
         float m_flyToAngle = 0.0;
         float m_turnSpeed = 40.0;
         bool m_toggleAlwaysRun = true;

@@ -25,7 +25,6 @@ namespace IDRC {
         m_noFlyAbility = a_noFlyAbility;
 
         ResetDragonHeight();
-        m_continueFlyTo = false;
         m_flyToAngle = 0.0;
         m_turnSpeed = 40.0;
         m_toggleAlwaysRun = true;
@@ -162,8 +161,8 @@ namespace IDRC {
     void FlyingModeManager::UpdateFlyingMode() {
         log::info("IDRC - {}", __func__);
     
-        if (m_registeredForLanding || CombatManager::GetSingleton().IsAttackOngoing()) {
-            log::info("IDRC - {}: Registered for Landing or Attack is ongoing - cancel update", __func__);
+        if (m_registeredForLanding) {
+            log::info("IDRC - {}: Registered for Landing - cancel update", __func__);
             return;
         }
     
@@ -183,8 +182,8 @@ namespace IDRC {
     }
 
     void FlyingModeManager::ToggleAutoCombat() {
-        if (m_registeredForLanding || CombatManager::GetSingleton().IsAttackOngoing()) {
-            // Autocombat is always turned off during landing and commanded attacks -  do not allow to toggle
+        if (m_registeredForLanding) {
+            // Autocombat is always turned off during landing - do not allow to toggle
             return;
         }
     
@@ -264,7 +263,7 @@ namespace IDRC {
         } else if (a_key == kJump) {
             m_vanillaAttack = !m_vanillaAttack;
         } else if (a_key == kSneak) {
-            if (!combatManager.GetAttackDisabled() || combatManager.GetTriggerAttack()) {
+            if (!combatManager.GetAttackDisabled()) {
                 combatManager.DragonAttack(controlsManager.GetIsKeyPressed(kRun));
             } else {
                 log::info("IDRC - {}: Attack Disabled", __func__);
@@ -272,7 +271,6 @@ namespace IDRC {
         }
     
         if (a_key == kForward || a_key == kStrafeLeft || a_key == kStrafeRight) {
-            SetContinueFlyTo(false);
     
             if (m_registeredForLanding && a_key == kForward) {
                 if (CancelDragonLandPlayerRiding()) {
@@ -1052,12 +1050,7 @@ namespace IDRC {
         }
     
         auto& combatManager = CombatManager::GetSingleton();
-        // Check if an attack is ongoing or if combat-related packages are active
-        if (combatManager.IsAttackOngoing() || combatManager.GetAttackMode() != 0 ||
-            _ts_SKSEFunctions::CheckForPackage(dragonActor, combatManager.GetCombatTargetPackageList())) {
-            return false;
-        }
-    
+
         if (!GetRegisteredForLanding()) {
             // Set flying state to landed
             SetFlyingMode(FlyingMode::kLanded);
@@ -1083,7 +1076,7 @@ namespace IDRC {
     
             // Handle auto-combat toggling
             m_toggledAutoCombatLand = false;
-            if (dataManager.GetAutoCombat() && !combatManager.IsAutoCombatAttackToggled()) {
+            if (dataManager.GetAutoCombat()) {
                 log::info("IDRC - {}: AutoCombat toggled to FALSE", __func__);
                 dataManager.SetAutoCombat(false);
                 m_toggledAutoCombatLand = true;
@@ -1400,7 +1393,6 @@ namespace IDRC {
 
         auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
         auto* orbitMarker = DataManager::GetSingleton().GetOrbitMarker();
-        auto& combatManager = CombatManager::GetSingleton();
 
         if (!dragonActor) {
             log::error("IDRC - {}: dragonActor is None", __func__);
@@ -1421,15 +1413,6 @@ namespace IDRC {
             DisplayManager::GetSingleton().DisplayFlyingMode();
         }
         
-        bool restartAttack = false;
-        if  (combatManager.IsAttackOngoing() && 
-            _ts_SKSEFunctions::GetCombatTarget(dragonActor) != nullptr) {   
-            if (combatManager.StopAttack()) {
-                restartAttack = true;
-                log::info("IDRC - {}: Stopped Attack - restarting once FastTravel started", __func__);
-            }
-        }
-
         WorldSpaceData worldSpaceData; 
         try {
             worldSpaceData = WorldSpaceData(dragonActor->GetWorldspace()); 
@@ -1491,10 +1474,6 @@ namespace IDRC {
         FastTravelManager::GetSingleton().FastTravel(orbitMarker);
 log::info("IDRC - {}: FastTravel started", __func__);
     
-        if (restartAttack) {
-            combatManager.DragonAttack();
-        }
-
         if (a_displayMode) {
            Utils::RegisterForSingleUpdate(0.5f);
            DisplayManager::GetSingleton().SetRegisteredForDisplayUpdate(true);
@@ -1503,24 +1482,8 @@ log::info("IDRC - {}: FastTravel started", __func__);
         return true;
     }
 
-    bool FlyingModeManager::GetContinueFlyTo() {
-        return m_continueFlyTo;
-    }
-
     float FlyingModeManager::GetFlyToAngle() {
         return m_flyToAngle;
-    }
-
-    void FlyingModeManager::SetContinueFlyTo(bool a_continue) {
-        auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
-
-        if (!dragonActor) {
-            log::error("IDRC - {}: dragonActor is None", __func__);
-            return;
-        }
-
-        m_continueFlyTo = a_continue;
-        m_flyToAngle = dragonActor->GetAngleZ();
     }
 
     float FlyingModeManager::GetAngleToCoordinate(float a_posX, float a_posY) {

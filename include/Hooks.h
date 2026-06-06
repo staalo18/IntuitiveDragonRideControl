@@ -147,7 +147,155 @@ namespace Hooks
 		static inline std::uintptr_t _SetPath{ 0 };
 	};
 
+/*  UNUSED HOOKS:
+	class VoiceSpellCastHook
+	{
+	public:
+		static void Hook()
+		{
+			_HandleVoiceSpellCast = _ts_SKSEFunctions::WriteFunctionHook(
+				REL::VariantID(41740, 42821, 0),
+				6,
+				reinterpret_cast<std::uintptr_t>(HandleVoiceSpellCast));
+		}
+	private:
+		static bool HandleVoiceSpellCast(std::uintptr_t  a_this, RE::Actor* a_caster);
+		static inline std::uintptr_t _HandleVoiceSpellCast{ 0 };
+	};
 
+	class VoiceShoutCastHook
+	{
+	public:
+		static void Hook()
+		{
+			_VoiceShoutCast = _ts_SKSEFunctions::WriteFunctionHook(
+				REL::VariantID(33663, 34443, 0),
+				6,
+				reinterpret_cast<std::uintptr_t>(VoiceShoutCast));
+		}
+		static void VoiceShoutCast(RE::Actor* a_caster);
+	private:
+		static inline std::uintptr_t _VoiceShoutCast{ 0 };
+	};
+
+	class StartCastHook
+	{
+	public:
+		static void Hook()
+		{
+			_StartCast = _ts_SKSEFunctions::WriteFunctionHook(
+				REL::VariantID(41823, 42904, 0),
+				6,
+				reinterpret_cast<std::uintptr_t>(StartCast));
+		}
+		static bool StartCast(RE::Actor* a_caster, RE::MagicSystem::CastingSource a_source);
+	private:
+		static inline std::uintptr_t _StartCast{ 0 };
+	};
+
+	class CastSpellImmediateHook
+	{
+	public:
+		static void Hook()
+		{
+			_CastSpellImmediate = _ts_SKSEFunctions::WriteFunctionHook(
+				REL::VariantID(33626, 34404, 0),
+				5,
+				reinterpret_cast<std::uintptr_t>(CastSpellImmediate));
+		}
+		static void CastSpellImmediate(
+    RE::MagicCaster* _a_magicCaster,
+    RE::MagicItem* _a_spell,
+    bool _a_loadCast,
+    RE::TESObjectREFR* _a_desiredTargetRef,
+    float _a_effectivenessMult,
+    bool _a_adjustOnlyHostileEffectiveness,
+    float _a_magnitudeOverride);
+	private:
+		static inline std::uintptr_t _CastSpellImmediate{ 0 };
+	};
+
+	class ApplyCastHook
+	{
+	public:
+		static void Hook()
+		{
+			_ApplyCast = _ts_SKSEFunctions::WriteFunctionHook(
+				REL::VariantID(33632, 34410, 0),
+				7,
+				reinterpret_cast<std::uintptr_t>(ApplyCast));
+		}
+		static bool ApplyCast(RE::MagicCaster* _a_magicCaster,
+								float _a_effectivenessMult,
+								std::uint32_t* _a_targetCount,
+								RE::TESBoundObject* _a_source,
+								bool _a_loadCast,
+								bool _a_adjustOnlyHostileEffectiveness);
+	private:
+		static inline std::uintptr_t _ApplyCast{ 0 };
+	};
+
+	class TestCastHook
+	{
+	public:
+		static void Hook()
+		{
+			_TestCast = _ts_SKSEFunctions::WriteFunctionHook(
+				REL::VariantID(33631, 34409, 0),
+				5,
+				reinterpret_cast<std::uintptr_t>(TestCast));
+		}
+		static bool TestCast(RE::MagicCaster* a_magicCaster,
+								RE::MagicItem* a_spell,
+								RE::Actor* a_target,
+								RE::TESBoundObject* a_source,
+								bool a_loadCast);
+
+	private:
+		static inline std::uintptr_t _TestCast{ 0 };
+	};
+
+	class ProcedureShoutHook
+	{
+	public:
+		static void Hook()
+		{
+			_Initiate = _ts_SKSEFunctions::WriteFunctionHook(
+				REL::VariantID(28332, 29080, 0),
+				5,
+				reinterpret_cast<std::uintptr_t>(Initiate));
+			_SetupExecState = _ts_SKSEFunctions::WriteFunctionHook(
+				REL::VariantID(28329, 29077, 0),
+				5,
+				reinterpret_cast<std::uintptr_t>(SetupExecState));
+		}
+		static void Initiate(std::uint64_t*  a_this,     // param_1: BGSProcedureShout*
+    						std::uint64_t*  a_context);
+		static void SetupExecState(std::uint64_t*  a_this,     // param_1: BGSProcedureShout*
+								std::uint64_t*  a_context);
+	private:
+		static inline std::uintptr_t _Initiate{ 0 };
+		static inline std::uintptr_t _SetupExecState{ 0 };
+	};
+
+	class StartVoiceShoutCastHook
+	{
+	public:
+		static void Hook()
+		{
+			_StartVoiceShoutCast = _ts_SKSEFunctions::WriteFunctionHook(
+				REL::VariantID(37850, 38804, 0),
+				5,
+				reinterpret_cast<std::uintptr_t>(StartVoiceShoutCast));
+		}
+		static bool StartVoiceShoutCast(RE::Character* a_caster,
+										RE::TESShout* a_shout,
+										std::uint32_t a_wordIndex,
+										RE::Actor* a_target);
+	private:
+		static inline std::uintptr_t _StartVoiceShoutCast{ 0 };
+	};
+*/
 /*
 #include <MinHook.h>
 
