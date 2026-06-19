@@ -21,3 +21,12 @@ typedef bool*(__fastcall* StartVoiceShoutCast_t)(
     std::uint32_t a_wordIndex,
     RE::Actor* a_target);
 static REL::Relocation<StartVoiceShoutCast_t> StartVoiceShoutCast{ RELOCATION_ID(37850, 38804) };
+
+typedef bool*(__fastcall* GetFlyingMountFastTravelStateFlag_t)();
+static REL::Relocation<GetFlyingMountFastTravelStateFlag_t> GetFlyingMountFastTravelStateFlag{ RELOCATION_ID(39634, 40720) };
+
+typedef bool*(__fastcall* GetFlyingMountPatrolQueuedStateFlag_t)();
+static REL::Relocation<GetFlyingMountPatrolQueuedStateFlag_t> GetFlyingMountPatrolQueuedStateFlag{ RELOCATION_ID(39635, 40721) };
+
+typedef bool*(__fastcall* StartCombat_t)(RE::Actor* a_this, RE::Actor* a_target, RE::CombatGroup* a_combatGroup);
+static REL::Relocation<StartCombat_t> StartCombat{ RELOCATION_ID(37608, 38561) };

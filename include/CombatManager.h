@@ -27,9 +27,9 @@ namespace IDRC {
  
         bool DragonAttack(bool a_alternateAttack = false);
         
-        RE::TESObjectREFR* GetCombatTarget();
+//        RE::TESObjectREFR* GetCombatTarget();
 
-        bool SyncCombatTarget();
+//        void UpdateCombatTargetAlias();
 
         RE::BGSListForm* GetBreathShoutList();
 
@@ -38,6 +38,14 @@ namespace IDRC {
         RE::BGSListForm* GetBallShoutList();
 
         void SetBallShoutList(RE::BGSListForm* a_ballShoutList);
+
+        void Update();
+    
+        bool GetStopCombat();
+
+        bool IsShoutActive() {return m_shoutActive;}
+
+        RE::Actor* GetShoutTarget() { return m_shoutTarget; }
 
     private:
         CombatManager() = default;
@@ -52,9 +60,13 @@ namespace IDRC {
         RE::TESShout* m_attackShout = nullptr;
         bool m_stopCombat = false; // this flag is used to stop combat whenever a FastTravel ends
         const float m_maxTargetDistance = 2000.0f;
+        float m_shoutTimer = 0.0f;
+        bool m_shoutActive = false;
+        bool m_restartCombatPending = false;
+        RE::Actor* m_shoutTarget = nullptr;
+        RE::Actor* m_storedCombatTarget = nullptr;
 
         // only used internally
-        bool m_registeredForTargetSync = false;
         bool m_attackDisabled = false;
 
         RE::TESShout* GetShout(const RE::BGSListForm* a_shoutList);
@@ -63,9 +75,11 @@ namespace IDRC {
 
         void DragonStartCombat(RE::Actor* a_target);
 
+        void RestartCombatIfNeeded();
+
+        void UpdateAttack();
+
         float GetMaxTargetDistance();
-    
-        bool GetStopCombat();
     }; // class CombatManager
 } // namespace IDRC
 

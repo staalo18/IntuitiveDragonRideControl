@@ -6,6 +6,7 @@
 #include "_ts_SKSEFunctions.h"
 #include "APIManager.h"
 #include "DataManager.h"
+#include "CombatManager.h"
 
 
 namespace IDRC {
@@ -50,6 +51,17 @@ namespace IDRC {
         bool isCameraBehindTarget = false;
         if (APIs::TrueDirectionalMovementV4) {
             isCameraBehindTarget = APIs::TrueDirectionalMovementV4->IsTargetLockBehindTarget();
+        }
+
+        auto& combatManager = CombatManager::GetSingleton();
+        if (combatManager.IsShoutActive() && combatManager.GetShoutTarget()) {
+            // If a shout target exists, use its position to calculate the camera yaw to keep 
+            // the dragon oriented towards the target while shouting.
+            // Also see the similar logic in Hooks::UpdateFlightPathData(), 
+            // which uses the shout target position to update flight path waypoints.
+            auto dragonPos = dragonActor->GetPosition();
+            auto shoutTargetPos = combatManager.GetShoutTarget()->GetPosition();
+            currentCameraYaw = atan2(shoutTargetPos.x - dragonPos.x, shoutTargetPos.y - dragonPos.y);
         }
 
         float currentDragonYaw = dragonActor->GetAngleZ();
@@ -139,7 +151,8 @@ namespace IDRC {
             } 
         }
 
-        if (isDragonTurning && !m_isUserTurning && !isTDMLocked && !m_turnLocked) {
+        if ((_ts_SKSEFunctions::GetFlyingState(dragonActor) == 2 && combatManager.IsShoutActive() && combatManager.GetShoutTarget()) ||
+            (isDragonTurning && !m_isUserTurning && !isTDMLocked && !m_turnLocked)) {
             // camera rotation follows dragon yaw
             m_cameraLocked = true;
             float currentCameraRotation = _ts_SKSEFunctions::NormalRelativeAngle(dragonCameraState->freeRotation.x);
@@ -194,27 +207,6 @@ namespace IDRC {
 
     void CameraLockManager::SetIgnoredCameraPitch(float a_pitch) {
         m_ignoredCameraPitch = -a_pitch * PI / 180.f;
-    }
-
-    void CameraLockManager::DampenPitch(float a_cameraPitch, float a_travelledPitch) {
-        auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
-        if (!dragonActor) {
-            return;
-        }
-
-        RE::NiPoint3 dragonAngle = dragonActor->GetAngle();
-
-        float groundHeight = _ts_SKSEFunctions::GetLandHeightWithWater(dragonActor);
-        float groundFactor= std::clamp((dragonActor->GetPosition().z - groundHeight - 1000.f)/2000.f, 0.f, 1.f);
-
-        float targetPitch = 0.3f * dragonAngle.x - 0.6f * a_cameraPitch - 0.1f * a_travelledPitch;
-        targetPitch = (1.f -  groundFactor) * dragonAngle.x +  groundFactor * targetPitch;
-
-        dragonAngle.x = targetPitch;
-//        SKSE::GetTaskInterface()->AddTask([this, dragonActor, dragonAngle]() {
-        // When modifying Game objects, send task to TaskInterface to ensure thread safety
-        dragonActor->SetAngle(dragonAngle);
-//        });
     }
 
     void CameraLockManager::LockTurn(int a_lockTime)

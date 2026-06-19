@@ -33,7 +33,7 @@ namespace IDRC {
                                 RE::BGSRefAlias* a_rockPerch, 
                                 RE::BGSRefAlias* a_perchTarget);
 
-            bool SetPerchTarget(RE::TESObjectREFR* a_target);
+            void SetPerchTarget(RE::TESObjectREFR* a_target);
 
             RE::TESQuest* GetRideQuest();
 

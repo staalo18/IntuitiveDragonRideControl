@@ -598,7 +598,7 @@ namespace IDRC {
         }
     
         // Clear combat targets if the dragon is far from the combat target
-        auto* combatTarget = CombatManager::GetSingleton().GetCombatTarget();
+        auto* combatTarget = _ts_SKSEFunctions::GetCombatTarget(dragonActor);
         if (combatTarget && _ts_SKSEFunctions::GetDistance(dragonActor, combatTarget) >= 5000.0f) {
             log::info("IDRC - {}: Clearing CombatTargets", __func__);
             SKSE::GetTaskInterface()->AddTask([dragonActor]() {
@@ -639,7 +639,7 @@ namespace IDRC {
         }
     
         // Clear combat targets if the dragon is far from the combat target
-        auto* combatTarget = CombatManager::GetSingleton().GetCombatTarget();
+        auto* combatTarget = _ts_SKSEFunctions::GetCombatTarget(dragonActor);
         if (combatTarget && _ts_SKSEFunctions::GetDistance(dragonActor, combatTarget) >= 5000.0f) {
             log::info("IDRC - {}: Clearing CombatTargets", __func__);
             SKSE::GetTaskInterface()->AddTask([dragonActor]() {
@@ -1049,8 +1049,6 @@ namespace IDRC {
             return false;
         }
     
-        auto& combatManager = CombatManager::GetSingleton();
-
         if (!GetRegisteredForLanding()) {
             // Set flying state to landed
             SetFlyingMode(FlyingMode::kLanded);
@@ -1292,12 +1290,7 @@ namespace IDRC {
                 if (closestPerch) {
                     log::info("IDRC - {}: Found perch: {}", __func__, closestPerch->GetFormID());      
 
-                    if (!dataManager.SetPerchTarget(closestPerch)) {
-                        log::error("IDRC - {}: Could not set perch target", __func__);
-                        SetFlyingMode(oldState);
-                        SetRegisteredForPerch(false);
-                        return false;
-                    }
+                    dataManager.SetPerchTarget(closestPerch);
 
                     DisplayManager::GetSingleton().SetRegisteredForDisplayUpdate(true);
 
@@ -1379,11 +1372,11 @@ namespace IDRC {
         }
     
     
-        SKSE::GetTaskInterface()->AddTask([dragonActor]() {
-            // When modifying Game objects, send task to TaskInterface to ensure thread safety
-            dragonActor->AsActorValueOwner()->SetActorValue(RE::ActorValue::kVariable03, 0); // Set to orbit
-            dragonActor->EvaluatePackage();
-        });
+//        SKSE::GetTaskInterface()->AddTask([dragonActor]() {
+//            // When modifying Game objects, send task to TaskInterface to ensure thread safety
+//            dragonActor->AsActorValueOwner()->SetActorValue(RE::ActorValue::kVariable03, 0); // Set to orbit
+//            dragonActor->EvaluatePackage();
+//        });
     
         return DragonFlyTo(a_angle, a_displayMode);
     }
@@ -1465,10 +1458,10 @@ namespace IDRC {
         // Cancel ongoing StopFastTravel requests
         FastTravelManager::GetSingleton().CancelStopFastTravel();
 
-        SKSE::GetTaskInterface()->AddTask([dragonActor]() {
-            // When modifying Game objects, send task to TaskInterface to ensure thread safety
-            _ts_SKSEFunctions::ClearCombatTargets(dragonActor);
-        });
+//        SKSE::GetTaskInterface()->AddTask([dragonActor]() {
+//            // When modifying Game objects, send task to TaskInterface to ensure thread safety
+//            _ts_SKSEFunctions::ClearCombatTargets(dragonActor);
+//        });
 
         // Start the FastTravel mode
         FastTravelManager::GetSingleton().FastTravel(orbitMarker);

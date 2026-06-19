@@ -61,8 +61,13 @@ namespace IDRC {
         return m_findPerchQuest;
     }
 
-    bool DataManager::SetPerchTarget(RE::TESObjectREFR* a_target) {
-        return Utils::ForceAliasTo(m_perchTarget, a_target);
+    void DataManager::SetPerchTarget(RE::TESObjectREFR* a_target) {
+        RE::Actor* dragonActor = GetDragonActor();
+        SKSE::GetTaskInterface()->AddTask([this, dragonActor, a_target]() {
+            // When modifying Game objects, send task to TaskInterface to ensure thread safety
+            this->m_perchTarget->ForceRefTo(a_target);
+            dragonActor->EvaluatePackage();
+        });        
     }
 
     RE::TESQuest* DataManager::GetRideQuest() {

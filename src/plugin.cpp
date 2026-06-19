@@ -280,16 +280,16 @@ std::thread([a_vm, a_stackID, a_stopFastTravelTarget, a_height, a_timeout, a_wai
         
             return RE::BSScript::LatentStatus::kStarted;
         }
-
-        RE::BSScript::LatentStatus SyncCombatTarget_SKSE_Latent(RE::BSScript::Internal::VirtualMachine* a_vm, RE::VMStackID a_stackID, RE::StaticFunctionTag*) {
+/*
+        RE::BSScript::LatentStatus UpdateCombatTargetAlias_SKSE_Latent(RE::BSScript::Internal::VirtualMachine* a_vm, RE::VMStackID a_stackID, RE::StaticFunctionTag*) {
             std::thread([a_vm, a_stackID]() {
-                bool result = CombatManager::GetSingleton().SyncCombatTarget();
-                a_vm->ReturnLatentResult(a_stackID, result);
+                CombatManager::GetSingleton().UpdateCombatTargetAlias();
+                a_vm->ReturnLatentResult(a_stackID, true);
             }).detach();
         
             return RE::BSScript::LatentStatus::kStarted;
         }
-
+*/
         RE::BSScript::LatentStatus DragonAttack_SKSE_Latent(RE::BSScript::Internal::VirtualMachine* a_vm, RE::VMStackID a_stackID, RE::StaticFunctionTag*, bool a_alternateAttack = false) {
             std::thread([a_vm, a_stackID, a_alternateAttack]() {
                 bool result = CombatManager::GetSingleton().DragonAttack(a_alternateAttack);
@@ -316,104 +316,7 @@ std::thread([a_vm, a_stackID, a_stopFastTravelTarget, a_height, a_timeout, a_wai
         
             return RE::BSScript::LatentStatus::kStarted;
         }
-/*
-        bool TEST_SKSE(RE::StaticFunctionTag *, RE::Actor* dragonActor, RE::BGSRefAlias* otherAlias,
-             RE::TESObjectREFR* Orbitmarker, bool bTest){
-            log::info("IDRC - {}", __func__);
 
-
-            auto* quest = DataManager::GetSingleton().GetRideQuest();
-            if (!quest) {
-                log::error("IDRC - {}: RideQuest is null", __func__);
-                return false;
-            }
-            auto handle = _ts_SKSEFunctions::GetHandle(quest);
-            if(!handle){
-                log::error("IDRC - {}: Quest handle is null", __func__);
-                return false;
-            }
-            auto* skyrimVM = RE::SkyrimVM::GetSingleton();
-            if (!skyrimVM) {
-                return false;
-            }
-            auto VMGameTime = skyrimVM->currentVMGameTime;
-            auto VMDaysPassed = skyrimVM->currentVMDaysPassed;
-            auto VMMenuModeTime = skyrimVM->currentVMMenuModeTime;
-            auto VMTime = skyrimVM->currentVMTime;
-
-            log::info("IDRC - {}: VMGameTime: {}, VMDaysPassed: {}, VMMenuModeTime: {}, VMTime: {}", __func__, VMGameTime, VMDaysPassed, VMMenuModeTime, VMTime);
-            std::string message = "Sending RegisterForSingleUpdate: VMGameTime: " + std::to_string(VMGameTime) + 
-                ", VMDaysPassed: " + std::to_string(VMDaysPassed) + 
-                ", VMMenuModeTime: " + std::to_string(VMMenuModeTime) + 
-                ", VMTime: " + std::to_string(VMTime);
-            RE::SendHUDMessage::ShowHUDMessage(message.c_str());
-            _ts_SKSEFunctions::RegisterForSingleUpdate(handle, 0.5f);
-
-            DataManager::GetSingleton().SetAutoCombat(true);
-
- /*
-            auto* target = CombatManager::GetSingleton().GetCombatTarget();
-            if (target) { 
-                log::info("IDRC - {}: Before - target: {}", __func__, target->GetFormID());
-            } else {
-                log::info("IDRC - {}: Before - target is None", __func__);
-            }   
-            log::info("IDRC - {}: dragonActor: {}", __func__, dragonActor->GetFormID());
- 
-            CombatManager::GetSingleton().ForceCombatTargetAliasTo(nullptr);
-
-            target = CombatManager::GetSingleton().GetCombatTarget();
-
-            if (target) { 
-                log::info("IDRC - {}: after - target: {}", __func__, target->GetFormID());
-            } else {
-                log::info("IDRC - {}: after - target is None", __func__);
-            }   
-
-*//*
-//            CombatManager::GetSingleton().SetShoutMode(0);
-            int iState = _ts_SKSEFunctions::GetFlyingState(dragonActor);
-
-            log::info("IDRC - {}: FlyingState = {}", __func__, iState);
-            int CombatState = _ts_SKSEFunctions::GetCombatState(dragonActor);
-            log::info("IDRC - {}: CombatState = {}", __func__, CombatState);
-//            _ts_SKSEFunctions::GetCombatMembers(dragonActor);
-
-            if (target) { 
-                log::info("IDRC - {}: target: {}", __func__, target->GetFormID());
-            } else {
-                log::info("IDRC - {}: target is None", __func__);
-            }
-//            _ts_SKSEFunctions::StartCombat(dragonActor, target);
-//            CombatManager::GetSingleton().DragonStartCombat(target);
-
-            int iCount = 0;
-            while (true) {
-                _ts_SKSEFunctions::WaitWhileGameIsPaused();
-
-                log::info("IDRC - {}: Waiting...({})", __func__, iCount);
-                std::this_thread::sleep_for(std::chrono::milliseconds(200));
-                iCount++;
-            }
-           bool isForwardPressed = ControlsManager::GetSingleton().GetIsKeyPressed(IDRCKey::kForward);
-            log::info("IDRC - {}: isForwardPressed = {}", __func__, isForwardPressed);
-            return true;
-        }
-
-
-        void TEST_SKSE_Latent(RE::BSScript::Internal::VirtualMachine* a_vm, RE::VMStackID a_stackID,
-            RE::Actor* dragonActor, RE::BGSRefAlias* otherAlias, RE::TESObjectREFR* Orbitmarker, bool bTest){
-            bool result = TEST_SKSE(nullptr, dragonActor, otherAlias, Orbitmarker, bTest);
-            a_vm->ReturnLatentResult(a_stackID, result);    
-        }
-
-        RE::BSScript::LatentStatus TEST_SKSE_SKSE_Latent(RE::BSScript::Internal::VirtualMachine* a_vm, RE::VMStackID a_stackID, 
-            RE::StaticFunctionTag *, RE::Actor* dragonActor, RE::BGSRefAlias* otherAlias, RE::TESObjectREFR* Orbitmarker,  bool bTest){
-            std::thread t(TEST_SKSE_Latent, a_vm, a_stackID, dragonActor, otherAlias, Orbitmarker, bTest);
-            t.detach();
-            return RE::BSScript::LatentStatus::kStarted;  
-        }
-*/
         bool IDRCFunctions(RE::BSScript::Internal::VirtualMachine * a_vm){
 
             a_vm->RegisterFunction("GetIDRCPluginVersion", "_ts_DR_PlayerAliasScript", GetIDRCPluginVersion);
@@ -476,7 +379,7 @@ std::thread([a_vm, a_stackID, a_stopFastTravelTarget, a_height, a_timeout, a_wai
             a_vm->RegisterLatentFunction<bool>("DragonLandPlayerRiding_SKSE", "_ts_DR_RideControlScript", DragonLandPlayerRiding_SKSE_Latent);
             a_vm->RegisterLatentFunction<bool>("CancelStopFastTravel_SKSE", "_ts_DR_RideControlScript", CancelStopFastTravel_SKSE_Latent);
             a_vm->RegisterLatentFunction<bool>("StopFastTravel_SKSE", "_ts_DR_RideControlScript", StopFastTravel_SKSE_Latent);
-            a_vm->RegisterLatentFunction<bool>("SyncCombatTarget_SKSE", "_ts_DR_RideControlScript", SyncCombatTarget_SKSE_Latent); 
+//            a_vm->RegisterLatentFunction<bool>("UpdateCombatTargetAlias_SKSE", "_ts_DR_RideControlScript", UpdateCombatTargetAlias_SKSE_Latent); 
             // functions for GoTDragonCompanions
             a_vm->RegisterLatentFunction<bool>("DragonAttack_SKSE", "_ts_DR_RideControlScript", DragonAttack_SKSE_Latent);
             a_vm->RegisterLatentFunction<bool>("DragonTakeOffPlayerRiding_SKSE", "_ts_DR_RideControlScript", DragonTakeOffPlayerRiding_SKSE_Latent);
@@ -557,7 +460,7 @@ extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* sks
 
     log::info("IDRC - {}: Calling Install Hooks", __func__);
 
-    SKSE::AllocTrampoline(96);
+    SKSE::AllocTrampoline(128);
 
     Hooks::Install();
 

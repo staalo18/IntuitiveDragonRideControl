@@ -29,68 +29,6 @@ namespace IDRC {
             });
         }
 
-        
-        // TODO: Using workaround (send command to papyrus) instead of native C++ function call
-        // This is a time-intensive way to solve it because ForceAliasTo waits for the Papyrus function to complete
-
-        // The C++ solution does not work as expected (FILL_TYPE is kForced, but forcedRef is nullptr??):
-//                CombatTargetAlias->fillData.forced.forcedRef = actor->As<RE::TESObjectREFR>()->GetHandle();
-//             This also does not work:
-//                CombatTargetAlias->InitItem(actor->As<RE::TESForm>());
-
-        // workaround for missing native (C++) ForceRefTo: 
-        // use custom event in _ts_DR_DragonRideControlScript to pass actor back to Papyrus 
-        // and call alias.ForceRefTo(actor) there:
-        bool ForceAliasTo(RE::BGSRefAlias* a_alias, RE::TESObjectREFR* a_reference) {
-            if (!a_alias) {
-                log::error("IDRC - {}: alias is null", __func__);
-                return false;
-            }
-    
-            auto* quest = DataManager::GetSingleton().GetRideQuest();
-            if (!quest) {
-                log::error("IDRC - {}: quest is null", __func__);
-                return false;
-            }
-            auto handle = _ts_SKSEFunctions::GetHandle(quest);
-            if(!handle){
-                log::error("IDRC - {}: Quest handle is null", __func__);
-                return false;
-            }
-    
-            if (a_reference) {
-                log::info("IDRC - {}: ForceRefTo {}", __func__, a_reference->GetFormID());
-                auto* args = RE::MakeFunctionArguments((RE::BGSRefAlias*)a_alias, (RE::TESObjectREFR*)a_reference);
-                SKSE::GetTaskInterface()->AddTask([handle, args]() {
-                    // When modifying Game objects, send task to TaskInterface to ensure thread safety
-                    _ts_SKSEFunctions::SendCustomEvent(handle, "OnForceRefTo_SKSE", args);
-                });
-            } else {
-                log::info("IDRC - {}: ClearingAlias", __func__);
-                auto* args = RE::MakeFunctionArguments((RE::BGSRefAlias*)a_alias);
-                SKSE::GetTaskInterface()->AddTask([handle, args]() {
-                    // When modifying Game objects, send task to TaskInterface to ensure thread safety
-                    _ts_SKSEFunctions::SendCustomEvent(handle, "OnClearAlias_SKSE", args);
-                });
-            }
-      
-            // With this workaround, the update of the alias is happening asychronously,
-            //  because the SendForceRefToEvent just triggers the Papyrus ForceRefTo(), 
-            //  but does not wait for it to complete.
-            //  So we need to wait for alias to be updated:
-            int count = 0;
-            while (count < 100 && a_alias->GetReference() != a_reference) 
-            {
-                _ts_SKSEFunctions::WaitWhileGameIsPaused();
-                std::this_thread::sleep_for(std::chrono::milliseconds(10));
-                count++;
-            }
-            if (count >= 100) { // waited > 1sec
-                log::error("IDRC - {}: ERROR - Timed out while waiting for alias to update!", __func__);
-                return false;
-            }
-            return true;
-        }
 
         bool RegisterForSingleUpdate(float a_seconds) {
             auto* quest = DataManager::GetSingleton().GetRideQuest();

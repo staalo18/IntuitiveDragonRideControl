@@ -114,39 +114,80 @@ namespace Hooks
 		static inline std::uintptr_t _SetGoal{ 0 };
 	};
 */
-	class FlightPathHook
+	class PathingHook
 	{
 	public:
 		static void Hook()
 		{
-			_SetPath = _ts_SKSEFunctions::WriteFunctionHook(
-				REL::VariantID(90008, 92493, 0),
-				6,
-				reinterpret_cast<std::uintptr_t>(SetPath));
-		}
-
-	private:
-		static void SetPath(std::uintptr_t  a_subPtr, std::uintptr_t* a_newNode, std::uintptr_t* a_newData);
-		static inline std::uintptr_t _SetPath{ 0 };
-	};
-
-
-	class GroundPathHook
-	{
-	public:
-		static void Hook()
-		{
-			_SetPath = _ts_SKSEFunctions::WriteFunctionHook(
+			_SetGroundPath = _ts_SKSEFunctions::WriteFunctionHook(
 				REL::VariantID(88302, 90713, 0),
 				5,
-				reinterpret_cast<std::uintptr_t>(SetPath));
+				reinterpret_cast<std::uintptr_t>(SetGroundPath));
+
+			_SetFlightPath = _ts_SKSEFunctions::WriteFunctionHook(
+				REL::VariantID(90008, 92493, 0),
+				6,
+				reinterpret_cast<std::uintptr_t>(SetFlightPath));
+
+			_FlightPlannerUpdate = _ts_SKSEFunctions::WriteFunctionHook(
+				REL::VariantID(90006, 92491, 0),
+				6,
+				reinterpret_cast<std::uintptr_t>(FlightPlannerUpdate));
 		}
 
 	private:
-		static void SetPath(std::uintptr_t  a_subPtr, std::uintptr_t* a_newNode, std::uintptr_t* a_newData);
-		static inline std::uintptr_t _SetPath{ 0 };
+		static void SetGroundPath(std::uintptr_t  a_subPtr, std::uintptr_t* a_newNode, std::uintptr_t* a_newData);
+		static void SetFlightPath(std::uintptr_t  a_subPtr, std::uintptr_t* a_newNode, std::uintptr_t* a_newData);
+		static void FlightPlannerUpdate(std::uintptr_t a_plannerSubPtr,
+									float* a_deltaTime,
+									float* a_outMovementIntention,
+									void* a_context);
+		static void UpdateFlightPathData(std::byte* a_agent);
+
+		static inline std::uintptr_t _SetGroundPath{ 0 };
+		static inline std::uintptr_t _SetFlightPath{ 0 };
+		static inline std::uintptr_t _FlightPlannerUpdate{ 0 };
+		static inline std::uintptr_t m_actorOffset = REL::Module::get().version() >= SKSE::RUNTIME_SSE_1_6_629 ? 0xC0 : 0xB8;
 	};
 
+
+	class CombatHook
+	{
+	public:
+		static void Hook()
+		{
+			_StartCombat = _ts_SKSEFunctions::WriteFunctionHook(
+				REL::VariantID(37608, 38561, 0),
+				5,
+				reinterpret_cast<std::uintptr_t>(StartCombat));	
+			_StopCombat = _ts_SKSEFunctions::WriteFunctionHook(
+				REL::VariantID(37613, 38566, 0),
+				5,
+				reinterpret_cast<std::uintptr_t>(StopCombat));
+		}
+	private:
+		static void StopCombat(RE::Actor* a_this);
+		static void StartCombat(RE::Actor* a_this, RE::Actor* a_target, RE::CombatGroup* a_combatGroup);
+		static inline std::uintptr_t _StartCombat{ 0 };
+		static inline std::uintptr_t _StopCombat{ 0 };
+	};
+/*
+	class FastTravelHook
+	{
+	public:
+		static void Hook()
+		{
+			_FastTravel = _ts_SKSEFunctions::WriteFunctionHook(
+				REL::VariantID(54824, 55457, 0),
+				6,
+				reinterpret_cast<std::uintptr_t>(FastTravel));
+		}
+
+	private:
+		static void FastTravel(RE::Actor* a_this);
+		static inline std::uintptr_t _FastTravel{ 0 };
+	};
+*/
 /*  UNUSED HOOKS:
 	class VoiceSpellCastHook
 	{

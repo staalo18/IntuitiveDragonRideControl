@@ -3,8 +3,10 @@
 #include "CameraLockManager.h"
 #include "FlyingModeManager.h"
 #include "DataManager.h"
+#include "CombatManager.h"
 #include "IDRCUtils.h"
 #include "APIManager.h"
+#include "REL/RuntimeDataAccessors.h"
 
 namespace Hooks
 {
@@ -20,9 +22,9 @@ namespace Hooks
 		DragonCameraStateHook::Hook();
 //		GetMountHook::Hook();
 //		FlightGoalHook::Hook();
-		FlightPathHook::Hook();
-		GroundPathHook::Hook();
+		PathingHook::Hook();
 /* UNUSED HOOKS:
+		CombatHook::Hook();
 		VoiceSpellCastHook::Hook();
 		VoiceShoutCastHook::Hook();
 		StartCastHook::Hook();
@@ -107,7 +109,15 @@ namespace Hooks
 
 		IDRC::CameraLockManager::GetSingleton().Update();
 		IDRC::TargetReticleManager::GetSingleton().Update();
-
+		IDRC::CombatManager::GetSingleton().Update();
+		bool fastTravelFlag = GetFlyingMountFastTravelStateFlag();
+		bool patrolQueuedFlag = GetFlyingMountPatrolQueuedStateFlag();
+		auto* dragonActor = IDRC::DataManager::GetSingleton().GetDragonActor();
+		if (dragonActor) {
+			auto combatState = _ts_SKSEFunctions::GetCombatState(dragonActor);
+//log::info("IDRC - {}: Dragon combat state: {}", __func__, combatState);
+log::info("IDRC - {}: FastTravelFlag={}, PatrolQueuedFlag={}, combatState={}", __func__, fastTravelFlag, patrolQueuedFlag, combatState);
+		}
 /* For debugging
 		auto* player = RE::PlayerCharacter::GetSingleton();
 		if (!player) {
@@ -405,76 +415,85 @@ log::info("IDRC - {}: ReadyWeaponHook-ProcessButton called with event IDCode = {
 */
 
 
-	void FlightPathHook::SetPath(std::uintptr_t  a_subPtr, std::uintptr_t* a_newNode, std::uintptr_t* a_newData) {
+	void PathingHook::SetFlightPath(std::uintptr_t  a_subPtr, std::uintptr_t* a_newNode, std::uintptr_t* a_newData) {
 
-	// This hook fires for all dragons in flyingstate == 2 (Flying), when they need to update their pathing
-	// Used to keep mounted dragon on a straight path during commanded flight, regardless of the terrain height
-
-		if (_SetPath == 0) {
+		if (_SetFlightPath == 0) {
 			log::error("{}: trampoline not initialized!", __FUNCTION__);
 			return;
 		}
 
 		// call the original function
-		using FuncType = decltype(&SetPath);
-		reinterpret_cast<FuncType>(_SetPath)(a_subPtr, a_newNode, a_newData);
+		using FuncType = decltype(&SetFlightPath);
+		reinterpret_cast<FuncType>(_SetFlightPath)(a_subPtr, a_newNode, a_newData);
+log::info("IDRC - {}: SetFlightPath called", __func__);
+//		auto agent = reinterpret_cast<std::byte*>(a_subPtr - 0x20);
+//		UpdateFlightPathData(agent);
+	}
 
-		// Now adjusting the first 4 waypoints' heights in the new path data to consider camera-relative height control.
-		// The engine is using a Bezier curve to interpolate between waypoints,
-		// so adjusting 4 points to impact the immediate path. 
-		// Other waypoints do not be adjusted in this frame,
-		// because they do not impact the form of the interpolated path btw dragon and waypoints 0 and 1.  
-
-		if(!IDRC::CameraLockManager::GetSingleton().IsEnabled()) {
+	void PathingHook::FlightPlannerUpdate(std::uintptr_t a_plannerSubPtr,
+									float* a_deltaTime,
+									float* a_outMovementIntention,
+									void* a_context) {
+	// This hook fires for all dragons in flyingstate == 2 (Flying), once per frame.
+	// Uses UpdateFlightPathData() to keep mounted dragon on a straight path towards the targeted direction
+	
+		if (!_FlightPlannerUpdate) {
+			log::error("{}: trampoline not initialized!", __FUNCTION__);
 			return;
 		}
 
-		// Read waypoints from agent+0x48 (pathData_48), which is now set
-		// a_subPtr + 0x28 = agent+0x48 = pathData_48
-		auto* pathData = reinterpret_cast<std::byte*>(
-			*reinterpret_cast<std::uintptr_t*>(a_subPtr + 0x28));
+		auto agent = reinterpret_cast<std::byte*>(a_plannerSubPtr - 0x18);
+		UpdateFlightPathData(agent);
 
+		// call the original function
+		using FuncType = decltype(&FlightPlannerUpdate);
+		reinterpret_cast<FuncType>(_FlightPlannerUpdate)(a_plannerSubPtr, a_deltaTime, a_outMovementIntention, a_context);
+	}
+
+
+	void PathingHook::UpdateFlightPathData(std::byte* a_agent) {
+		if (!a_agent) {
+log::warn("IDRC - {}: Agent pointer is null", __func__);
+			return;
+		}
+
+		auto* actorState = *reinterpret_cast<RE::ActorState**>(a_agent + 0x10);
+		if (!actorState) {
+log::warn("IDRC - {}: ActorState pointer is null", __func__);
+			return;
+		}
+
+		auto* actor = reinterpret_cast<RE::Actor*>(reinterpret_cast<std::uintptr_t>(actorState) - m_actorOffset);
+		auto* dragonActor = IDRC::DataManager::GetSingleton().GetDragonActor();
+
+		if(!IDRC::CameraLockManager::GetSingleton().IsEnabled() || 
+		   !dragonActor ||
+		   actor != dragonActor ||
+		   IDRC::FlyingModeManager::GetSingleton().GetFlyingMode() != IDRC::FlyingMode::kFlying ||
+		   _ts_SKSEFunctions::GetFlyingState(dragonActor) != 2) 
+		{
+			// only update path data for the mounted dragon, while in flying mode and in the correct flying state
+log::info("IDRC - {}: Skipping path update. Conditions not met. CameraLockEnabled={}, dragonActor valid={}, actor is dragon={}, flying mode={}, flying state={}", __func__, IDRC::CameraLockManager::GetSingleton().IsEnabled(), dragonActor != nullptr, actor == dragonActor, IDRC::FlyingModeManager::GetSingleton().GetFlyingMode() == IDRC::FlyingMode::kFlying, _ts_SKSEFunctions::GetFlyingState(dragonActor));
+			return;
+		}
+
+		auto currentIndex = *reinterpret_cast<uint32_t*>(a_agent + 0x58);
+		auto* pathData = *reinterpret_cast<std::byte**>(a_agent + 0x48);
 		if (!pathData) {
+// TBD: Still need to find out why sometimes there are sequences where pathData == nullptr, 
+//      and therefore the path update is skipped, causing the dragon to fly straight down or up.
+
+log::warn("IDRC - {}: pathData pointer is null", __func__);
 			return;
 		}
 
-		// pathData + 0x90 = waypointArray_90 (float* base)
-		// pathData + 0xA0 = waypointCount_A0 (uint32)
+		// a_pathData + 0x90 = waypointArray_90 (float* base)
+		// a_pathData + 0xA0 = waypointCount_A0 (uint32)
 		auto* wayPointBase  = *reinterpret_cast<float**>(pathData + 0x90);
 		auto  wayPointCount = *reinterpret_cast<std::uint32_t*>(pathData + 0xA0);
 
 		if (!wayPointBase || wayPointCount == 0) {
-			return;
-		}
-
-		auto* dragonActor = IDRC::DataManager::GetSingleton().GetDragonActor();
-		if (!dragonActor) {
-			return;
-		}
-
-		if (IDRC::FlyingModeManager::GetSingleton().GetFlyingMode() != IDRC::FlyingMode::kFlying) {
-			return;
-		}
-
-		if (_ts_SKSEFunctions::GetFlyingState(dragonActor) != 2) { // not in flying state
-			return;
-		}
-
-		// Filter: verify this path belongs to the mounted dragon by checking that
-		// waypoint[0] (the agent's current position) is close to the mounted dragon.
-		// Any other flying dragon's starting point usually is further away from the mounted dragon.
-		// Risk here is that the mounted dragon's first waypoint is further than 1000 units from the mounted dragon,
-		// but I've never seen that in my testing (usually distance is about 100).
-		// Other risk is that another dragon is closer in the x/y plane than 1000 units.
-		// in that case that dragon's height will be adjusted as an unwanted side effect 
-		// for the duration of the other dragon being closer than 1000 units.
-
-		auto& firstWaypoint  = *reinterpret_cast<RE::NiPoint3*>(&wayPointBase[0]);
-		const RE::NiPoint3 dragonPos = dragonActor->GetPosition();
-		float dx  = firstWaypoint.x - dragonPos.x;
-		float dy  = firstWaypoint.y - dragonPos.y;
-		constexpr float checkDistSq = 1000.f * 1000.f;
-		if (dx * dx + dy * dy > checkDistSq) {
+log::warn("IDRC - {}: wayPointBase null=? wayPointCount: {}", __func__, wayPointCount);
 			return;
 		}
 
@@ -492,65 +511,95 @@ log::info("IDRC - {}: ReadyWeaponHook-ProcessButton called with event IDCode = {
 			return;
 		}
 
-		const float cameraPitch = _ts_SKSEFunctions::GetPitch(dragonCameraState->rotation);
-		const float cameraYaw = _ts_SKSEFunctions::GetYaw(dragonCameraState->rotation);
-		const float sinYaw = std::sin(cameraYaw);
-		const float cosYaw = std::cos(cameraYaw);
-		const float tanPitch = std::tan(cameraPitch);
+		const float targetPitch = _ts_SKSEFunctions::GetPitch(dragonCameraState->rotation);
+		float targetYaw = _ts_SKSEFunctions::GetYaw(dragonCameraState->rotation);
+
+		const RE::NiPoint3 dragonPos = dragonActor->GetPosition();
+		auto& combatManager = IDRC::CombatManager::GetSingleton();
+		if (combatManager.IsShoutActive() && combatManager.GetShoutTarget()) {
+			// If a shout target exists, use its position as the yaw target to keep the dragon oriented towards the target while shouting.
+			// Also see the similar logic in CameraLockManager::Update(), to place the orbit marker in the direction of the shout target.
+			auto orbitMarker = IDRC::DataManager::GetSingleton().GetOrbitMarker();
+			if (!orbitMarker) {
+				log::warn("IDRC - {}: Orbit marker is null", __func__);
+				return;
+			}
+			auto targetPos = orbitMarker->GetPosition();
+			targetYaw = std::atan2f(targetPos.x - dragonPos.x, targetPos.y - dragonPos.y);
+		}
+
+		const float sinYaw = std::sin(targetYaw);
+		const float cosYaw = std::cos(targetYaw);
+		const float tanPitch = std::tan(targetPitch);
 		const float minHeightAboveGround = 500.f;
 
 		// Each entry is 0x48 bytes; XYZ floats at byte offsets +0, +4, +8
 		constexpr std::size_t kStride = 0x48 / sizeof(float);  // = 0x12 floats
-		for (std::uint32_t i = 0; i < std::min(wayPointCount - 1, 8u); ++i) {
-			// Update the first 8 waypoints in the path data
-			// to keep dragon on straight line
+		for (std::uint32_t i = 0; i < std::min(std::max(wayPointCount - 2, 0u), currentIndex + 8u); ++i) {
+			// #Adjusting the first waypoints to impact the immediate path.
+			// Other waypoints do not be adjusted in this frame,
+			// because they do not impact the form of the interpolated path close to the dragon.  
 			auto& waypointToUpdate = *reinterpret_cast<RE::NiPoint3*>(&wayPointBase[i * kStride]);
-			dx = waypointToUpdate.x - dragonPos.x;
-			dy = waypointToUpdate.y - dragonPos.y;
+			float dx = waypointToUpdate.x - dragonPos.x;
+			float dy = waypointToUpdate.y - dragonPos.y;
 			float distanceToUpdate = std::sqrt(dx * dx + dy * dy);
+			float cameraZ = dragonPos.z + distanceToUpdate * tanPitch;
+			float landZ = _ts_SKSEFunctions::GetLandHeightWithWater(waypointToUpdate, true) + minHeightAboveGround;
 
 			waypointToUpdate.x = dragonPos.x + distanceToUpdate * sinYaw;
-			waypointToUpdate.y = dragonPos.y + distanceToUpdate * cosYaw;
-			
-			if (i < 4) {
-				// only update height for the first 4 waypoints
-				// to keep sensitivity for upcoming obstacles
-				float cameraZ = dragonPos.z + distanceToUpdate * tanPitch;
-				float landHeight = _ts_SKSEFunctions::GetLandHeightWithWater(waypointToUpdate, true);
-				waypointToUpdate.z = std::max(cameraZ, landHeight + minHeightAboveGround);
-			}
-
-//if (APIs::TrueHUD) {
-//	APIs::TrueHUD->DrawPoint(waypointToUpdate, 5.0f, 0.1f, 0xFF0000FF);
-//}
+			waypointToUpdate.y = dragonPos.y + distanceToUpdate * cosYaw;			
+			waypointToUpdate.z = std::max(cameraZ, landZ);
 		}
+log::info("IDRC - {}: Updated waypoints for flying dragon. CurrentIndex: {}, WaypointCount: {}", __func__, currentIndex, wayPointCount);
+for (std::uint32_t i = 0; i < std::min(wayPointCount - 2, currentIndex + 8u); ++i) {
+auto& waypointToUpdate = *reinterpret_cast<RE::NiPoint3*>(&wayPointBase[i * kStride]);
+if (i == currentIndex) {
+APIs::TrueHUD->DrawPoint(waypointToUpdate, 10.0f, 0.0f, 0x00FF00FF);
+} else {
+APIs::TrueHUD->DrawPoint(waypointToUpdate, 5.0f, 0.0f, 0xFF0000FF);
+}
+}		
+
 	}
 
 
-	void GroundPathHook::SetPath(std::uintptr_t  a_subPtr, std::uintptr_t* a_newNode, std::uintptr_t* a_newData) {
+	void PathingHook::SetGroundPath(std::uintptr_t  a_subPtr, std::uintptr_t* a_newNode, std::uintptr_t* a_newData) {
 	// This hook fires whenever an actor needs updated pathing,  including dragons in flyingstate == 0 (Landed)
 	// Used to modify pathing for mounted dragon in flyingState == 0 (Landed)
 	// This is to improve handling of obstacles, and avoid that the dragon deviates from the straight
 	// path that has been directed by the player, if possible.
 
-		if (_SetPath == 0) {
+		if (_SetGroundPath == 0) {
 			log::error("{}: trampoline not initialized!", __FUNCTION__);
 			return;
 
 		}
 	
 		// call the original function
-		using FuncType = decltype(&SetPath);
-		reinterpret_cast<FuncType>(_SetPath)(a_subPtr, a_newNode, a_newData);
+		using FuncType = decltype(&SetGroundPath);
+		reinterpret_cast<FuncType>(_SetGroundPath)(a_subPtr, a_newNode, a_newData);
 
 		// modify waypoints for grounded, mounted dragon
 
 		auto* dragonActor = IDRC::DataManager::GetSingleton().GetDragonActor();
 		if (!dragonActor) {
+			// no dragon mounted
 			return;
 		} else if (_ts_SKSEFunctions::GetFlyingState(dragonActor) != 0 || 
 					IDRC::FlyingModeManager::GetSingleton().GetFlyingMode() != IDRC::FlyingMode::kLanded) {
 			// not in landed state
+			return;
+		}
+
+		auto agent = reinterpret_cast<std::byte*>(a_subPtr - 0x20);
+		auto* actorState = *reinterpret_cast<RE::ActorState**>(agent + 0x10);
+		if (!actorState) {
+			return;
+		}
+
+		auto* actor = reinterpret_cast<RE::Actor*>(reinterpret_cast<std::uintptr_t>(actorState) - m_actorOffset);
+		if(actor != dragonActor) {
+			// not the mounted dragon
 			return;
 		}
 
@@ -572,18 +621,10 @@ log::info("IDRC - {}: ReadyWeaponHook-ProcessButton called with event IDCode = {
 			return;
 		}
 
-		auto& firstWayPoint = *reinterpret_cast<RE::NiPoint3*>(&wayPointBase[0]);
-		auto dragonPos = dragonActor->GetPosition();
-		float distance2D = std::sqrt((firstWayPoint.x - dragonPos.x) * (firstWayPoint.x - dragonPos.x) + (firstWayPoint.y - dragonPos.y) * (firstWayPoint.y - dragonPos.y));
-		bool isDragonPath = (distance2D < 50.f);
-
-		if (!isDragonPath) {
-			return;
-		}
-
 		// Each entry is 0x48 bytes; XYZ floats at byte offsets +0, +4, +8
 		constexpr std::size_t kStride = 0x48 / sizeof(float);  // = 0x12 floats
 
+		auto& firstWayPoint = *reinterpret_cast<RE::NiPoint3*>(&wayPointBase[0]);
 		auto& lastWayPoint = *reinterpret_cast<RE::NiPoint3*>(&wayPointBase[(wayPointCount - 1) * kStride]);
 
 		for (std::uint32_t i = 0; i < wayPointCount; ++i) {
@@ -607,6 +648,49 @@ log::info("IDRC - {}: ReadyWeaponHook-ProcessButton called with event IDCode = {
 			wayPointBase[i * kStride + 2] = currentWayPoint.z;
 		}
 	}
+
+	void CombatHook::StartCombat(RE::Actor* a_this, RE::Actor* a_target, RE::CombatGroup* a_combatGroup) {
+		if (_StartCombat == 0) {
+			log::error("{}: trampoline not initialized!", __FUNCTION__);
+			return;
+		}
+
+//log::info("IDRC - {}: StartCombat called for actor {} on target {}", __func__, a_this ? a_this->GetName() : "null", a_target ? a_target->GetName() : "null");
+		reinterpret_cast<decltype(&StartCombat)>(_StartCombat)(a_this, a_target, a_combatGroup);
+	}
+
+	void CombatHook::StopCombat(RE::Actor* a_actor) {
+		if (_StopCombat == 0) {
+			log::error("{}: trampoline not initialized!", __FUNCTION__);
+			return;
+		}
+
+		auto* dragonActor = IDRC::DataManager::GetSingleton().GetDragonActor();
+		auto& combatManager = IDRC::CombatManager::GetSingleton();
+
+		if (dragonActor && a_actor == dragonActor) {
+//log::info("IDRC - {}: StopCombat called for actor {}", __func__, a_actor ? a_actor->GetName() : "null");
+//			if (!combatManager.GetStopCombat()) {
+//log::info("IDRC - {}: Cancelling StopCombat!!", __func__);
+//				return;
+//			}
+		}
+		combatManager.SetStopCombat(false);
+
+		 reinterpret_cast<decltype(&StopCombat)>(_StopCombat)(a_actor);
+//log::info("IDRC - {}: StopCombat original function returned", __func__);
+	}
+/*
+	void FastTravelHook::FastTravel(RE::PlayerCharacter* a_player, RE::TESObjectREFR* a_destination) {
+		if (_FastTravel == 0) {
+			log::error("{}: trampoline not initialized!", __FUNCTION__);
+			return;
+		}
+log::info("IDRC - {}: FastTravel called for destination {}", __func__, a_destination ? a_destination->GetName() : "null");
+		reinterpret_cast<decltype(&FastTravel)>(_FastTravel)(a_player, a_destination);
+log::info("IDRC - {}: FastTravel original function returned", __func__);
+	}
+*/
 
 /* UNUSED HOOKS:	
 	bool VoiceSpellCastHook::HandleVoiceSpellCast(std::uintptr_t  a_this, RE::Actor* a_caster) {

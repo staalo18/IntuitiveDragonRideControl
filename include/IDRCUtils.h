@@ -14,8 +14,6 @@ namespace IDRC {
         
         void SetINIVars();
 
-        bool ForceAliasTo(RE::BGSRefAlias* a_alias, RE::TESObjectREFR* a_reference);
-
         bool RegisterForSingleUpdate(float a_seconds);
 
         bool SetAllowFlying(bool a_allowFlying);

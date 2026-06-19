@@ -31,7 +31,6 @@ namespace IDRC {
         private:
             CameraLockManager() = default;
 
-            void DampenPitch(float a_cameraPitch, float a_travelledPitch);
             void LockTurn(int a_lockTime);
             void LockHeight(int a_lockTime);
 
