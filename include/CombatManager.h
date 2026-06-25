@@ -16,20 +16,9 @@ namespace IDRC {
         void InitializeData(RE::BGSListForm* a_breathShoutList, 
                             RE::BGSListForm* a_ballShoutList,
                             RE::TESShout* a_unrelentingForceShout,
-                            RE::TESShout* a_attackShout,
-                            RE::BGSRefAlias* a_combatTargetAlias);
-
-        void SetStopCombat(bool a_stop, bool a_calledFromPapyrus = false);
-
-        void SetAttackDisabled(bool a_disabled);
-
-        bool GetAttackDisabled();
+                            RE::TESShout* a_attackShout);
  
         bool DragonAttack(bool a_alternateAttack = false);
-        
-//        RE::TESObjectREFR* GetCombatTarget();
-
-//        void UpdateCombatTargetAlias();
 
         RE::BGSListForm* GetBreathShoutList();
 
@@ -41,11 +30,9 @@ namespace IDRC {
 
         void Update();
     
-        bool GetStopCombat();
-
         bool IsShoutActive() {return m_shoutActive;}
 
-        RE::Actor* GetShoutTarget() { return m_shoutTarget; }
+        RE::Actor* GetShoutTarget() { return m_shoutTarget ? m_shoutTarget.get().get() : nullptr; }
 
     private:
         CombatManager() = default;
@@ -53,21 +40,17 @@ namespace IDRC {
 
         // accessed by other classes
         // change value only via Set function to trigger PropertyUpdateEvent
-        RE::BGSRefAlias* m_combatTargetAlias = nullptr;
         RE::BGSListForm* m_breathShoutList = nullptr;
         RE::BGSListForm* m_ballShoutList = nullptr;
         RE::TESShout* m_unrelentingForceShout = nullptr;
         RE::TESShout* m_attackShout = nullptr;
-        bool m_stopCombat = false; // this flag is used to stop combat whenever a FastTravel ends
         const float m_maxTargetDistance = 2000.0f;
+        const float m_maxCombatDistance = 8000.0f;
         float m_shoutTimer = 0.0f;
         bool m_shoutActive = false;
         bool m_restartCombatPending = false;
-        RE::Actor* m_shoutTarget = nullptr;
-        RE::Actor* m_storedCombatTarget = nullptr;
-
-        // only used internally
-        bool m_attackDisabled = false;
+        RE::ActorHandle m_shoutTarget{};
+        RE::ActorHandle m_storedCombatTarget{};
 
         RE::TESShout* GetShout(const RE::BGSListForm* a_shoutList);
 
@@ -75,7 +58,9 @@ namespace IDRC {
 
         void DragonStartCombat(RE::Actor* a_target);
 
-        void RestartCombatIfNeeded();
+        void UpdateCombat();
+
+        void UpdatePlayerCell();
 
         void UpdateAttack();
 

@@ -15,6 +15,8 @@ static REL::Relocation<tNiAVObject_LookupBoneNodeByName> NiAVObject_LookupBoneNo
 typedef void(__fastcall* tNiQuaternion_SomeRotationManipulation)(RE::NiQuaternion& a1, float a2, float a3, float a4);
 static REL::Relocation<tNiQuaternion_SomeRotationManipulation> NiQuaternion_SomeRotationManipulation{ RELOCATION_ID(69466, 70843) };
 
+// END offsets from True Directional Movement
+
 typedef bool*(__fastcall* StartVoiceShoutCast_t)(
     RE::Character* a_caster,
     RE::TESShout* a_shout,
@@ -30,3 +32,9 @@ static REL::Relocation<GetFlyingMountPatrolQueuedStateFlag_t> GetFlyingMountPatr
 
 typedef bool*(__fastcall* StartCombat_t)(RE::Actor* a_this, RE::Actor* a_target, RE::CombatGroup* a_combatGroup);
 static REL::Relocation<StartCombat_t> StartCombat{ RELOCATION_ID(37608, 38561) };
+
+//typedef void*(__fastcall* MountedDragonTriggerLand_t)();
+//static REL::Relocation<MountedDragonTriggerLand_t> MountedDragonTriggerLand{ RELOCATION_ID(39707, 40809) };
+
+typedef RE::RefHandle*(__fastcall* GetRefHandle_t)(const RE::TESObjectREFR *a_objectRef,RE::RefHandle *a_handleBuffer);
+static REL::Relocation<GetRefHandle_t> GetRefHandle{ RELOCATION_ID(19418, 19846) };

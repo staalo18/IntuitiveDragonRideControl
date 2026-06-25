@@ -8,53 +8,23 @@
 #include "APIManager.h"
 #include "FastTravelManager.h"
 #include "TargetReticleManager.h"
+#include "IDRCUtils.h"
 
 namespace IDRC {   
 
     void CombatManager::InitializeData(RE::BGSListForm* a_breathShoutList, 
                                 RE::BGSListForm* a_ballShoutList,
                                 RE::TESShout* a_unrelentingForceShout,
-                                RE::TESShout* a_attackShout,
-                                RE::BGSRefAlias* a_combatTargetAlias) {
+                                RE::TESShout* a_attackShout) {
         log::info("IDRC - {}", __func__);
         SetBreathShoutList(a_breathShoutList);
         SetBallShoutList(a_ballShoutList);
         m_unrelentingForceShout = a_unrelentingForceShout;
         m_attackShout = a_attackShout;
-        m_combatTargetAlias = a_combatTargetAlias;
-
-        m_stopCombat = false;
-        m_attackDisabled = false;
-    }
-
-    void CombatManager::SetAttackDisabled(bool a_disabled) {
-        m_attackDisabled = a_disabled;
-    }
-
-    bool CombatManager::GetAttackDisabled() {
-        return m_attackDisabled;
     }
 
     float CombatManager::GetMaxTargetDistance() {
         return m_maxTargetDistance;
-    }
-
-
-    bool CombatManager::GetStopCombat() {
-        return false;
-//         return m_stopCombat; 
-    }
-
-    void CombatManager::SetStopCombat(bool a_stop, bool a_calledFromPapyrus) {
-        m_stopCombat = false;
-        return;
-        if (a_stop != m_stopCombat) {
-            m_stopCombat = a_stop;
-
-            if (!a_calledFromPapyrus) {
-                DataManager::GetSingleton().SendPropertyUpdateEvent("StopCombat", m_stopCombat, 0.0f, 0);
-            }
-        }
     }
 
     RE::BGSListForm* CombatManager::GetBreathShoutList() {
@@ -93,7 +63,8 @@ namespace IDRC {
             return;
         }
 
-        if (_ts_SKSEFunctions::GetDistance(dragonActor, a_target) >= 5000.0f) {
+        if (Utils::GetHorizontalDistance(dragonActor, a_target) > m_maxCombatDistance ||
+            !a_target->GetParentCell() || !a_target->GetParentCell()->IsAttached()) {
             log::info("IDRC - {}: Target is too far away, cancel DragonStartCombat", __func__);
             return;
         }
@@ -111,13 +82,6 @@ namespace IDRC {
         StartCombat(dragonActor, a_target, dragonActor->GetCombatGroup());
     }
     
-//    RE::TESObjectREFR* CombatManager::GetCombatTarget() {
-//        if (m_combatTargetAlias) {
-//            return m_combatTargetAlias->GetReference();
-//        }
-//        return nullptr;
-//    }
-
     void CombatManager::Update() {
          if (RE::UI::GetSingleton()->GameIsPaused()) {
             return;
@@ -127,18 +91,19 @@ namespace IDRC {
             return;
         }
 
-        RestartCombatIfNeeded();
+        UpdateCombat();
 
         UpdateAttack();
     }
 
-    void CombatManager::RestartCombatIfNeeded() {
+    void CombatManager::UpdateCombat() {
 
         auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
         if (!dragonActor) {
             return;
         }
 
+        // restart combat with stored target when dragon leaves flying state.
         if (FlyingModeManager::GetSingleton().GetFlyingMode() != FlyingMode::kFlying &&
             _ts_SKSEFunctions::GetFlyingState(dragonActor) != 2 &&
             !_ts_SKSEFunctions::IsFlyingMountPatrolQueued(dragonActor) && 
@@ -148,18 +113,99 @@ namespace IDRC {
             {
                 m_restartCombatPending = false;            
 
-                if (m_storedCombatTarget) {
-                    DragonStartCombat(m_storedCombatTarget);
+                auto* storedTarget = m_storedCombatTarget ? m_storedCombatTarget.get().get() : nullptr;
+                if (storedTarget && !dragonActor->IsInCombat()) {
+log::info("IDRC - {}: ------------------->>>>>>> Restarting combat with stored target {}", __func__, storedTarget->GetName());
+                    DragonStartCombat(storedTarget);
                 }
             }
 
-            m_storedCombatTarget = _ts_SKSEFunctions::GetCombatTarget(dragonActor);
+            auto* ct = _ts_SKSEFunctions::GetCombatTarget(dragonActor);
+            m_storedCombatTarget = ct ? ct->GetHandle() : RE::ActorHandle{};
         } else {
             m_restartCombatPending = true;
+
+ //           UpdatePlayerCell();
 
             if (m_shoutTarget) {
                 m_storedCombatTarget = m_shoutTarget;
             }
+        }
+
+        // Clear combat targets (ie stop combat) if the dragon is too far from the combat target
+        if (dragonActor->IsInCombat()) {
+            auto* combatTarget = _ts_SKSEFunctions::GetCombatTarget(dragonActor);
+    
+            if (combatTarget && 
+                (
+                    Utils::GetHorizontalDistance(dragonActor, combatTarget) > m_maxCombatDistance ||
+                    !combatTarget->GetParentCell() || !combatTarget->GetParentCell()->IsAttached()
+                )) {
+log::info("IDRC - {}: distance: {}, ParentCell: {}, attached: {}", __func__, Utils::GetHorizontalDistance(dragonActor, combatTarget), combatTarget->GetParentCell() ? "Yes" : "null", combatTarget->GetParentCell() ? (combatTarget->GetParentCell()->IsAttached() ? "Yes" : "No") : "null");                
+                // In case the dragon is in combat, the game's 3D data  is centered around the dragon's combat target (ie the combat target's cell and its 8 adjacent cells).
+                // If the mounted dragon is in a different cell in the landscape, 
+                // the 3D area of the player's/dragon's location can get unloaded (player gets "detached" from cell).
+                // This then causes a lot of issues, like:
+                // 		skyshots, grey screen, "You cannot go that way", frozen player in mid-air (while dragon flys on), 
+                // 		teleported dragon, disappearing dragon, only LOD landscape visible, crashes, etc
+                // To prevent this, we clear combat targets (stop combat).
+                SKSE::GetTaskInterface()->AddTask([dragonActor]() {
+                    // When modifying Game objects, send task to TaskInterface to ensure thread safety
+                _ts_SKSEFunctions::ClearCombatTargets(dragonActor);
+log::info("IDRC - {}: ------------------->>>>>>> Cleared CombatTargets due to distance or target not loaded", __func__);
+                });
+            }
+        }
+    }
+
+    constexpr float CELL_SIZE = 4096.0f;
+
+    void CombatManager::UpdatePlayerCell() { 
+        auto* player = RE::PlayerCharacter::GetSingleton();
+        if (!player) {
+            log::warn("{}: Cannot access player character", __FUNCTION__);
+            return;
+        } 
+
+        auto* tes = RE::TES::GetSingleton();
+        if (!tes) {
+            log::warn("{}: Cannot access TES", __FUNCTION__);
+            return;
+        }
+
+        RE::TESObjectCELL* cell = nullptr;
+        auto* worldspace = tes->GetRuntimeData2().worldSpace;
+        if (!worldspace) {
+            log::warn("{}: Cannot access worldspace", __FUNCTION__);
+            return;
+        }
+
+        auto playerPos = player->GetPosition();
+
+        // Calculate cell coordinates from position
+        std::int16_t targetCellX = static_cast<std::int16_t>(std::floor(playerPos.x / CELL_SIZE));
+        std::int16_t targetCellY = static_cast<std::int16_t>(std::floor(playerPos.y / CELL_SIZE));
+        
+        RE::CellID cellID(targetCellY, targetCellX);
+
+        // First check if cell is already in the cellMap
+        const auto& map = worldspace->cellMap;
+        const auto it = map.find(cellID);
+        if (it != map.end()) {
+            cell = it->second;
+        }
+
+        // If not in map, load it using TESWorldSpace_LoadCell
+        if (!cell) {
+            bool loadFromDisk;
+            cell = _ts_SKSEFunctions::GetCell(targetCellX, targetCellY, worldspace, loadFromDisk);
+        }
+
+        if (cell) {
+            player->SetParentCell(cell);
+log::info("{}: Updated player cell to {}, {}", __FUNCTION__, targetCellX, targetCellY);
+        } else {
+            log::error("{}: No cell!", __FUNCTION__);
         }
     }
 
@@ -172,7 +218,7 @@ namespace IDRC {
         m_shoutTimer += *g_deltaTimeRealTime;
 
         if (!m_shoutActive) {
-            m_shoutTarget = nullptr;
+            m_shoutTarget = RE::ActorHandle{};
             m_shoutTimer = 0.0f;
             if (attackStopped) {
                 auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
@@ -208,11 +254,6 @@ namespace IDRC {
             return false;
         }
 
-        if (m_attackDisabled) {
-            log::info("IDRC - {}: Attack is disabled, canceling", __func__);
-            return false;
-        }
-
         if (m_shoutActive) {
             log::info("IDRC - {}: Shout is ongoing, canceling new attack", __func__);
             return false;
@@ -221,32 +262,34 @@ namespace IDRC {
         bool isAlternateAttack = a_alternateAttack;
         m_shoutTimer = 0.0f;
         m_shoutActive = true;
-         
-        SetStopCombat(false);
-        
-        m_shoutTarget = nullptr;
+                 
+        m_shoutTarget = RE::ActorHandle{};
         if (APIs::TrueDirectionalMovementV1 && APIs::TrueDirectionalMovementV1->GetTargetLockState()
             && !TargetReticleManager::GetSingleton().IsReticleLocked()) {
             auto currentTDMTarget = APIs::TrueDirectionalMovementV1->GetCurrentTarget();
             if (currentTDMTarget) {
-                m_shoutTarget = currentTDMTarget.get()->As<RE::Actor>();
+                m_shoutTarget = currentTDMTarget;
             }
         }
 
         if (!m_shoutTarget) {
             // No TDM target, get the combat target from the reticle (if active)
 log::info("IDRC - {}: No TDM target, checking Target Reticle Manager for target", __func__);
-            m_shoutTarget = TargetReticleManager::GetSingleton().GetCurrentTarget();
+            if (auto* actor = TargetReticleManager::GetSingleton().GetCurrentTarget()) {
+                m_shoutTarget = actor->GetHandle();
+            }
         }
-log::info("IDRC - {}: shout target is {}", __func__, m_shoutTarget ? m_shoutTarget->GetName() : "null");
+        auto* resolvedShoutTarget = m_shoutTarget ? m_shoutTarget.get().get() : nullptr;
+log::info("IDRC - {}: shout target is {}", __func__, resolvedShoutTarget ? resolvedShoutTarget->GetName() : "null");
         RE::Actor* currentCombatTarget = _ts_SKSEFunctions::GetCombatTarget(dragonActor);
 
         if (!m_shoutTarget) {
             // if no target from TDM or Reticle, use current combat target (if any)
-            m_shoutTarget = currentCombatTarget;
-        } else if (m_shoutTarget != currentCombatTarget) {
+            m_shoutTarget = currentCombatTarget ? currentCombatTarget->GetHandle() : RE::ActorHandle{};
+            resolvedShoutTarget = currentCombatTarget;
+        } else if (resolvedShoutTarget != currentCombatTarget) {
 log::info("IDRC - {}: Shout target is different from current combat target, starting combat with shout target", __func__);
-            DragonStartCombat(m_shoutTarget);
+            DragonStartCombat(resolvedShoutTarget);
         }
 
         while (controlsManager.GetIsKeyPressed(IDRCKey::kSneak)) {
@@ -256,7 +299,7 @@ log::info("IDRC - {}: Shout target is different from current combat target, star
                 isAlternateAttack = true;
             }
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
-            auto* shoutTarget = m_shoutTarget;
+            auto* shoutTarget = m_shoutTarget ? m_shoutTarget.get().get() : nullptr;
             if (shoutTarget) {
                 SKSE::GetTaskInterface()->AddTask([shoutTarget, dragonActor]() {
                     // When modifying Game objects, send task to TaskInterface to ensure thread safety
@@ -265,18 +308,16 @@ log::info("IDRC - {}: Shout target is different from current combat target, star
             }
         }
 
-//        UpdateCombatTargetAlias();
-
         std::string displayMessage = "Commanding Attack";
-        if (m_shoutTarget) {
+        if (resolvedShoutTarget) {
             // Display attack notification
             displayMessage += " on ";
-            displayMessage += std::string(m_shoutTarget->GetName());
+            displayMessage += std::string(resolvedShoutTarget->GetName());
         }
 
         if (dragonActor->HasShout(m_unrelentingForceShout) && (isAlternateAttack || controlsManager.GetIsKeyPressed(IDRCKey::kRun))) {
             SetShoutMode(2); // Set to Unrelenting Force
-        } else if (m_shoutTarget && _ts_SKSEFunctions::GetDistance(dragonActor, m_shoutTarget) >= m_maxTargetDistance) {
+        } else if (resolvedShoutTarget && _ts_SKSEFunctions::GetDistance(dragonActor, resolvedShoutTarget) >= m_maxTargetDistance) {
             SetShoutMode(1); // Set to Ball/Storm
         } else {
             SetShoutMode(0); // Set to Breath
@@ -291,13 +332,14 @@ log::info("IDRC - {}: Shout target is different from current combat target, star
             RE::SendHUDMessage::ShowHUDMessage(displayMessage.c_str());
         }
 
-        auto* shoutTarget = m_shoutTarget;
+        auto* shoutTarget = resolvedShoutTarget;
         SKSE::GetTaskInterface()->AddTask([this, shoutTarget, dragonActor]() {
             // When modifying Game objects, send task to TaskInterface to ensure thread safety
             if (shoutTarget) {
                 _ts_SKSEFunctions::SetLookAt(dragonActor, shoutTarget, true);
             }
-            StartVoiceShoutCast(static_cast<RE::Character*>(dragonActor), this->m_attackShout, 2, this->m_shoutTarget);
+            auto* taskShoutTarget = this->m_shoutTarget ? this->m_shoutTarget.get().get() : nullptr;
+            StartVoiceShoutCast(static_cast<RE::Character*>(dragonActor), this->m_attackShout, 2, taskShoutTarget);
 log::info("IDRC - {}: Started Attack with target {}", __func__, shoutTarget ? shoutTarget->GetName() : "null");
         });
 
@@ -393,44 +435,5 @@ log::info("IDRC - {}: Started Attack with target {}", __func__, shoutTarget ? sh
     
         return true;
     }
-    
-/*
-    void CombatManager::UpdateCombatTargetAlias() {
-        log::info("IDRC - {}", __func__);
-return;
-        auto& dataManager = DataManager::GetSingleton();
-        auto* dragonActor = dataManager.GetDragonActor();
-
-        if (!dragonActor) {
-            log::error("IDRC - {}: dragonActor is null", __func__);
-            return;
-        }
-
-        RE::Actor* currentCombatTarget =  _ts_SKSEFunctions::GetCombatTarget(dragonActor);
-
-if (currentCombatTarget) {
-    log::info("IDRC - {}: Updating to {}", __func__, currentCombatTarget->GetFormID());
-} else {
-    log::info("IDRC - {}: Clearing target", __func__);
-}
-
-        SKSE::GetTaskInterface()->AddTask([this, dragonActor, currentCombatTarget]() {
-            // When modifying Game objects, send task to TaskInterface to ensure thread safety
-            this->m_combatTargetAlias->ForceRefTo(currentCombatTarget);
-            dragonActor->EvaluatePackage();
-
-if (m_combatTargetAlias) {
-auto* checkActor = m_combatTargetAlias->GetActorReference();
-if (checkActor) {
-log::info("IDRC - {}: CombatTarget now points to {}", __func__, checkActor->GetFormID());
-} else {
-log::info("IDRC - {}: CombatTarget is now null", __func__);
-}
-} else {
-log::error("IDRC - {}: No CombatTargetAlias!", __func__);
-}
-        });
-    }
-*/
 } // namespace IDRC
 

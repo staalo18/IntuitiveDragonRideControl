@@ -1,6 +1,7 @@
 #include "FastTravelManager.h"
 #include "_ts_SKSEFunctions.h"
 #include "DataManager.h"
+#include "Hooks.h"
 
 #include "RE/Skyrim.h"
 #include "SKSE/API.h"
@@ -21,7 +22,60 @@ namespace IDRC {
             log::error("IDRC - {}: error - FastTravelTarget is none", __func__);
             return;
         } 
-        _ts_SKSEFunctions::CallPapyrusFunction("Game"sv, "FastTravel"sv, a_fastTravelTarget);
+        
+        if (m_skipFastTravelRequest) {
+            // Set in PathingHook::UpdateFlightPathData() to skip FastTravel (ExecuteTeleport) requests
+            // while pathData is still being updated from the previous FastTravel request.
+            // FastTravel is setting pathData to nullptr until new pathData is generated.
+            // This can take a few frames (in particular if many pathing requests occur in parallel, eg during combat).
+            // Skipping FastTravel in this case avoids continuous nullifying of pathData.
+
+            log::info("IDRC - {}: FastTravel is skipped", __func__);
+            return;
+        }
+
+        SKSE::GetTaskInterface()->AddTask([a_fastTravelTarget]() {
+            // When modifying Game objects, send task to TaskInterface to ensure thread safety
+            auto* player = RE::PlayerCharacter::GetSingleton();
+            if (!player) {
+                log::warn("{}: Could not get player", __FUNCTION__);
+                return;
+            }
+
+            auto* tes = RE::TES::GetSingleton();
+            if (!tes) {
+                log::warn("{}: Cannot access TES", __FUNCTION__);
+                return;
+            }
+            auto* worldspace = tes->GetRuntimeData2().worldSpace;
+            if (!worldspace) {
+                log::warn("{}: Cannot access worldspace", __FUNCTION__);
+                return;
+            }
+
+            auto* loc = Utils::GetQueuedTargetLoc(player);
+            loc->world         = worldspace;
+            loc->interior      = nullptr;
+            loc->location      = a_fastTravelTarget->GetPosition();
+            loc->angle         = a_fastTravelTarget->GetAngle();
+            loc->arrivalFunc   = nullptr;
+            loc->arrivalFuncData = 0;
+            loc->furnitureRef  = RE::RefHandle{};
+            GetRefHandle(a_fastTravelTarget, &loc->fastTravelMarker);
+            loc->resetWeather  = false;
+            loc->allowAutoSave = false;
+            loc->isValid       = true;  // fires the teleport on next per-frame ExecuteTeleport call
+
+            auto dragonActor = DataManager::GetSingleton().GetDragonActor();
+            if (!dragonActor) {
+                log::error("IDRC - {}: error - dragonActor is none", __func__);
+                return;
+            }
+
+//            _ts_SKSEFunctions::CallPapyrusFunction("Game"sv, "FastTravel"sv, a_fastTravelTarget);
+
+            dragonActor->EvaluatePackage();
+        });
     }
 
     bool FastTravelManager::CancelStopFastTravel() {
@@ -111,19 +165,13 @@ namespace IDRC {
             }
 
             // Trigger FastTravel to the StopFastTravelTarget
-            SKSE::GetTaskInterface()->AddTask([orbitMarker, a_stopFastTravelTarget, dragonActor, a_height]() {
+            SKSE::GetTaskInterface()->AddTask([this,orbitMarker, a_stopFastTravelTarget, dragonActor, a_height]() {
                 // When modifying Game objects, send task to TaskInterface to ensure thread safety
                 _ts_SKSEFunctions::MoveTo(orbitMarker, a_stopFastTravelTarget, 0.0f, 0.0f, a_height);
-                _ts_SKSEFunctions::ClearCombatTargets(dragonActor);
-            });
-            log::info("IDRC - {}: Cleared CombatTargets", __func__);
-
-            FastTravel(orbitMarker);
-            SKSE::GetTaskInterface()->AddTask([dragonActor]() {
-                // When modifying Game objects, send task to TaskInterface to ensure thread safety
-                dragonActor->EvaluatePackage();
-            });
     
+                this->FastTravel(orbitMarker);
+            });   
+            
             // Wait until the dragon has left the dragon-FastTravel state
             int waitCount = 0;
             int messageCount = 0;

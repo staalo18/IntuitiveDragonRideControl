@@ -161,5 +161,20 @@ namespace IDRC {
         
             return worldspaces;
         }
+
+        float GetHorizontalDistance(RE::TESObjectREFR* a_from, RE::TESObjectREFR* a_to) {
+            if (!a_from || !a_to) {
+                log::error("IDRC - {}: One or both of the provided TESObjectREFRs are null", __func__);
+                return 0.0f;
+            }
+
+            auto fromPos = a_from->GetPosition();
+            auto toPos = a_to->GetPosition();
+
+            float deltaX = toPos.x - fromPos.x;
+            float deltaY = toPos.y - fromPos.y;
+
+            return std::sqrt(deltaX * deltaX + deltaY * deltaY);
+        }
     } // namespace Utils
 } // namespace IDRC

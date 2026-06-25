@@ -171,8 +171,135 @@ namespace Hooks
 		static inline std::uintptr_t _StartCombat{ 0 };
 		static inline std::uintptr_t _StopCombat{ 0 };
 	};
+
+/*  UNUSED HOOKS:
+
+FastTravel-related hooks:
+*************************
+
 /*
-	class FastTravelHook
+	< NOTE: all addresses are for SE version. AE addresses differ. >
+
+- PapyrusFastTravelHook::FastTravel: the papyrus function "FastTravel". This fires ExecuteTeleport via queuedTargetLoc.
+
+- ExecuteTeleport is called once per frame from the main update loop (0x1405b2ff0).
+	It fires if queuedTargetLoc is valid, eg via papyrus FastTravel request, COC, and on loadgame / at startup:
+
+		[game startup / BGS load path]
+			TeleportPlayerToCell (TeleportPlayertoCellHook)
+			└─ ExecuteTeleport (ExecuteTeleportHook) (called once per frame, fires if queuedTargetLoc is valid)
+					├─ TeleportToCell  (TeleportHook)              ← queuedTargetLoc has interior cell
+					│    └─ SwitchToInteriorCell (SwitchToCellHook)
+					└─ TeleportToWorldspacePosition (TeleportHook) ← queuedTargetLoc has worldspace
+						└─ TeleportToCell (TeleportHook)
+							├─ SwitchToInteriorCell (SwitchToCellHook)  (if target is interior; N/A on this path)
+							├─ SwitchToWorldspace (SwitchToCellHook)    (if worldspace differs from current)
+							└─ SwitchToExteriorCell (SwitchToCellHook)   (if target is exterior)
+								└─ SwitchToWorldspace (SwitchToCellHook)  (conditional: interior-surplus purge path)
+
+			[console: coc <x> <y>]
+			ConsoleFunc__CenterOnExterior
+			└─ PlayerCharacter__CenterOnCell (CenterOnCellHook)
+				└─ ExecuteTeleport (ExecuteTeleportHook)  (same subtree as above)
+			
+			[papyrus FastTravel]
+			└─ ExecuteTeleport (ExecuteTeleportHook)  (same subtree as above)
+
+	See IDRC::Utils::GetQueuedTargetLoc for how to obtain and modify queuedTargetLoc.
+
+- UpdateFlyingMountFastTravelHook::UpdateFastTravel (0x1406badd0, REL::VariantID(39716, 40818, 0)) 
+    is called once per frame from the main player update loop (0x14069e580).
+	UpdateFastTravel is handling the flying mount logic once airborne. 
+	It calls ApproachTarget (REL::VariantID(39705, 40807, 0)), and "DispatchFlyingMountTravelMode" (not hooked here, REL::VariantID(39714, 40816, 0)).
+	Those two functions in turn trigger the FastTravelState and PatrolQueuedState updates
+	(UpdateFastTravelState -> EnterFlyingMountFastTravelState, UpdatePatrolQueuedState). 
+	PatroQueued states are:
+		0 = idle
+		1 = queue FastTravel    → EnterFlyingMountFastTravelState (REL::VariantID(39703, 40805, 0))
+		2 = queue dismount      → FUN_1406ba750
+		3 = queue set-injured   → FUN_1406ba940
+		4 = queue eval-package  → FUN_1406bac00
+
+- UpdateFlyingMountFastTravelHook::ApproachTarget handles the flying-mount approach logic toward the target.
+	It is called by UpdateFastTravel, ExecuteArrival and ExecuteTeleport.
+
+- UpdateFlyingMountFastTravelHook::ExecuteArrival is triggered through these call chains:
+	* SneakHandler::ProcessButton (0x1407094c0)->0x1406b6030->TESObjectREFR::sub_1406ba9b0->0x1406ba710-> ExecuteArrival
+	* ActivateHandler::sub_140708bf0->PlayerCharacter::sub_1406a9f90->0x1406ba8e0->ExecuteArrival
+*/
+/*
+
+	class ExecuteTeleportHook
+	{
+	public:
+		static void Hook()
+		{
+			_ExecuteTeleport = _ts_SKSEFunctions::WriteFunctionHook(
+				REL::VariantID(39366, 40438, 0),
+				5,
+				reinterpret_cast<std::uintptr_t>(ExecuteTeleport)
+			);
+		}
+
+		static bool ExecuteTeleport(RE::PlayerCharacter* a_this);
+		static void BlockNextExecuteTeleport(bool a_block) { m_blockExecuteTeleport = a_block; }
+		static void SetTeleportPending(bool a_pending) { m_teleportPending = a_pending; }
+	private:
+		static inline std::uintptr_t _ExecuteTeleport{ 0 };
+		static inline bool m_blockExecuteTeleport{ false };
+		static inline bool m_teleportPending{ false };
+	};
+
+	class UpdateFlyingMountFastTravelHook
+	{
+	public:
+		static void Hook()
+		{
+			_UpdateFastTravel = _ts_SKSEFunctions::WriteFunctionHook(
+				REL::VariantID(39716, 40818, 0),
+				5,
+				reinterpret_cast<std::uintptr_t>(UpdateFastTravel));
+
+			_UpdateFastTravelState = _ts_SKSEFunctions::WriteFunctionHook(
+				REL::VariantID(39714, 40816, 0),
+				15,
+				reinterpret_cast<std::uintptr_t>(UpdateFastTravelState));
+
+			_UpdatePatrolQueuedState = _ts_SKSEFunctions::WriteFunctionHook(
+				REL::VariantID(39702, 40804, 0),
+				13,
+				reinterpret_cast<std::uintptr_t>(UpdatePatrolQueuedState));
+
+			_ApproachTarget = _ts_SKSEFunctions::WriteFunctionHook(
+				REL::VariantID(39705, 40807, 0),
+				6,
+				reinterpret_cast<std::uintptr_t>(ApproachTarget));
+
+			_ExecuteArrival = _ts_SKSEFunctions::WriteFunctionHook(
+				REL::VariantID(39706, 40808, 0),
+				5,
+				reinterpret_cast<std::uintptr_t>(ExecuteArrival));
+		}
+
+		static void UpdateFastTravel(float a_deltaTime);
+		static void UpdateFastTravelState();
+		static void UpdatePatrolQueuedState(uint32_t a_mode);
+		static void ApproachTarget(RE::NiPoint3* a_targetPos,
+									std::uint64_t a_modeRaw,
+									std::uint64_t a3,
+									std::uint64_t a4);
+		static void ExecuteArrival();
+	private:
+		static inline std::uintptr_t _UpdateFastTravel{ 0 };
+		static inline std::uintptr_t _UpdateFlyingMountFastTravelState{ 0 };
+		static inline std::uintptr_t _UpdateFastTravelState{ 0 };
+		static inline std::uintptr_t _UpdatePatrolQueuedState{ 0 };
+		static inline std::uintptr_t _ApproachTarget{ 0 };
+		static inline std::uintptr_t _ExecuteArrival{ 0 };
+	};
+
+
+	class PapyrusFastTravelHook
 	{
 	public:
 		static void Hook()
@@ -184,11 +311,17 @@ namespace Hooks
 		}
 
 	private:
-		static void FastTravel(RE::Actor* a_this);
+		static void FastTravel(RE::BSScript::IVirtualMachine* a_vm,       // Papyrus VM (for error reporting)
+								RE::VMStackID                  a_stackID,  // Calling script's stack ID
+								RE::StaticFunctionTag*         a_staticTag, // Static function tag placeholder (unused)
+								RE::TESObjectREFR*             a_location );
 		static inline std::uintptr_t _FastTravel{ 0 };
 	};
-*/
-/*  UNUSED HOOKS:
+
+
+END FastTravel-related hooks
+****************************
+
 	class VoiceSpellCastHook
 	{
 	public:

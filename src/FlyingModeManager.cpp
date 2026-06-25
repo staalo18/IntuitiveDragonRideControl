@@ -263,11 +263,7 @@ namespace IDRC {
         } else if (a_key == kJump) {
             m_vanillaAttack = !m_vanillaAttack;
         } else if (a_key == kSneak) {
-            if (!combatManager.GetAttackDisabled()) {
-                combatManager.DragonAttack(controlsManager.GetIsKeyPressed(kRun));
-            } else {
-                log::info("IDRC - {}: Attack Disabled", __func__);
-            }
+            combatManager.DragonAttack(controlsManager.GetIsKeyPressed(kRun));
         }
     
         if (a_key == kForward || a_key == kStrafeLeft || a_key == kStrafeRight) {
@@ -597,17 +593,6 @@ namespace IDRC {
             return false;
         }
     
-        // Clear combat targets if the dragon is far from the combat target
-        auto* combatTarget = _ts_SKSEFunctions::GetCombatTarget(dragonActor);
-        if (combatTarget && _ts_SKSEFunctions::GetDistance(dragonActor, combatTarget) >= 5000.0f) {
-            log::info("IDRC - {}: Clearing CombatTargets", __func__);
-            SKSE::GetTaskInterface()->AddTask([dragonActor]() {
-                // When modifying Game objects, send task to TaskInterface to ensure thread safety
-               _ts_SKSEFunctions::ClearCombatTargets(dragonActor);
-            });
-            CombatManager::GetSingleton().SetStopCombat(true);
-        }
-    
         // Switch to travel package
         SKSE::GetTaskInterface()->AddTask([dragonActor]() {
             // When modifying Game objects, send task to TaskInterface to ensure thread safety
@@ -636,17 +621,6 @@ namespace IDRC {
         if (!dragonActor) {
             log::error("IDRC - {}: dragonActor is null", __func__);
             return false;
-        }
-    
-        // Clear combat targets if the dragon is far from the combat target
-        auto* combatTarget = _ts_SKSEFunctions::GetCombatTarget(dragonActor);
-        if (combatTarget && _ts_SKSEFunctions::GetDistance(dragonActor, combatTarget) >= 5000.0f) {
-            log::info("IDRC - {}: Clearing CombatTargets", __func__);
-            SKSE::GetTaskInterface()->AddTask([dragonActor]() {
-                // When modifying Game objects, send task to TaskInterface to ensure thread safety
-               _ts_SKSEFunctions::ClearCombatTargets(dragonActor);
-            });
-            CombatManager::GetSingleton().SetStopCombat(true);
         }
     
         // If no a_andTarget is provided, use the dragonActor as the target

@@ -104,12 +104,15 @@ namespace IDRC {
         bool StopFastTravel(RE::TESObjectREFR* a_stopFastTravelTarget, float a_height = 0.0f, 
             int a_timeout = 200, std::string a_waitMessage = "", 
             std::string a_timeoutMessage = "");
+
+        void SkipFastTravelRequest(bool a_skip) { m_skipFastTravelRequest = a_skip; }
     
     private:
         FastTravelManager() = default;
         ~FastTravelManager() = default;
 
         RE::BGSListForm* m_fastTravelPackagelist = nullptr;
+        bool m_skipFastTravelRequest = false; 
 
         // only accessed internally:
         bool m_stopFastTravelOngoing = false; // keeps track of a StopFastTravel() and CancelStopFastTravel() requests

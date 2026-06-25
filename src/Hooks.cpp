@@ -4,6 +4,7 @@
 #include "FlyingModeManager.h"
 #include "DataManager.h"
 #include "CombatManager.h"
+#include "FastTravelManager.h"
 #include "IDRCUtils.h"
 #include "APIManager.h"
 #include "REL/RuntimeDataAccessors.h"
@@ -24,6 +25,9 @@ namespace Hooks
 //		FlightGoalHook::Hook();
 		PathingHook::Hook();
 /* UNUSED HOOKS:
+		ExecuteTeleportHook::Hook();
+		PapyrusFastTravelHook::Hook();
+		UpdateFlyingMountFastTravelHook::Hook();
 		CombatHook::Hook();
 		VoiceSpellCastHook::Hook();
 		VoiceShoutCastHook::Hook();
@@ -480,12 +484,19 @@ log::info("IDRC - {}: Skipping path update. Conditions not met. CameraLockEnable
 		auto currentIndex = *reinterpret_cast<uint32_t*>(a_agent + 0x58);
 		auto* pathData = *reinterpret_cast<std::byte**>(a_agent + 0x48);
 		if (!pathData) {
-// TBD: Still need to find out why sometimes there are sequences where pathData == nullptr, 
-//      and therefore the path update is skipped, causing the dragon to fly straight down or up.
-
-log::warn("IDRC - {}: pathData pointer is null", __func__);
+			// Each FastTravel (ExecuteTeleport) triggers re-pathing. 
+			// In that track, pathData is set to nullptr until the new pathData is generated. 
+			// It can take a few frames until the new pathData is generated, 
+			// in particular if many pathing requests occur in parallel, eg during combat. 
+			// In this case we skip the next FastTravel request to allow engine to catch up with re-pathing. 
+			// Flight pathData will not be updated until new pathData is generated, 
+			// The dragon will fly straight forward without path data during these frames (typically 1-3)
+			
+			IDRC::FastTravelManager::GetSingleton().SkipFastTravelRequest(true);
 			return;
 		}
+		// If pathData is valid, allow FastTravel
+		IDRC::FastTravelManager::GetSingleton().SkipFastTravelRequest(false);
 
 		// a_pathData + 0x90 = waypointArray_90 (float* base)
 		// a_pathData + 0xA0 = waypointCount_A0 (uint32)
@@ -665,34 +676,92 @@ APIs::TrueHUD->DrawPoint(waypointToUpdate, 5.0f, 0.0f, 0xFF0000FF);
 			return;
 		}
 
-		auto* dragonActor = IDRC::DataManager::GetSingleton().GetDragonActor();
-		auto& combatManager = IDRC::CombatManager::GetSingleton();
-
-		if (dragonActor && a_actor == dragonActor) {
-//log::info("IDRC - {}: StopCombat called for actor {}", __func__, a_actor ? a_actor->GetName() : "null");
-//			if (!combatManager.GetStopCombat()) {
-//log::info("IDRC - {}: Cancelling StopCombat!!", __func__);
-//				return;
-//			}
-		}
-		combatManager.SetStopCombat(false);
-
-		 reinterpret_cast<decltype(&StopCombat)>(_StopCombat)(a_actor);
+		reinterpret_cast<decltype(&StopCombat)>(_StopCombat)(a_actor);
 //log::info("IDRC - {}: StopCombat original function returned", __func__);
 	}
-/*
-	void FastTravelHook::FastTravel(RE::PlayerCharacter* a_player, RE::TESObjectREFR* a_destination) {
+
+/* UNUSED HOOKS:	
+
+	bool ExecuteTeleportHook::ExecuteTeleport(
+		RE::PlayerCharacter* a_this)
+	{
+		if (_ExecuteTeleport == 0) {
+			log::error("{}: trampoline not initialized!", __FUNCTION__);
+			return false;
+		}
+		if (m_blockExecuteTeleport) {
+			if (auto* loc = IDRC::Utils::GetQueuedTargetLoc(a_this); loc->isValid) {
+log::info("{}: --------------->>>>>>>>>>>> ExecuteTeleport called - isValid == true", __FUNCTION__);
+				loc->isValid = false;
+			}
+		}
+		using FuncType = bool(*)(RE::PlayerCharacter*);
+log::info("{}: Calling original ExecuteTeleport", __FUNCTION__);
+		return reinterpret_cast<FuncType>(_ExecuteTeleport)(a_this);
+	}
+
+
+	void UpdateFlyingMountFastTravelHook::UpdateFastTravel(float a_deltaTime) {
+		if (_UpdateFastTravel == 0) {
+			log::error("{}: trampoline not initialized!", __FUNCTION__);
+			return;
+		}
+log::info("IDRC - {}: UpdateFastTravel called, deltaTime: {}", __FUNCTION__, a_deltaTime);
+		reinterpret_cast<decltype(&UpdateFastTravel)>(_UpdateFastTravel)(a_deltaTime);
+	}
+
+	void UpdateFlyingMountFastTravelHook::UpdateFastTravelState() {
+		if (_UpdateFastTravelState == 0) {
+			log::error("{}: trampoline not initialized!", __FUNCTION__);
+			return;
+		}
+log::info("IDRC - {}: UpdateFlyingMountFastTravelState called", __FUNCTION__);
+		reinterpret_cast<decltype(&UpdateFastTravelState)>(_UpdateFastTravelState)();
+	}
+
+	void UpdateFlyingMountFastTravelHook::UpdatePatrolQueuedState(uint32_t a_mode) {
+		if (_UpdatePatrolQueuedState == 0) {
+			log::error("{}: trampoline not initialized!", __FUNCTION__);
+			return;
+		}
+log::info("IDRC - {}: UpdatePatrolQueuedState called for mode {}", __FUNCTION__, a_mode);
+		reinterpret_cast<decltype(&UpdatePatrolQueuedState)>(_UpdatePatrolQueuedState)(a_mode);
+	}
+
+	void UpdateFlyingMountFastTravelHook::ApproachTarget(RE::NiPoint3* a_targetPos,
+									std::uint64_t a_modeRaw,
+									std::uint64_t a3,
+									std::uint64_t a4) {
+		if (_ApproachTarget == 0) {
+			log::error("{}: trampoline not initialized!", __FUNCTION__);
+			return;
+		}
+log::info("IDRC - {}: ApproachTarget called, ({}, {}, {}), modeRaw: {}, a3: {}, a4: {}", __FUNCTION__, a_targetPos->x, a_targetPos->y, a_targetPos->z, a_modeRaw, a3, a4);
+		reinterpret_cast<decltype(&ApproachTarget)>(_ApproachTarget)(a_targetPos, a_modeRaw, a3, a4);
+	}
+
+	void UpdateFlyingMountFastTravelHook::ExecuteArrival() {
+		if (_ExecuteArrival == 0) {
+			log::error("{}: trampoline not initialized!", __FUNCTION__);
+			return;
+		}
+log::info("IDRC - {}: ExecuteArrival called", __FUNCTION__);
+		reinterpret_cast<decltype(&ExecuteArrival)>(_ExecuteArrival)();
+	}	
+
+	void PapyrusFastTravelHook::FastTravel(RE::BSScript::IVirtualMachine* a_vm,       // Papyrus VM (for error reporting)
+											RE::VMStackID                  a_stackID,  // Calling script's stack ID
+											RE::StaticFunctionTag*         a_staticTag, // Static function tag placeholder (unused)
+											RE::TESObjectREFR*             a_location ) {
 		if (_FastTravel == 0) {
 			log::error("{}: trampoline not initialized!", __FUNCTION__);
 			return;
 		}
-log::info("IDRC - {}: FastTravel called for destination {}", __func__, a_destination ? a_destination->GetName() : "null");
-		reinterpret_cast<decltype(&FastTravel)>(_FastTravel)(a_player, a_destination);
-log::info("IDRC - {}: FastTravel original function returned", __func__);
+log::info("IDRC - {}: FastTravel called ", __FUNCTION__);
+		reinterpret_cast<decltype(&FastTravel)>(_FastTravel)(a_vm, a_stackID, a_staticTag, a_location);
 	}
-*/
 
-/* UNUSED HOOKS:	
+
 	bool VoiceSpellCastHook::HandleVoiceSpellCast(std::uintptr_t  a_this, RE::Actor* a_caster) {
 		if (_HandleVoiceSpellCast == 0) {
 			log::error("{}: trampoline not initialized!", __FUNCTION__);
