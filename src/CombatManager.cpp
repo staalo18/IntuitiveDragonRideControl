@@ -275,8 +275,8 @@ log::info("{}: Updated player cell to {}, {}", __FUNCTION__, targetCellX, target
         if (!m_shoutTarget) {
             // No TDM target, get the combat target from the reticle (if active)
 log::info("IDRC - {}: No TDM target, checking Target Reticle Manager for target", __func__);
-            if (auto* actor = TargetReticleManager::GetSingleton().GetCurrentTarget()) {
-                m_shoutTarget = actor->GetHandle();
+            if (auto handle = TargetReticleManager::GetSingleton().GetCurrentTarget()) {
+                m_shoutTarget = handle;
             }
         }
         auto* resolvedShoutTarget = m_shoutTarget ? m_shoutTarget.get().get() : nullptr;

@@ -16,10 +16,7 @@ unsigned long Messaging::IDRCInterface::GetIDRCThreadId() const noexcept {
 RE::ActorHandle Messaging::IDRCInterface::GetCurrentTarget() const noexcept  {
     auto* dragonActor = IDRC::DataManager::GetSingleton().GetDragonActor();
     if (dragonActor) {
-        auto* currentTarget = IDRC::TargetReticleManager::GetSingleton().GetCurrentTarget();
-        if (currentTarget) {   
-            return currentTarget->GetHandle();
-        }
+        return IDRC::TargetReticleManager::GetSingleton().GetCurrentTarget();
     }
 
 	return RE::ActorHandle();

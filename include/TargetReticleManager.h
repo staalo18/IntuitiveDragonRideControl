@@ -46,7 +46,7 @@ namespace IDRC {
 
             void DisposeReticle();
 
-            RE::Actor* GetCurrentTarget() const;
+            RE::ActorHandle GetCurrentTarget() const;
 
             bool GetUseTarget() const;
 
@@ -67,13 +67,13 @@ namespace IDRC {
 
             RE::Actor* GetSelectedActor() const;
 
-            RE::Actor* GetCombatTarget() const;
+            RE::ActorHandle GetCombatTarget() const;
 
             TargetMode GetTargetMode(bool a_hasSelectedActor, bool a_hasCombatTarget) const;
 
             void SetReticleTarget();
 
-            RE::NiPointer<RE::NiAVObject> GetTargetPoint(RE::Actor* a_actor) const;
+            RE::NiPointer<RE::NiAVObject> GetTargetPoint(RE::ActorHandle a_actorHandle) const;
 
             float GetDistanceRaceSizeMultiplier(RE::TESRace* a_race) const;
 
@@ -88,7 +88,7 @@ namespace IDRC {
             float m_distanceMultiplierLarge = 2.0f;
             float m_distanceMultiplierExtraLarge = 4.0f;
             float m_maxTargetScanAngle = 7.0f;
-            RE::Actor* m_reticleTarget = nullptr;
+            RE::ActorHandle m_reticleTarget{};
             TargetMode m_primaryTargetMode = TargetMode::kCombatTarget;
             TargetMode m_currentTargetMode = TargetMode::kNone;
             int m_reticleLockAnimationStyle = 0;

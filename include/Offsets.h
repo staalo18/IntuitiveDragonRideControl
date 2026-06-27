@@ -1,5 +1,5 @@
 #pragma once
-// Offsets are from 'True Directional Movement':
+// below offsets are from 'True Directional Movement':
 // https://github.com/ersh1/TrueDirectionalMovement
 // All credits go to the original author Ersh!
 
