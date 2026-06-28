@@ -95,6 +95,7 @@ namespace IDRC {
             
             // start gamepad thumbstick tracing
             ThumbstickTracerHook::Install();
+            CameraLockManager::GetSingleton().Initialize();
 //            CombatTargetTracer::GetSingleton().Register();
 //            CrosshairTracer::GetSingleton().Register();
 //            MagicEffectTracer::GetSingleton().Register();

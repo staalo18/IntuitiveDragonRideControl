@@ -11,6 +11,25 @@
 
 namespace IDRC {
 
+    void CameraLockManager::Initialize()
+    {
+        auto* playerCamera = RE::PlayerCamera::GetSingleton();
+        if (playerCamera && playerCamera->currentState) {
+            RE::TESCameraState* playerCameraState = playerCamera->currentState.get();
+            if (playerCameraState) {
+                RE::NiQuaternion cameraRotation;
+                playerCameraState->GetRotation(cameraRotation);
+                m_storedCameraYaw = _ts_SKSEFunctions::GetYaw(cameraRotation);
+            }
+        }
+
+        auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
+        if (dragonActor) {
+            m_flyState = _ts_SKSEFunctions::GetFlyingState(dragonActor);
+            m_dragonYaw = dragonActor->GetAngleZ();
+        }
+    }
+
     void CameraLockManager::Update()
     {
         if (RE::UI::GetSingleton()->GameIsPaused()) {
@@ -47,10 +66,15 @@ namespace IDRC {
             return;
         }
 
+        bool isCameraTurnOngoing = false;
         float currentCameraYaw = _ts_SKSEFunctions::GetYaw(dragonCameraState->rotation);
-        bool isCameraBehindTarget = false;
-        if (APIs::TrueDirectionalMovementV4) {
-            isCameraBehindTarget = APIs::TrueDirectionalMovementV4->IsTargetLockBehindTarget();
+        if (m_isUserTurning) {
+            m_storedCameraYaw = currentCameraYaw;
+        } else {
+            if (fabs(_ts_SKSEFunctions::NormalRelativeAngle(currentCameraYaw - m_storedCameraYaw)) > 0.1f * PI / 180.f) {
+                isCameraTurnOngoing = true;
+            }
+            currentCameraYaw = m_storedCameraYaw;
         }
 
         auto& combatManager = CombatManager::GetSingleton();
@@ -66,7 +90,7 @@ namespace IDRC {
 
         float currentDragonYaw = dragonActor->GetAngleZ();
         float currentDragonYawOffset = currentCameraYaw - currentDragonYaw;
-        if (isCameraBehindTarget) {
+        if (APIs::TrueDirectionalMovementV4 && APIs::TrueDirectionalMovementV4->IsTargetLockBehindTarget()) {
             currentDragonYawOffset += PI;
         }
         currentDragonYawOffset = _ts_SKSEFunctions::NormalRelativeAngle(currentDragonYawOffset);
@@ -123,37 +147,24 @@ namespace IDRC {
         }
         m_flyState = flyState;
 
-        if (!m_dragonPosInitialized) {
-            m_dragonPos = dragonActor->GetPosition();
-            m_dragonPosInitialized = true;
-        }
-
-        RE::NiPoint3 travelledVec = dragonActor->GetPosition() - m_dragonPos;
-        m_dragonPos = dragonActor->GetPosition();
-
         if (( (flyState == 3 && flyMode == FlyingMode::kHovering ) ||
               (flyState == 0 && flyMode == FlyingMode::kLanded) ||
               (flyState == 2 && flyMode == FlyingMode::kFlying) )  // only trigger camera-induced movements if dragon is in one of these flying states 
            ) {
 
             // Turning
-            if  ( !m_turnLocked  // don't spam the Turn calls
-                  && (isTDMLocked || m_isUserTurning || m_turnOngoing || flyState == 2) // only if user is actively triggering a turn (via mouse or gamepad, or TDM Lock), or such a user-triggered turn is not yet completed
+            if  ((isTDMLocked || m_isUserTurning || m_turnOngoing || flyState == 2) // only if user is actively triggering a turn (via mouse or gamepad, or TDM Lock), or such a user-triggered turn is not yet completed
                   && (flyState == 2 ||fabs(currentDragonYawOffset) > 2.f * PI / 180.f) // ignore turn angles smaller than 2 degrees
                   && !controlsManager.GetIsKeyPressed(kStrafeLeft) && !controlsManager.GetIsKeyPressed(kStrafeRight)
                 ) {
                 // dragon yaw follows user-triggered camera rotation
                 flyingModeManager.DragonTurnPlayerRiding(180.f / PI * currentDragonYawOffset);
                 m_turnOngoing = true;
-                int lockTime = 30;
-                // TBD: Probably no longer needed...
-                LockTurn(lockTime); // Prevent next DragonTurnPlayerRiding() call for lockTime ms
             } 
         }
 
         if ((_ts_SKSEFunctions::GetFlyingState(dragonActor) == 2 && combatManager.IsShoutActive() && combatManager.GetShoutTarget()) ||
-            (isDragonTurning && !m_isUserTurning && !isTDMLocked && !m_turnLocked)) {
-log::info("IDRC - {}: --------------->>>>>>>>>> camera rotation follows dragon yaw", __func__);
+            (isDragonTurning && !m_isUserTurning && !isTDMLocked && !isCameraTurnOngoing)) {
             // camera rotation follows dragon yaw
             m_cameraLocked = true;
             float currentCameraRotation = _ts_SKSEFunctions::NormalRelativeAngle(dragonCameraState->freeRotation.x);
@@ -209,7 +220,7 @@ log::info("IDRC - {}: --------------->>>>>>>>>> camera rotation follows dragon y
     void CameraLockManager::SetIgnoredCameraPitch(float a_pitch) {
         m_ignoredCameraPitch = -a_pitch * PI / 180.f;
     }
-
+/*
     void CameraLockManager::LockTurn(int a_lockTime)
     {
         m_turnLocked = true;
@@ -238,5 +249,6 @@ log::info("IDRC - {}: --------------->>>>>>>>>> camera rotation follows dragon y
             }
             this->m_heightLocked = false;
         }).detach();
-    }   
+    } 
+*/  
 }  // namespace IDRC

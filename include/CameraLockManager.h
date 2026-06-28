@@ -12,6 +12,8 @@ namespace IDRC {
             CameraLockManager(const CameraLockManager&) = delete;
             CameraLockManager& operator=(const CameraLockManager&) = delete;
 
+            void Initialize();
+
             void Update();
 
             void SetInitiallyEnabled(bool a_enabled);
@@ -31,21 +33,20 @@ namespace IDRC {
         private:
             CameraLockManager() = default;
 
-            void LockTurn(int a_lockTime);
-            void LockHeight(int a_lockTime);
+//            void LockTurn(int a_lockTime);
+//            void LockHeight(int a_lockTime);
 
             bool m_initiallyEnabled = true;
             bool m_isEnabled = true;
-            bool m_turnLocked = false;
-            bool m_heightLocked = false;
+//            bool m_turnLocked = false;
+//            bool m_heightLocked = false;
             bool m_turnOngoing = false;
             bool m_cameraLocked = false;
             bool m_isUserTurning = false;
             float m_dragonYaw = 0.0f;
+            float m_storedCameraYaw = 0.0f;
             int m_flyState = -1;
-            RE::NiPoint3 m_dragonPos;
-            bool m_dragonPosInitialized = false;
             float m_ignoredCameraPitch = -8.f * PI / 180.f;
-            float m_transitionalPitchRange = -5.f * PI / 180.f;
+            const float m_transitionalPitchRange = -5.f * PI / 180.f;
     }; // class CameraLockManager
 }  // namespace IDRC

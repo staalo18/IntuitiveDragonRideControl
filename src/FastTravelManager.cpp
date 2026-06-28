@@ -53,6 +53,7 @@ namespace IDRC {
                 return;
             }
 
+            // trigger fast travel to a_fastTravelTarget in next frame 
             auto* loc = Utils::GetQueuedTargetLoc(player);
             loc->world         = worldspace;
             loc->interior      = nullptr;
@@ -71,7 +72,7 @@ namespace IDRC {
                 log::error("IDRC - {}: error - dragonActor is none", __func__);
                 return;
             }
-
+// previous solution: call the Papyrus function Game.FastTravel()
 //            _ts_SKSEFunctions::CallPapyrusFunction("Game"sv, "FastTravel"sv, a_fastTravelTarget);
 
             dragonActor->EvaluatePackage();
