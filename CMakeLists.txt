@@ -109,4 +109,80 @@ if(DEFINED OUTPUT_FOLDER)
             VERBATIM
         )
     endif()
+
+    # Copy compiled Papyrus scripts (.pex files) from Scripts/ to output Scripts/ folder
+    set(SCRIPTS_FOLDER "${OUTPUT_FOLDER}/Scripts")
+    message(STATUS "Papyrus scripts output folder: ${SCRIPTS_FOLDER}")
+
+    file(GLOB_RECURSE PAPYRUS_PEX_FILES CONFIGURE_DEPENDS
+        "${CMAKE_CURRENT_SOURCE_DIR}/Scripts/*.pex"
+    )
+
+    add_custom_command(
+        TARGET "${PROJECT_NAME}"
+        POST_BUILD
+        COMMAND "${CMAKE_COMMAND}" -E make_directory "${SCRIPTS_FOLDER}"
+        VERBATIM
+    )
+
+    if(PAPYRUS_PEX_FILES)
+        add_custom_command(
+            TARGET "${PROJECT_NAME}"
+            POST_BUILD
+            COMMAND "${CMAKE_COMMAND}" -E copy_if_different ${PAPYRUS_PEX_FILES} "${SCRIPTS_FOLDER}"
+            VERBATIM
+        )
+    endif()
+
+    # Copy source Papyrus scripts (.psc files) from Source/Scripts/ to output Source/Scripts/ folder
+    set(SOURCE_SCRIPTS_FOLDER "${OUTPUT_FOLDER}/Source/Scripts")
+    message(STATUS "Papyrus source scripts output folder: ${SOURCE_SCRIPTS_FOLDER}")
+
+    file(GLOB_RECURSE PAPYRUS_PSC_FILES CONFIGURE_DEPENDS
+        "${CMAKE_CURRENT_SOURCE_DIR}/Source/Scripts/*.psc"
+    )
+
+    add_custom_command(
+        TARGET "${PROJECT_NAME}"
+        POST_BUILD
+        COMMAND "${CMAKE_COMMAND}" -E make_directory "${SOURCE_SCRIPTS_FOLDER}"
+        VERBATIM
+    )
+
+    if(PAPYRUS_PSC_FILES)
+        add_custom_command(
+            TARGET "${PROJECT_NAME}"
+            POST_BUILD
+            COMMAND "${CMAKE_COMMAND}" -E copy_if_different ${PAPYRUS_PSC_FILES} "${SOURCE_SCRIPTS_FOLDER}"
+            VERBATIM
+        )
+    endif()
+
+    # Copy ESP files to output folder
+    message(STATUS "ESP output folder: ${OUTPUT_FOLDER}")
+
+    add_custom_command(
+        TARGET "${PROJECT_NAME}"
+        POST_BUILD
+        COMMAND "${CMAKE_COMMAND}" -E make_directory "${OUTPUT_FOLDER}"
+        COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/ESP/IntuitiveDragonRideControl.esp" "${OUTPUT_FOLDER}/IntuitiveDragonRideControl.esp"
+        COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/ESP/IntuitiveDragonRideControl_LE.esp" "${OUTPUT_FOLDER}/IntuitiveDragonRideControl_LE.esp"
+        COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/ESP/IntuitiveDragonRideControl.ini" "${DLL_FOLDER}/IntuitiveDragonRideControl.ini"
+        VERBATIM
+    )
+
+    # Copy SWF files from swf/ to Interface/IntuitiveDragonRideControl/ folder
+    set(INTERFACE_FOLDER "${OUTPUT_FOLDER}/Interface/IntuitiveDragonRideControl")
+    message(STATUS "SWF output folder: ${INTERFACE_FOLDER}")
+
+    add_custom_command(
+        TARGET "${PROJECT_NAME}"
+        POST_BUILD
+        COMMAND "${CMAKE_COMMAND}" -E make_directory "${INTERFACE_FOLDER}"
+        COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/swf/IDRC_Assets0.swf" "${INTERFACE_FOLDER}/IDRC_Assets0.swf"
+        COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/swf/IDRC_Widgets.swf" "${INTERFACE_FOLDER}/IDRC_Widgets.swf"
+        VERBATIM
+    )
+
+
 endif()

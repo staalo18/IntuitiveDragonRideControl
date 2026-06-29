@@ -1,0 +1,527 @@
+Scriptname _ts_DR_RideControlScript extends Quest conditional
+
+import _ts_DR_Debug
+
+int property iFlyingState = 0 auto hidden
+bool property bRegenerateHealth = false auto hidden
+bool property bTriggerMessage = false auto conditional hidden
+bool property bDragonRoars = false auto conditional hidden
+bool property bAutoCombat = false auto hidden conditional
+bool property bIsFollowerActive = false auto hidden conditional
+
+ReferenceAlias Property dragonAlias  Auto
+ReferenceAlias Property PerchTarget Auto
+ReferenceAlias Property WordWallPerch Auto
+ReferenceAlias Property RockPerch Auto
+ReferenceAlias Property TowerPerch Auto
+
+ObjectReference Property DLC2TameDragonOrbitMarker Auto ; default object that the orbit package uses. code also moves this to fast travel destination
+ObjectReference Property FlyToTargetMarker Auto
+
+quest Property MCMConfigQuest auto
+Quest Property FindPerchQuest auto
+
+ObjectReference Property DragonTurnMarker Auto
+ObjectReference Property DragonTravelToMarker Auto
+
+Spell Property RestoreHealthSpell Auto
+
+string property DragonName auto
+
+Spell Property DLC2TameDragonNoFlyAbility  Auto
+
+Shout Property AttackShout auto
+Shout Property UnrelentingForceShout auto
+
+Formlist Property BreathShoutList auto
+Formlist Property BallShoutList auto
+Formlist property FastTravelPackageList auto
+
+Scene Property BorderRegionScene Auto
+Scene Property FastTravelScene Auto
+
+
+
+; Initialization 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+int ScriptVersion = 8
+int function GetVersion()
+	return ScriptVersion
+endfunction
+
+
+event OnInit()
+	InitVariables(false)
+endevent
+
+function InitializeData_SKSE(Quest rideQuest, Quest findPerchQuest, \
+							ReferenceAlias dragonAlias, ObjectReference OrbitMarker,\
+							ReferenceAlias wordWallPerch, \
+							ReferenceAlias TowerPerch, \
+							ReferenceAlias RockPerch, \
+							ReferenceAlias PerchTarget, \							
+							FormList FastTravelPackagelist, \
+							FormList BreathShoutList, FormList BallShoutList, \
+							Shout UnrelentingForceShout, Shout AttackShout, \
+							ObjectReference DragonTurnMarker, ObjectReference DragonTravelToMarker,\
+							ObjectReference FlyToTargetMarker, \
+							Spell TameDragonNoFlyAbility, \
+							string dragonName, \
+							bool cameraLockInitiallyEnabled) global native
+
+function InitVariables(bool bIsOnLoad)
+_ts_Debug_Trace_Message("IDRC - _ts_DR_RideControlScript - InitVariables: IsUsingGamepad = " + game.UsingGamepad())
+	
+	SetIniVars()
+
+	if !BorderRegionScene.IsPlaying()
+		BorderRegionScene.Start()
+	endif	
+
+	if !FastTravelScene.IsPlaying()
+		FastTravelScene.Start()
+	endif
+
+	RegisterCustomEvents()
+	CheckIDRCVersion()
+
+	InitializeData_SKSE((self as quest), FindPerchQuest, dragonAlias, DLC2TameDragonOrbitMarker, \
+						WordWallPerch, TowerPerch, RockPerch, PerchTarget, \
+						FastTravelPackagelist, \
+						BreathShoutList, BallShoutList, UnrelentingForceShout, AttackShout, \
+						DragonTurnMarker, DragonTravelToMarker, FlyToTargetMarker,\
+						DLC2TameDragonNoFlyAbility, DragonName, \
+						(MCMConfigQuest as _ts_DR_MCMConfig).bCameraLockInitiallyEnabled)
+
+	SetTargetReticleMode((MCMConfigQuest as _ts_DR_MCMConfig).iTargetReticleMode)
+	SetReticleLockAnimationStyle((MCMConfigQuest as _ts_DR_MCMConfig).iReticleLockAnimationStyle)
+	SetTDMLock((MCMConfigQuest as _ts_DR_MCMConfig).iTDMLock)
+	SetPrimaryTargetMode((MCMConfigQuest as _ts_DR_MCMConfig).iPrimaryTargetMode)
+	SetMaxTargetDistance((MCMConfigQuest as _ts_DR_MCMConfig).fMaxTargetDistance)
+	SetDistanceMultiplierSmall((MCMConfigQuest as _ts_DR_MCMConfig).fDistanceMultiplierSmall)
+	SetDistanceMultiplierLarge((MCMConfigQuest as _ts_DR_MCMConfig).fDistanceMultiplierLarge)
+	SetDistanceMultiplierExtraLarge((MCMConfigQuest as _ts_DR_MCMConfig).fDistanceMultiplierExtraLarge)
+	SetMaxTargetScanAngle((MCMConfigQuest as _ts_DR_MCMConfig).fTargetScanAngle)
+	SetIgnoredCameraPitch((MCMConfigQuest as _ts_DR_MCMConfig).fIgnoredCameraPitch)
+
+	if bIsOnLoad
+		if (MCMConfigQuest as _ts_DR_MCMConfig) != None
+			; This ensures that the values from the MCM menu are used,
+			; instead of the initial values :
+			SetDragonSpeed((MCMConfigQuest as _ts_DR_MCMConfig).fDragonSpeed)
+			SetRollAmplitude((MCMConfigQuest as _ts_DR_MCMConfig).fRollAmplitude)
+			bool bAuto = false
+			if (MCMConfigQuest as _ts_DR_MCMConfig).iCombatMode == 1
+				bAuto = true
+			endif
+			SetInitialAutoCombatMode(bAuto)
+			SetDisplayFlyingMode((MCMConfigQuest as _ts_DR_MCMConfig).bDisplayFlyingMode)
+		else
+			; fallback in case SkyUI is not in the load order
+_ts_Debug_Trace_Message("IDRC - _ts_DR_RideControlScript - InitVariables: MCMConfigQuest not available")
+			SetDragonSpeed(1.0)
+			SetRollAmplitude(0.5)
+		endif
+
+		bool  bDragonIsBeingRidden = false
+		if dragonAlias.GetActorReference()
+			bDragonIsBeingRidden = dragonAlias.GetActorReference().IsBeingRidden()
+		endif			
+
+		if game.GetPlayer().IsOnMount() && bDragonIsBeingRidden
+_ts_Debug_Trace_Message("IDRC - _ts_DR_RideControlScript - InitVariables: Re-registering ride control. FlyingState: " + iFlyingState + ", AutoCombat: " + bAutoCombat)
+			DragonRegisterForControls(bReRegisterOnLoad = true)
+			SetFlyingState(iFlyingState)
+			SetAutoCombat(bAutoCombat)
+			dragonAlias.GetActorRef().EvaluatePackage()
+		endif
+	endif
+endFunction
+
+
+function SetINIVars_SKSE() global native
+function SetIniVars()
+	SetINIVars_SKSE()
+endfunction
+
+
+bool Function CheckIDRCVersion()
+	
+	if GetVersion() < 8
+_ts_Debug_Trace_Message("IDRC - _ts_DR_RideControlScript - CheckIDRCVersion: Savegame with old IDRC version.")
+		debug.MessageBox("Intuitive Dragon Ride Control: Your savegame is using an older version of IDRC. Ride controls will not work properly! Please clean the savegame before continuing to use IDRC. Check the mod's Nexus page for instructions.")
+		return false	
+	endif
+
+	return true
+endFunction
+
+
+Function RegisterCustomEvents()
+_ts_Debug_Trace_Message("IDRC - _ts_DR_RideControlScript - RegisterCustomEvents")
+	; Use custom events to run time-consuming tasks asynchronosly, ie not gating progress of the calling scripts
+	; NOTE: These custom events MUST be registered each time the game is loaded - see OnPlayerLoadGame() in _ts_DR_PlayerAliasScript
+	RegisterForModEvent("Event_StopFastTravelEvent", "StopFastTravelEvent")
+	
+	RegisterForModEvent("OnProperyUpdate_SKSE", "OnPropertyUpdate_SKSE")
+	RegisterForModEvent("OnSetAllowFlying_SKSE", "OnSetAllowFlying_SKSE")
+EndFunction
+
+
+; Dragon Ride Control registration
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+bool function RegisterForControls_SKSE(bool bReRegisterOnLoad = false, bool bRegisterFromGoTDragonCompanions = false) global native
+function DragonRegisterForControls(bool bReRegisterOnLoad = false, bool bRegisterFromGoTDragonCompanions = false)
+_ts_Debug_Trace_Message("IDRC - _ts_DR_RideControlScript - DragonRegisterForControls")
+
+	if dragonAlias.GetActorRef().IsBeingRidden()
+		SetKeyMappings(bRegisterFromGoTDragonCompanions)
+		RegisterForControls_SKSE(bReRegisterOnLoad, bRegisterFromGoTDragonCompanions)	
+	endif	
+endfunction
+
+
+bool function UnregisterForControls_SKSE() global native
+function DragonUnregisterForControls()
+_ts_Debug_Trace_Message("IDRC - _ts_DR_RideControlScript - DragonUnregisterForControls")
+	UnregisterForControls_SKSE()
+endfunction
+
+
+function SetKeyMapping_SKSE(string skey, int iMappedKey) global native
+function SetKeyMappings(bool bRegisterFromGoTDragonCompanions = false)
+_ts_Debug_Trace_Message("IDRC - _ts_DR_RideControlScript - SetKeyMappings")
+
+	SetKeyMapping_SKSE("Forward", (MCMConfigQuest as _ts_DR_MCMConfig).GetForwardKey())
+	SetKeyMapping_SKSE("Back", (MCMConfigQuest as _ts_DR_MCMConfig).GetBackKey())
+	SetKeyMapping_SKSE("StrafeLeft", (MCMConfigQuest as _ts_DR_MCMConfig).GetStrafeLeftKey())
+	SetKeyMapping_SKSE("StrafeRight", (MCMConfigQuest as _ts_DR_MCMConfig).GetStrafeRightKey())
+	SetKeyMapping_SKSE("DisplayHealth", (MCMConfigQuest as _ts_DR_MCMConfig).GetDisplayHealthKey())
+	SetKeyMapping_SKSE("DragonUp", (MCMConfigQuest as _ts_DR_MCMConfig).GetDragonUpKey())
+	SetKeyMapping_SKSE("DragonDown", (MCMConfigQuest as _ts_DR_MCMConfig).GetDragonDownKey())
+	SetKeyMapping_SKSE("Run", (MCMConfigQuest as _ts_DR_MCMConfig).GetRunKey())
+	SetKeyMapping_SKSE("ToggleAlwaysRun", (MCMConfigQuest as _ts_DR_MCMConfig).GetToggleAlwaysRunKey())
+	SetKeyMapping_SKSE("ToggleLockReticle", (MCMConfigQuest as _ts_DR_MCMConfig).GetToggleLockReticleKey())
+	SetKeyMapping_SKSE("ToggleCameraLock", (MCMConfigQuest as _ts_DR_MCMConfig).GetToggleCameraLockKey())
+;	SetKeyMapping_SKSE("PrimaryTargetMode", (MCMConfigQuest as _ts_DR_MCMConfig).GetTogglePrimaryTargetModeKey())
+	if !bRegisterFromGoTDragonCompanions
+		SetKeyMapping_SKSE("ToggleAutoCombat", (MCMConfigQuest as _ts_DR_MCMConfig).GetAutoCombatKey())
+	endif
+endfunction
+
+
+; Display functions
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+function UpdateDisplay_SKSE() global native
+event OnUpdate()
+	UpdateDisplay_SKSE()
+endevent
+
+
+; Interface with SKSE plugin -> Synchronization of SKSE property updates with Papyrus properties
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+Event OnProperyUpdate_SKSE(string propertyName, bool bValue, float fValue, int iValue)
+	if propertyName == "AutoCombat"
+		bAutoCombat = bValue
+_ts_Debug_Trace_Message("IDRC - _ts_DR_RideControlScript - OnProperyUpdate_SKSE: bAutoCombat = " + bAutoCombat)
+	elseif propertyName == "FlyingState"
+		iFlyingState = iValue
+_ts_Debug_Trace_Message("IDRC - _ts_DR_RideControlScript - OnProperyUpdate_SKSE: iFlyingState = " + iFlyingState)
+	else
+_ts_Debug_Trace_Message("IDRC - _ts_DR_RideControlScript - OnProperyUpdate_SKSE: Error - Unknown property: " + propertyName)
+	endif
+
+	; ensure any updates that involve package changes are evaluated
+	dragonAlias.GetActorRef().EvaluatePackage()
+endevent
+
+
+; Interface with SKSE plugin -> SKSE plugin using Papyrus functions (no C++ native implementation yet)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+Event OnSetAllowFlying_SKSE(bool bValue)
+	if bValue
+		dragonAlias.GetActorRef().SetAllowFlying(true)
+	else
+		dragonAlias.GetActorRef().SetAllowFlyingEx(abAllowed = false, abAllowCrash = false, abAllowSearch = true)		
+	endif
+
+	dragonAlias.GetActorRef().EvaluatePackage()
+
+_ts_Debug_Trace_Message("IDRC - _ts_DR_RideControlScript - OnSetAllowFlying_SKSE: AllowFlying = " + bValue)
+endevent
+
+
+; MCM Interface
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+function SetInitialAutoCombatMode_SKSE(bool bValue) global native
+function SetInitialAutoCombatMode(bool bValue)
+	SetInitialAutoCombatMode_SKSE(bValue)
+endFunction
+
+function SetDisplayFlyingMode_SKSE (bool bValue) global native
+function SetDisplayFlyingMode(bool bValue)
+	SetDisplayFlyingMode_SKSE(bValue)
+endFunction
+
+
+function SetTriggerMessage(bool bValue)
+	bTriggerMessage = bValue
+endFunction
+
+
+function SetDragonRoars(bool bValue)
+	bDragonRoars = bValue
+endFunction
+
+
+function SetRegenerateHealth(bool bValue)
+	bRegenerateHealth = bValue
+	ToggleRegenerateHealth()
+endfunction
+
+
+function ToggleRegenerateHealth()
+	actor dragonActor = dragonAlias.GetActorRef()
+	
+	if dragonActor
+		if bRegenerateHealth &&  dragonActor.GetCombatState() == 1
+			float fMagnitude = 0.5 * dragonActor.GetLevel()
+			RestoreHealthSpell.SetNthEffectMagnitude(0, fMagnitude)
+			dragonActor.AddSpell(RestoreHealthSpell)		
+		else
+			dragonActor.RemoveSpell(RestoreHealthSpell)
+		endif
+	endif
+endFunction
+
+
+function SetKey (int ikey, string sKeyName)
+	SetKeyMapping_SKSE(sKeyName, ikey)
+endFunction
+
+
+function SetDragonSpeeds_SKSE (float fMult) global native
+function SetDragonSpeed (float fvalue)
+SetDragonSpeeds_SKSE (fvalue)
+endFunction
+
+function SetRollAmplitude_SKSE (float fAmplitude) global native
+function SetRollAmplitude (float fvalue)
+	SetRollAmplitude_SKSE (fvalue)
+endFunction
+
+function SetTargetReticleMode_SKSE(int bTargetReticleMode) global native
+function SetTargetReticleMode(int bTargetReticleMode)
+	SetTargetReticleMode_SKSE(bTargetReticleMode)
+endfunction
+
+function SetReticleLockAnimationStyle_SKSE(int iReticleLockAnimationStyle) global native
+function SetReticleLockAnimationStyle(int iReticleLockAnimationStyle)
+	SetReticleLockAnimationStyle_SKSE(iReticleLockAnimationStyle)
+endfunction
+
+function SetTDMLock_SKSE(int iTDMLock) global native
+function SetTDMLock(int iTDMLock)
+	SetTDMLock_SKSE(iTDMLock)
+endfunction
+
+function SetPrimaryTargetMode_SKSE(int iPrimaryTargetMode) global native
+function SetPrimaryTargetMode(int iPrimaryTargetMode)
+	SetPrimaryTargetMode_SKSE(iPrimaryTargetMode)
+endfunction
+
+function SetMaxTargetDistance_SKSE(float fMaxTargetDistance) global native
+function SetMaxTargetDistance(float fMaxTargetDistance)
+	SetMaxTargetDistance_SKSE(fMaxTargetDistance)
+endfunction
+
+function SetDistanceMultiplierSmall_SKSE(float fDistanceMultiplierSmall) global native
+function SetDistanceMultiplierSmall(float fDistanceMultiplierSmall)
+	SetDistanceMultiplierSmall_SKSE(fDistanceMultiplierSmall)
+endfunction
+
+function SetDistanceMultiplierLarge_SKSE(float fDistanceMultiplierLarge) global native
+function SetDistanceMultiplierLarge(float fDistanceMultiplierLarge)
+	SetDistanceMultiplierLarge_SKSE(fDistanceMultiplierLarge)
+endfunction
+
+function SetDistanceMultiplierExtraLarge_SKSE(float fDistanceMultiplierExtraLarge) global native
+function SetDistanceMultiplierExtraLarge(float fDistanceMultiplierExtraLarge)
+	SetDistanceMultiplierExtraLarge_SKSE(fDistanceMultiplierExtraLarge)
+endfunction
+
+function SetMaxTargetScanAngle_SKSE(float fTargetScanAngle) global native
+function SetMaxTargetScanAngle(float fTargetScanAngle)
+	SetMaxTargetScanAngle_SKSE(fTargetScanAngle)
+endfunction
+
+function SetCameraLockInitiallyEnabled_SKSE(bool bEnabled) global native
+function SetCameraLockInitiallyEnabled(bool bEnabled)
+	SetCameraLockInitiallyEnabled_SKSE(bEnabled)
+endfunction
+
+function SetIgnoredCameraPitch_SKSE(float fIgnoredCameraPitch) global native
+function SetIgnoredCameraPitch(float fIgnoredCameraPitch)
+	SetIgnoredCameraPitch_SKSE(fIgnoredCameraPitch)
+endfunction
+
+; Interface to other scripts
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+bool Function IsFlyingMountPatrolQueued(Actor akActor) global native
+
+bool Function IsFlyingMountFastTravelling(Actor akActor) global native
+
+
+; DragonFollowAliasScript, DragonRegisterScript
+function SetFlyingMode_SKSE(int iState) global native
+Function SetFlyingState(int iState)
+	iFlyingState = iState
+	SetFlyingMode_SKSE(iFlyingState)
+endFunction
+
+
+; BorderRegionSceneScript
+bool function ForceHover_SKSE() global native
+function ForceHover()
+_ts_Debug_Trace_Message("IDRC - _ts_DR_RideControlScript - ForceHover")
+ForceHover_SKSE()
+endFunction
+
+
+; DragonTameAliasScript
+bool function DragonLandPlayerRiding_SKSE(ObjectReference LandTarget, bool bDisplayMode = true) global native
+bool function DragonLandPlayerRiding(ObjectReference LandTarget, bool bDisplayMode = true)
+_ts_Debug_Trace_Message("IDRC - _ts_DR_RideControlScript - DragonLandPlayerRiding")
+return DragonLandPlayerRiding_SKSE(LandTarget, bDisplayMode)
+endFunction
+
+
+; FastTravelSceneScript
+bool function TriggerLand_SKSE(ObjectReference LandTarget = None) global native
+function TriggerLand(ObjectReference LandTarget = None)
+_ts_Debug_Trace_Message("IDRC - _ts_DR_RideControlScript - TriggerLand")
+TriggerLand_SKSE(LandTarget)
+endfunction
+
+
+; FastTravelSceneScript
+bool function CancelStopFastTravel_SKSE() global native
+bool function CancelStopFastTravel()
+return CancelStopFastTravel_SKSE()
+endfunction
+
+
+; FastTravelSceneScript
+Function StopFastTravelAsEvent(ObjectReference StopFastTravelTarget,  float fHeight = 0.0, \
+								int iTimeout = 200, string WaitMessage = "", string TimeoutMessage = "")
+_ts_Debug_Trace_Message("IDRC - _ts_DR_RideControlScript - StopFastTravelAsEvent")
+	int handle = ModEvent.Create("Event_StopFastTravelEvent")
+	if (handle)
+		ModEvent.PushForm(handle, self)
+		ModEvent.PushForm(handle, StopFastTravelTarget)
+		ModEvent.PushFloat(handle, fHeight)
+		ModEvent.PushInt(handle, iTimeout)
+		ModEvent.PushString(handle, WaitMessage)
+		ModEvent.PushString(handle, TimeoutMessage)
+		ModEvent.Send(handle)
+	endIf
+endfunction
+
+Event StopFastTravelEvent(Form sender, Form StopFastTravelTargetForm,  float fHeight = 0.0, \
+	int iTimeout = 100, string WaitMessage = "", string TimeoutMessage = "")
+_ts_Debug_Trace_Message("IDRC - _ts_DR_RideControlScript - StopFastTravelEvent")	
+
+	if sender != self
+_ts_Debug_Trace_Message("IDRC - _ts_DR_RideControlScript - StopFastTravelEvent: Error - sender != self")	
+		return
+	endif
+
+	ObjectReference StopFastTravelTarget = StopFastTravelTargetForm as ObjectReference
+	if !StopFastTravelTarget
+_ts_Debug_Trace_Message("IDRC - _ts_DR_RideControlScript - StopFastTravelEvent: Error - StopFastTravelTarget not found")	
+		return
+	endif
+	
+	StopFastTravel(StopFastTravelTarget, fHeight, iTimeout, WaitMessage, TimeoutMessage)
+endevent
+
+
+; FastTravelSceneScript
+bool Function StopFastTravel_SKSE(ObjectReference StopFastTravelTarget, float fHeight, int iTimeout, string WaitMessage, string TimeoutMessage) global native
+bool function StopFastTravel(ObjectReference StopFastTravelTarget, float fHeight = 0.0, \
+                             int iTimeout = 200, string WaitMessage = "", string TimeoutMessage = "")
+_ts_Debug_Trace_Message("IDRC - _ts_DR_RideControlScript - StopFastTravel")
+return StopFastTravel_SKSE(StopFastTravelTarget, fHeight, iTimeout, WaitMessage, TimeoutMessage)
+endfunction
+
+
+; Interface to GoTDragonCompanions
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+function SetAutoCombat_SKSE(bool bAuto) global native
+function SetAutoCombat(bool bValue)
+_ts_Debug_Trace_Message("IDRC - _ts_DR_RideControlScript - SetAutoCombat: bAutoCombat = " + bValue)
+	bAutoCombat = bValue
+	SetAutoCombat_SKSE(bValue)
+endfunction
+
+function SetBreathShoutList_SKSE(Formlist ShoutList) global native
+function SetBreathShoutList(Formlist ShoutList)
+_ts_Debug_Trace_Message("IDRC - _ts_DR_RideControlScript - SetBreathShoutList")
+	BreathShoutList = ShoutList
+	SetBreathShoutList_SKSE(ShoutList)
+endfunction
+
+function SetBallShoutList_SKSE(Formlist ShoutList) global native
+function SetBallShoutList(Formlist ShoutList)
+_ts_Debug_Trace_Message("IDRC - _ts_DR_RideControlScript - SetBallShoutList")
+	BallShoutList = ShoutList
+	SetBallShoutList_SKSE(ShoutList)
+endfunction
+
+Formlist function GetBreathShoutList_SKSE() global native
+Formlist function GetBreathShoutList()
+	return GetBreathShoutList_SKSE()
+endfunction
+
+Formlist function GetBallShoutList_SKSE() global native
+Formlist function GetBallShoutList()
+	return GetBallShoutList_SKSE()
+endfunction
+
+bool function GetInitialAutoCombatMode_SKSE() global native
+bool function GetInitialAutoCombatMode()
+	return GetInitialAutoCombatMode_SKSE()
+endfunction
+
+function SetDisplayMessages_SKSE(bool bDisplay) global native
+function SetDisplayMessages(bool bDisplay)
+	SetDisplayMessages_SKSE(bDisplay)
+endfunction
+
+bool function DragonAttack_SKSE(bool bAlternateAttack = false) global native
+bool function DragonAttack(bool bAlternateAttack = false)
+_ts_Debug_Trace_Message("IDRC - _ts_DR_RideControlScript - DragonAttack")
+	return DragonAttack_SKSE(bAlternateAttack)
+endfunction
+
+bool function DragonTakeOffPlayerRiding_SKSE(ObjectReference TakeOffTarget, bool bDisplayMode = true) global native
+bool function DragonTakeOffPlayerRiding(ObjectReference TakeOffTarget, bool bDisplayMode = true)
+_ts_Debug_Trace_Message("IDRC - _ts_DR_RideControlScript - DragonTakeOffPlayerRiding")
+	return DragonTakeOffPlayerRiding_SKSE(TakeOffTarget, bDisplayMode)
+endfunction
+
+bool function DragonHoverPlayerRiding_SKSE(ObjectReference HoverTarget, bool bDisplayMode = true) global native
+bool function DragonHoverPlayerRiding(ObjectReference HoverTarget, bool bDisplayMode = true)
+_ts_Debug_Trace_Message("IDRC - _ts_DR_RideControlScript - DragonHoverPlayerRiding")
+	return DragonHoverPlayerRiding_SKSE(HoverTarget, bDisplayMode)
+endfunction
+

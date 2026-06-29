@@ -1,6 +1,7 @@
 .idea
 .vs
 .vscode/settings.json
+.git_papyrus
 build
 cmake-build*
 vcpkg_installed*
