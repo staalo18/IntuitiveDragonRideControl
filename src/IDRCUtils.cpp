@@ -50,6 +50,19 @@ namespace IDRC {
 
 // TODO: Try to implement a plugin function for SetAllowFlyingEx() to avoid this workaround
         bool SetAllowFlying(bool a_allowFlying) {
+/*
+            auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
+            if (!dragonActor) {
+                log::error("IDRC - {}: dragonActor is null", __func__);
+                return false;
+            }
+        SKSE::GetTaskInterface()->AddTask([dragonActor, a_allowFlying]() {
+            // When modifying Game objects, send task to TaskInterface to ensure thread safety
+            dragonActor->AsActorState()->actorState2.allowFlying = static_cast<uint32_t>(a_allowFlying);
+            dragonActor->EvaluatePackage();
+        });
+//            return true;
+ */           
             auto& dataManager = DataManager::GetSingleton();
 
             auto* RideQuest = dataManager.GetRideQuest();
@@ -76,11 +89,17 @@ namespace IDRC {
                 _ts_SKSEFunctions::WaitWhileGameIsPaused();
                 std::this_thread::sleep_for(std::chrono::milliseconds(10));
                 count++;
+//log::info("IDRC - {}: Waiting for SetAllowFlying to complete... ({} ms)", __func__, count * 10);
             }
             if (count >= 100) { // waited > 1sec
                 log::error("IDRC - {}: ERROR - Timed out while waiting for SetAllowFlying to complete!", __func__);
                 return false;
             }
+//        SKSE::GetTaskInterface()->AddTask([dragonActor, a_allowFlying]() {
+            // When modifying Game objects, send task to TaskInterface to ensure thread safety
+//            dragonActor->EvaluatePackage();
+//        });
+
             return true;
         }
         

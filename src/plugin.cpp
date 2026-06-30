@@ -39,7 +39,6 @@ namespace IDRC {
                                 RE::BGSRefAlias* a_towerPerch,
                                 RE::BGSRefAlias* a_rockPerch,
                                 RE::BGSRefAlias* a_perchTarget,
-                                RE::BGSListForm* a_fastTravelPackageList, 
                                 RE::BGSListForm* a_breathList, 
                                 RE::BGSListForm* a_ballList,
                                 RE::TESShout* a_unrelentingForceShout,
@@ -56,7 +55,6 @@ namespace IDRC {
             DisplayManager::GetSingleton().InitializeData();
             FlyingModeManager::GetSingleton().InitializeData(a_dragonTurnMarker, 
                                             a_dragonTravelToMarker, a_flyToTargetMarker, a_noFlyAbility);
-            FastTravelManager::GetSingleton().InitializeData(a_fastTravelPackageList);
             CombatManager::GetSingleton().InitializeData(a_breathList, a_ballList, a_unrelentingForceShout, a_attackShout);  
             ControlsManager::GetSingleton().InitializeData();
             TargetReticleManager::GetSingleton().Initialize();
@@ -148,14 +146,6 @@ namespace IDRC {
             return ControlsManager::GetSingleton().GetInitialAutoCombatMode();
         }
 
-        bool IsFlyingMountPatrolQueued(RE::StaticFunctionTag*, RE::Actor* a_actor) {
-            return _ts_SKSEFunctions::IsFlyingMountPatrolQueued(a_actor);
-        }
-
-        bool IsFlyingMountFastTravelling(RE::StaticFunctionTag*, RE::Actor* a_actor) {
-            return _ts_SKSEFunctions::IsFlyingMountFastTravelling(a_actor);
-        }
-
         void SetDisplayMessages_SKSE(RE::StaticFunctionTag*, bool a_display) {
             log::info("IDRC - {}: {}", __func__, a_display);
             DisplayManager::GetSingleton().SetDisplayMessages(a_display);
@@ -214,15 +204,6 @@ namespace IDRC {
             CameraLockManager::GetSingleton().SetIgnoredCameraPitch(a_pitch);
         }
 
-        RE::BSScript::LatentStatus TriggerLand_SKSE_Latent(RE::BSScript::Internal::VirtualMachine* a_vm, RE::VMStackID a_stackID, RE::StaticFunctionTag*, RE::TESObjectREFR* a_landTarget) {
-            std::thread([a_vm, a_stackID, a_landTarget]() {
-                bool result = FlyingModeManager::GetSingleton().TriggerLand(a_landTarget);
-                a_vm->ReturnLatentResult(a_stackID, result);
-            }).detach();
-        
-            return RE::BSScript::LatentStatus::kStarted;
-        }
-
         RE::BSScript::LatentStatus ForceHover_SKSE_Latent(RE::BSScript::Internal::VirtualMachine* a_vm, RE::VMStackID a_stackID, RE::StaticFunctionTag*) {
             std::thread([a_vm, a_stackID]() {
                 bool result = FlyingModeManager::GetSingleton().ForceHover();
@@ -235,31 +216,6 @@ namespace IDRC {
         RE::BSScript::LatentStatus DragonLandPlayerRiding_SKSE_Latent(RE::BSScript::Internal::VirtualMachine* a_vm, RE::VMStackID a_stackID, RE::StaticFunctionTag*, RE::TESObjectREFR* a_landTarget, bool a_displayMode) {
             std::thread([a_vm, a_stackID, a_landTarget, a_displayMode]() {
                 bool result = FlyingModeManager::GetSingleton().DragonLandPlayerRiding(a_landTarget, a_displayMode);
-                a_vm->ReturnLatentResult(a_stackID, result);
-            }).detach();
-        
-            return RE::BSScript::LatentStatus::kStarted;
-        }
-
-        RE::BSScript::LatentStatus StopFastTravel_SKSE_Latent(RE::BSScript::Internal::VirtualMachine* a_vm, RE::VMStackID a_stackID, RE::StaticFunctionTag*, RE::TESObjectREFR* a_stopFastTravelTarget, float a_height, int a_timeout, std::string a_waitMessage, std::string a_timeoutMessage) {
-
-            // Log threadId of papyrus thread:
-//            std::ostringstream threadIdStream;
-//            threadIdStream << std::this_thread::get_id();
-//            std::string threadIdStr = threadIdStream.str();
-//            log::info("IDRC - {} - threadId: {}", __func__, threadIdStr);
-
-std::thread([a_vm, a_stackID, a_stopFastTravelTarget, a_height, a_timeout, a_waitMessage, a_timeoutMessage]() {
-                bool result = FastTravelManager::GetSingleton().StopFastTravel(a_stopFastTravelTarget, a_height, a_timeout, a_waitMessage, a_timeoutMessage);
-                a_vm->ReturnLatentResult(a_stackID, result);
-            }).detach();
-        
-            return RE::BSScript::LatentStatus::kStarted;
-        }
-
-        RE::BSScript::LatentStatus CancelStopFastTravel_SKSE_Latent(RE::BSScript::Internal::VirtualMachine* a_vm, RE::VMStackID a_stackID, RE::StaticFunctionTag*) {
-            std::thread([a_vm, a_stackID]() {
-                bool result = FastTravelManager::GetSingleton().CancelStopFastTravel();
                 a_vm->ReturnLatentResult(a_stackID, result);
             }).detach();
         
@@ -319,10 +275,6 @@ std::thread([a_vm, a_stackID, a_stopFastTravelTarget, a_height, a_timeout, a_wai
             a_vm->RegisterFunction("SetMaxTargetScanAngle_SKSE", "_ts_DR_RideControlScript", SetMaxTargetScanAngle_SKSE);
             a_vm->RegisterFunction("SetCameraLockInitiallyEnabled_SKSE", "_ts_DR_RideControlScript", SetCameraLockInitiallyEnabled_SKSE);
             a_vm->RegisterFunction("SetIgnoredCameraPitch_SKSE", "_ts_DR_RideControlScript", SetIgnoredCameraPitch_SKSE);
-
-            // Papyrus access to ts_SKSEFunctions
-            a_vm->RegisterFunction("IsFlyingMountPatrolQueued", "_ts_DR_RideControlScript", IsFlyingMountPatrolQueued);
-            a_vm->RegisterFunction("IsFlyingMountFastTravelling", "_ts_DR_RideControlScript", IsFlyingMountFastTravelling);
         
             // functions for GoTDragonCompanions
             a_vm->RegisterFunction("SetAutoCombat_SKSE", "_ts_DR_RideControlScript", SetAutoCombat_SKSE);
@@ -332,8 +284,6 @@ std::thread([a_vm, a_stackID, a_stopFastTravelTarget, a_height, a_timeout, a_wai
             a_vm->RegisterFunction("GetBallShoutList_SKSE", "_ts_DR_RideControlScript", GetBallShoutList_SKSE);
             a_vm->RegisterFunction("GetInitialAutoCombatMode_SKSE", "_ts_DR_RideControlScript", GetInitialAutoCombatMode_SKSE);
             a_vm->RegisterFunction("SetDisplayMessages_SKSE", "_ts_DR_RideControlScript", SetDisplayMessages_SKSE);
-
-//            a_vm->RegisterFunction("TEST_SKSE", "_ts_DR_RideControlScript", TEST_SKSE);
 
             // Latent native functions are used in situations where the function execution takes
             // a non-negligible amount of time.
@@ -347,11 +297,8 @@ std::thread([a_vm, a_stackID, a_stopFastTravelTarget, a_height, a_timeout, a_wai
                     from original: this->_retType = GetRawType<latentR>();
                     to patched:  this->_retType = GetRawType<latentR>()();
             */
-            a_vm->RegisterLatentFunction<bool>("TriggerLand_SKSE", "_ts_DR_RideControlScript", TriggerLand_SKSE_Latent);
             a_vm->RegisterLatentFunction<bool>("ForceHover_SKSE", "_ts_DR_RideControlScript", ForceHover_SKSE_Latent);
             a_vm->RegisterLatentFunction<bool>("DragonLandPlayerRiding_SKSE", "_ts_DR_RideControlScript", DragonLandPlayerRiding_SKSE_Latent);
-            a_vm->RegisterLatentFunction<bool>("CancelStopFastTravel_SKSE", "_ts_DR_RideControlScript", CancelStopFastTravel_SKSE_Latent);
-            a_vm->RegisterLatentFunction<bool>("StopFastTravel_SKSE", "_ts_DR_RideControlScript", StopFastTravel_SKSE_Latent);
             // functions for GoTDragonCompanions
             a_vm->RegisterLatentFunction<bool>("DragonAttack_SKSE", "_ts_DR_RideControlScript", DragonAttack_SKSE_Latent);
             a_vm->RegisterLatentFunction<bool>("DragonTakeOffPlayerRiding_SKSE", "_ts_DR_RideControlScript", DragonTakeOffPlayerRiding_SKSE_Latent);
@@ -432,7 +379,7 @@ extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* sks
 
     log::info("IDRC - {}: Calling Install Hooks", __func__);
 
-    SKSE::AllocTrampoline(256);
+    SKSE::AllocTrampoline(128);
 
     Hooks::Install();
 

@@ -35,10 +35,8 @@ Shout Property UnrelentingForceShout auto
 
 Formlist Property BreathShoutList auto
 Formlist Property BallShoutList auto
-Formlist property FastTravelPackageList auto
 
 Scene Property BorderRegionScene Auto
-Scene Property FastTravelScene Auto
 
 
 
@@ -61,7 +59,6 @@ function InitializeData_SKSE(Quest rideQuest, Quest findPerchQuest, \
 							ReferenceAlias TowerPerch, \
 							ReferenceAlias RockPerch, \
 							ReferenceAlias PerchTarget, \							
-							FormList FastTravelPackagelist, \
 							FormList BreathShoutList, FormList BallShoutList, \
 							Shout UnrelentingForceShout, Shout AttackShout, \
 							ObjectReference DragonTurnMarker, ObjectReference DragonTravelToMarker,\
@@ -79,16 +76,11 @@ _ts_Debug_Trace_Message("IDRC - _ts_DR_RideControlScript - InitVariables: IsUsin
 		BorderRegionScene.Start()
 	endif	
 
-	if !FastTravelScene.IsPlaying()
-		FastTravelScene.Start()
-	endif
-
 	RegisterCustomEvents()
 	CheckIDRCVersion()
 
 	InitializeData_SKSE((self as quest), FindPerchQuest, dragonAlias, DLC2TameDragonOrbitMarker, \
 						WordWallPerch, TowerPerch, RockPerch, PerchTarget, \
-						FastTravelPackagelist, \
 						BreathShoutList, BallShoutList, UnrelentingForceShout, AttackShout, \
 						DragonTurnMarker, DragonTravelToMarker, FlyToTargetMarker,\
 						DLC2TameDragonNoFlyAbility, DragonName, \
@@ -162,7 +154,6 @@ Function RegisterCustomEvents()
 _ts_Debug_Trace_Message("IDRC - _ts_DR_RideControlScript - RegisterCustomEvents")
 	; Use custom events to run time-consuming tasks asynchronosly, ie not gating progress of the calling scripts
 	; NOTE: These custom events MUST be registered each time the game is loaded - see OnPlayerLoadGame() in _ts_DR_PlayerAliasScript
-	RegisterForModEvent("Event_StopFastTravelEvent", "StopFastTravelEvent")
 	
 	RegisterForModEvent("OnProperyUpdate_SKSE", "OnPropertyUpdate_SKSE")
 	RegisterForModEvent("OnSetAllowFlying_SKSE", "OnSetAllowFlying_SKSE")
@@ -375,11 +366,6 @@ endfunction
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
-bool Function IsFlyingMountPatrolQueued(Actor akActor) global native
-
-bool Function IsFlyingMountFastTravelling(Actor akActor) global native
-
-
 ; DragonFollowAliasScript, DragonRegisterScript
 function SetFlyingMode_SKSE(int iState) global native
 Function SetFlyingState(int iState)
@@ -402,65 +388,6 @@ bool function DragonLandPlayerRiding(ObjectReference LandTarget, bool bDisplayMo
 _ts_Debug_Trace_Message("IDRC - _ts_DR_RideControlScript - DragonLandPlayerRiding")
 return DragonLandPlayerRiding_SKSE(LandTarget, bDisplayMode)
 endFunction
-
-
-; FastTravelSceneScript
-bool function TriggerLand_SKSE(ObjectReference LandTarget = None) global native
-function TriggerLand(ObjectReference LandTarget = None)
-_ts_Debug_Trace_Message("IDRC - _ts_DR_RideControlScript - TriggerLand")
-TriggerLand_SKSE(LandTarget)
-endfunction
-
-
-; FastTravelSceneScript
-bool function CancelStopFastTravel_SKSE() global native
-bool function CancelStopFastTravel()
-return CancelStopFastTravel_SKSE()
-endfunction
-
-
-; FastTravelSceneScript
-Function StopFastTravelAsEvent(ObjectReference StopFastTravelTarget,  float fHeight = 0.0, \
-								int iTimeout = 200, string WaitMessage = "", string TimeoutMessage = "")
-_ts_Debug_Trace_Message("IDRC - _ts_DR_RideControlScript - StopFastTravelAsEvent")
-	int handle = ModEvent.Create("Event_StopFastTravelEvent")
-	if (handle)
-		ModEvent.PushForm(handle, self)
-		ModEvent.PushForm(handle, StopFastTravelTarget)
-		ModEvent.PushFloat(handle, fHeight)
-		ModEvent.PushInt(handle, iTimeout)
-		ModEvent.PushString(handle, WaitMessage)
-		ModEvent.PushString(handle, TimeoutMessage)
-		ModEvent.Send(handle)
-	endIf
-endfunction
-
-Event StopFastTravelEvent(Form sender, Form StopFastTravelTargetForm,  float fHeight = 0.0, \
-	int iTimeout = 100, string WaitMessage = "", string TimeoutMessage = "")
-_ts_Debug_Trace_Message("IDRC - _ts_DR_RideControlScript - StopFastTravelEvent")	
-
-	if sender != self
-_ts_Debug_Trace_Message("IDRC - _ts_DR_RideControlScript - StopFastTravelEvent: Error - sender != self")	
-		return
-	endif
-
-	ObjectReference StopFastTravelTarget = StopFastTravelTargetForm as ObjectReference
-	if !StopFastTravelTarget
-_ts_Debug_Trace_Message("IDRC - _ts_DR_RideControlScript - StopFastTravelEvent: Error - StopFastTravelTarget not found")	
-		return
-	endif
-	
-	StopFastTravel(StopFastTravelTarget, fHeight, iTimeout, WaitMessage, TimeoutMessage)
-endevent
-
-
-; FastTravelSceneScript
-bool Function StopFastTravel_SKSE(ObjectReference StopFastTravelTarget, float fHeight, int iTimeout, string WaitMessage, string TimeoutMessage) global native
-bool function StopFastTravel(ObjectReference StopFastTravelTarget, float fHeight = 0.0, \
-                             int iTimeout = 200, string WaitMessage = "", string TimeoutMessage = "")
-_ts_Debug_Trace_Message("IDRC - _ts_DR_RideControlScript - StopFastTravel")
-return StopFastTravel_SKSE(StopFastTravelTarget, fHeight, iTimeout, WaitMessage, TimeoutMessage)
-endfunction
 
 
 ; Interface to GoTDragonCompanions

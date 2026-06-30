@@ -24,6 +24,9 @@ namespace Hooks
 //		GetMountHook::Hook();
 //		FlightGoalHook::Hook();
 		PathingHook::Hook();
+
+//		ActivateHandlerHook::Hook();
+//		UpdateFlyingMountFastTravelHook::Hook();
 /* UNUSED HOOKS:
 		ExecuteTeleportHook::Hook();
 		PapyrusFastTravelHook::Hook();
@@ -114,13 +117,17 @@ namespace Hooks
 		IDRC::CameraLockManager::GetSingleton().Update();
 		IDRC::TargetReticleManager::GetSingleton().Update();
 		IDRC::CombatManager::GetSingleton().Update();
+		IDRC::FastTravelManager::GetSingleton().Update();
 		bool fastTravelFlag = GetFlyingMountFastTravelStateFlag();
 		bool patrolQueuedFlag = GetFlyingMountPatrolQueuedStateFlag();
 		auto* dragonActor = IDRC::DataManager::GetSingleton().GetDragonActor();
 		if (dragonActor) {
 			auto combatState = _ts_SKSEFunctions::GetCombatState(dragonActor);
-//log::info("IDRC - {}: Dragon combat state: {}", __func__, combatState);
-log::info("IDRC - {}: FastTravelFlag={}, PatrolQueuedFlag={}, combatState={}", __func__, fastTravelFlag, patrolQueuedFlag, combatState);
+//            dragonActor->EvaluatePackage();
+//log::info("IDRC - {}: FastTravelFlag={}, PatrolQueuedFlag={}, combatState={}, AV3= {}, package: {:0x}", __func__, 
+//	fastTravelFlag, patrolQueuedFlag, combatState, 
+//	dragonActor->AsActorValueOwner()->GetActorValue(RE::ActorValue::kVariable03), 
+//	dragonActor->GetCurrentPackage()->GetFormID());
 		}
 /* For debugging
 		auto* player = RE::PlayerCharacter::GetSingleton();
@@ -680,6 +687,67 @@ APIs::TrueHUD->DrawPoint(waypointToUpdate, 5.0f, 0.0f, 0xFF0000FF);
 //log::info("IDRC - {}: StopCombat original function returned", __func__);
 	}
 
+	void ActivateHandlerHook::sub_140708bf0(RE::ActivateHandler* a_this, std::uint64_t a_param2, std::uint64_t a_param3, bool a_param4)
+	{
+		if (_sub_140708bf0 == 0) {
+			log::error("{}: trampoline not initialized!", __FUNCTION__);
+			return;
+		}
+//log::info("IDRC - {}: --------------->>>>>>>>>>>>>> sub_140708bf0 called", __func__);
+		reinterpret_cast<decltype(&sub_140708bf0)>(_sub_140708bf0)(a_this, a_param2, a_param3, a_param4);
+	}
+
+	void ActivateHandlerHook::sub_1406a9f90(RE::PlayerCharacter* a_this)
+	{
+		
+		if (_sub_1406a9f90 == 0) {
+			log::error("{}: trampoline not initialized!", __FUNCTION__);
+			return;
+		}
+log::info("IDRC - {}: --------------->>>>>>>>>>>>>> sub_1406a9f90 (player) called", __func__);
+		reinterpret_cast<decltype(&sub_1406a9f90)>(_sub_1406a9f90)(a_this);
+	}
+
+	void ActivateHandlerHook::FUN_1406ba8e0(std::uint64_t a_param1, std::uint64_t a_param2, std::uint64_t a_param3, bool a_param4)
+	{
+		if (_FUN_1406ba8e0 == 0) {
+			log::error("{}: trampoline not initialized!", __FUNCTION__);
+			return;
+		}
+log::info("IDRC - {}: --------------->>>>>>>>>>>>>> FUN_1406ba8e0 called", __func__);
+		reinterpret_cast<decltype(&FUN_1406ba8e0)>(_FUN_1406ba8e0)(a_param1, a_param2, a_param3, a_param4);
+	}
+
+	bool ActivateHandlerHook::ObjectRefActivate(void* a_this,void* a_activator,void* a_arg2,void* a_object,void* a_count,
+               bool a_defaultProcessingOnly)
+	{
+		if (_ObjectRefActivate == 0) {
+			log::error("{}: trampoline not initialized!", __FUNCTION__);
+			return false;
+		}
+log::info("IDRC - {}: --------------->>>>>>>>>>>>>> ObjectRefActivate called", __func__);
+		return reinterpret_cast<decltype(&ObjectRefActivate)>(_ObjectRefActivate)(a_this, a_activator, a_arg2, a_object, a_count, a_defaultProcessingOnly);
+	}
+
+	void ActivateHandlerHook::FlyingMountTriggerLand(void* a_this, void* a_param2, void* a_param3, void* a_param4)
+	{
+		if (_FlyingMountTriggerLand == 0) {
+			log::error("{}: trampoline not initialized!", __FUNCTION__);
+			return;
+		}
+log::info("IDRC - {}: --------------->>>>>>>>>>>>>> FlyingMountTriggerLand called", __func__);
+		reinterpret_cast<decltype(&FlyingMountTriggerLand)>(_FlyingMountTriggerLand)(a_this, a_param2, a_param3, a_param4);
+	}
+
+	void ActivateHandlerHook::FlyingMountActivate(void* a_this, void* a_param2)
+	{
+		if (_FlyingMountActivate == 0) {
+			log::error("{}: trampoline not initialized!", __FUNCTION__);
+			return;
+		}
+log::info("IDRC - {}: --------------->>>>>>>>>>>>>> FlyingMountActivate called", __func__);
+		reinterpret_cast<decltype(&FlyingMountActivate)>(_FlyingMountActivate)(a_this, a_param2);
+	}
 /* UNUSED HOOKS:	
 
 	bool ExecuteTeleportHook::ExecuteTeleport(

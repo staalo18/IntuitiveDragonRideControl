@@ -10,7 +10,7 @@
 #include "RE/Skyrim.h"
 #include "SKSE/API.h"
 #include "CLIBUtil/EditorID.hpp"
-
+#include "Hooks.h"
 
 namespace IDRC {
 
@@ -586,13 +586,6 @@ namespace IDRC {
             return false;
         }
     
-        // Check if FastTravel can be stopped
-        if (!FastTravelManager::GetSingleton().StopFastTravel(a_directionMarker, 0.0, 
-                    200, "", "Unexpected error - dragon not grounded?")) {
-            log::error("IDRC - {}: Failed to stop FastTravel", __func__);
-            return false;
-        }
-    
         // Switch to travel package
         SKSE::GetTaskInterface()->AddTask([dragonActor]() {
             // When modifying Game objects, send task to TaskInterface to ensure thread safety
@@ -777,12 +770,7 @@ namespace IDRC {
             if (a_displayMode) {
                 searchMessage = "The dragon is still approaching hover position";
             }
-    
-            // Stop fast travel
-            if (!FastTravelManager::GetSingleton().StopFastTravel(dragonActor, 0.0f, 200, "", searchMessage)) {
-                return false;
-            }
-    
+        
             // Check if flying state is still valid
             flyingMode = GetFlyingMode();
             if (flyingMode != FlyingMode::kHovering) {
@@ -943,12 +931,6 @@ namespace IDRC {
                     log::warn("IDRC - {}: NoFlyAbility is null", __func__);
                 }
             });    
-
-            // Trigger StopFastTravel just in case - should not be in FastTravel when taking off
-            if (!FastTravelManager::GetSingleton().StopFastTravel(orbitMarker)) {
-                log::info("IDRC - {}: Failed to stop FastTravel - cancel takeoff", __func__);
-                return false;
-            }
     
             SKSE::GetTaskInterface()->AddTask([dragonActor]() {
             // When modifying Game objects, send task to TaskInterface to ensure thread safety
@@ -1007,7 +989,7 @@ namespace IDRC {
 
     bool FlyingModeManager::DragonLandPlayerRiding(RE::TESObjectREFR* a_landTarget, bool a_displayMode) {
         log::info("IDRC - {}", __func__);
-    
+        
         auto& dataManager = DataManager::GetSingleton();
         auto& displayManager = DisplayManager::GetSingleton();
         auto* dragonActor = dataManager.GetDragonActor();
@@ -1015,7 +997,7 @@ namespace IDRC {
             log::error("IDRC - {}: dragonActor is null", __func__);
             return false;
         }
-    
+        
         // Check if the dragon is already landing or landed
         int dragonFlyingState = _ts_SKSEFunctions::GetFlyingState(dragonActor);
         if (GetFlyingMode() == FlyingMode::kLanded && (dragonFlyingState == 0 || dragonFlyingState == 4)) {
@@ -1039,13 +1021,7 @@ namespace IDRC {
                 searchMessage = "The dragon is still searching for a place to land";
                 timeoutMessage = "Could not find a landing spot - Land cancelled";
             }
-    
-            // Cancel any fast travel and set target to LandTarget
-            if (!FastTravelManager::GetSingleton().StopFastTravel(a_landTarget, 0.0f, 200, searchMessage, timeoutMessage)) {
-                CancelDragonLandPlayerRiding();
-                return false;
-            }
-    
+        
             // Handle auto-combat toggling
             m_toggledAutoCombatLand = false;
             if (dataManager.GetAutoCombat()) {
@@ -1163,10 +1139,6 @@ namespace IDRC {
             // Stop fast travel if currently ongoing
             std::string waitMessage = "The dragon is still approaching orbit position";
             std::string timeoutMessage = "Aborting orbit attempt...";
-            if (!FastTravelManager::GetSingleton().StopFastTravel(orbitMarker, 0.0f, 200, waitMessage, timeoutMessage)) {
-                log::info("IDRC - {}: Failed to stop FastTravel - cancel orbit", __func__);
-                return false;
-            }
     
             SKSE::GetTaskInterface()->AddTask([dragonActor]() {
                 // When modifying Game objects, send task to TaskInterface to ensure thread safety
@@ -1401,7 +1373,7 @@ namespace IDRC {
             return false;
         }  
 
-        if(_ts_SKSEFunctions::IsFlyingMountPatrolQueued(dragonActor) == true){
+        if(_ts_SKSEFunctions::IsFlyingMountPatrolQueued(dragonActor)){
             // do not trigger FastTravel while dragon is patrolQueue is still ongoing:
             // that would keep the dragon in PatrolQueued state
             log::info("IDRC - {}: in PatrolQueued - cancel FlyTo...", __func__);
@@ -1419,7 +1391,8 @@ namespace IDRC {
                 // When modifying Game objects, send task to TaskInterface to ensure thread safety
                 orbitMarker->MoveTo(dragonActor); // ensures orbitMarker is in same worldspace as dragonActor
                 orbitMarker->SetPosition(markerPosX, markerPosY, height);
-                dragonActor->AsActorValueOwner()->SetActorValue(RE::ActorValue::kVariable03, 0);
+                dragonActor->AsActorValueOwner()->SetActorValue(RE::ActorValue::kVariable03, 2); // FastTravel
+
                 dragonActor->EvaluatePackage();
             });
         }
@@ -1428,14 +1401,6 @@ namespace IDRC {
             log::info("IDRC - {}: no longer in Flying mode - cancel FlyTo...", __func__);
             return false;
         }
-
-        // Cancel ongoing StopFastTravel requests
-        FastTravelManager::GetSingleton().CancelStopFastTravel();
-
-//        SKSE::GetTaskInterface()->AddTask([dragonActor]() {
-//            // When modifying Game objects, send task to TaskInterface to ensure thread safety
-//            _ts_SKSEFunctions::ClearCombatTargets(dragonActor);
-//        });
 
         // Start the FastTravel mode
         FastTravelManager::GetSingleton().FastTravel(orbitMarker);

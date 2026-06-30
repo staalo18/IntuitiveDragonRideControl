@@ -164,7 +164,7 @@ namespace IDRC {
         }
 
         if ((_ts_SKSEFunctions::GetFlyingState(dragonActor) == 2 && combatManager.IsShoutActive() && combatManager.GetShoutTarget()) ||
-            (isDragonTurning && !m_isUserTurning && !isTDMLocked && !isCameraTurnOngoing)) {
+            (isDragonTurning && !m_isUserTurning && !m_turnOngoing && !isTDMLocked && !isCameraTurnOngoing)) {
             // camera rotation follows dragon yaw
             m_cameraLocked = true;
             float currentCameraRotation = _ts_SKSEFunctions::NormalRelativeAngle(dragonCameraState->freeRotation.x);

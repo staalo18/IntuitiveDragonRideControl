@@ -172,6 +172,54 @@ namespace Hooks
 		static inline std::uintptr_t _StopCombat{ 0 };
 	};
 
+
+	class ActivateHandlerHook
+	{
+	public:
+		static void Hook()
+		{
+			_sub_140708bf0 = _ts_SKSEFunctions::WriteFunctionHook(
+				REL::VariantID(39366, 40438, 0),
+				6,
+				reinterpret_cast<std::uintptr_t>(sub_140708bf0));
+
+			_sub_1406a9f90 = _ts_SKSEFunctions::WriteFunctionHook(
+				REL::VariantID(39471, 40548, 0),
+				5,
+				reinterpret_cast<std::uintptr_t>(sub_1406a9f90));
+			_FUN_1406ba8e0 = _ts_SKSEFunctions::WriteFunctionHook(
+				REL::VariantID(39710, 40812, 0),
+				12,
+				reinterpret_cast<std::uintptr_t>(FUN_1406ba8e0));
+
+			_ObjectRefActivate = _ts_SKSEFunctions::WriteFunctionHook(
+				REL::VariantID(19369, 19796, 0),
+				7,
+				reinterpret_cast<std::uintptr_t>(ObjectRefActivate));
+			_FlyingMountTriggerLand = _ts_SKSEFunctions::WriteFunctionHook(
+				REL::VariantID(39709, 40811, 0),
+				13,
+				reinterpret_cast<std::uintptr_t>(FlyingMountTriggerLand));
+			_FlyingMountActivate = _ts_SKSEFunctions::WriteFunctionHook(
+				REL::VariantID(36840, 37864, 0),
+				6,
+				reinterpret_cast<std::uintptr_t>(FlyingMountActivate));
+		}
+		static void FlyingMountActivate(void* a_this, void* a_param2);
+	private:
+		static void sub_140708bf0(RE::ActivateHandler* a_this, std::uint64_t a_param2, std::uint64_t a_param3, bool a_param4);
+		static void sub_1406a9f90(RE::PlayerCharacter* a_this);
+		static void FUN_1406ba8e0(std::uint64_t a_param1, std::uint64_t a_param2, std::uint64_t a_param3, bool a_param4);
+		static bool ObjectRefActivate(void* a_this, void* a_activator,void* a_arg2,void* a_object,void* a_count,
+               bool a_defaultProcessingOnly);
+		static void FlyingMountTriggerLand(void* a_this, void* a_param2, void* a_param3, void* a_param4);
+		static inline std::uintptr_t _sub_140708bf0{ 0 };
+		static inline std::uintptr_t _sub_1406a9f90{ 0 };
+		static inline std::uintptr_t _FUN_1406ba8e0{ 0 };
+		static inline std::uintptr_t _ObjectRefActivate{ 0 };
+		static inline std::uintptr_t _FlyingMountTriggerLand{ 0 };
+		static inline std::uintptr_t _FlyingMountActivate{ 0 };
+	};
 /*  UNUSED HOOKS:
 
 FastTravel-related hooks:
