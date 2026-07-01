@@ -172,6 +172,48 @@ namespace Hooks
 		static inline std::uintptr_t _StopCombat{ 0 };
 	};
 
+	// Patches BGSSaveLoadGame::FlushQueuedFormLoads (REL: 34645, 35567, SE address: 0x14057a950) 
+	// to guard the TESForm::AsReference2 virtual dispatch against use-after-free -> crash.
+	// Dragon flight causes rapid exterior cell loads/unloads; if a TESForm queued
+	// in BGSSaveLoadGame::loadFormData is freed before FlushQueuedFormLoads runs,
+	// the GetForm() null check passes (pointer non-null) but the vtable at *form
+	// is garbage, crashing at 'call [rdx+0x160]' (at address <function+0x111>, both SE and AE).
+	class FlushQueuedFormLoadsHook
+	{
+	public:
+		static void Hook()
+		{
+			// Patch offset 0x111 within the function: 6-byte 'call [rdx+0x160]'
+			//
+			// The original instruction is FF 92 60 01 00 00 (6 bytes).
+			// write_call<5> replaces bytes 0-4 with a 5-byte relative call stub.
+			// Byte 5 (the trailing 0x00) must be explicitly NOP'd to prevent it from
+			// executing as 'ADD [rax],al' after our hook returns.
+
+			m_imageBase = REL::Module::get().base();
+			const auto* dos = reinterpret_cast<const IMAGE_DOS_HEADER*>(m_imageBase);
+			const auto* nt  = reinterpret_cast<const IMAGE_NT_HEADERS*>(m_imageBase + dos->e_lfanew);
+			m_imageEnd = m_imageBase + static_cast<std::uintptr_t>(nt->OptionalHeader.SizeOfImage);
+
+			REL::Relocation<std::uintptr_t> func{ RELOCATION_ID(34645, 35567) };
+			const auto patchAddr = func.address() + RELOCATION_OFFSET(0x111, 0x111);
+
+			auto& trampoline = SKSE::GetTrampoline();
+			trampoline.write_call<5>(patchAddr, TESForm_AsReference2_Guard);
+			// NOP the 6th byte of the original instruction
+			REL::safe_write(patchAddr + 5, std::uint8_t{ 0x90 });
+		}
+
+	private:
+		// Replaces 'call [rdx+0x160]' — TESForm::AsReference2 virtual dispatch.
+		// a_form (rcx) = TESForm* from BGSLoadFormData::GetForm (non-null).
+		// rdx = *a_form = vtable pointer — null or garbage when form has been freed.
+		// Returns nullptr (safe: caller skips the form) when vtable is outside the image.
+		static RE::TESObjectREFR* TESForm_AsReference2_Guard(RE::TESForm* a_form);
+
+		static inline std::uintptr_t m_imageBase{ 0 };
+		static inline std::uintptr_t m_imageEnd{ 0 };
+	};
 
 	class ActivateHandlerHook
 	{

@@ -24,7 +24,7 @@ namespace Hooks
 //		GetMountHook::Hook();
 //		FlightGoalHook::Hook();
 		PathingHook::Hook();
-
+		FlushQueuedFormLoadsHook::Hook();
 //		ActivateHandlerHook::Hook();
 //		UpdateFlyingMountFastTravelHook::Hook();
 /* UNUSED HOOKS:
@@ -510,7 +510,7 @@ log::info("IDRC - {}: Skipping path update. Conditions not met. CameraLockEnable
 		auto* wayPointBase  = *reinterpret_cast<float**>(pathData + 0x90);
 		auto  wayPointCount = *reinterpret_cast<std::uint32_t*>(pathData + 0xA0);
 
-		if (!wayPointBase || wayPointCount == 0) {
+		if (!wayPointBase || wayPointCount < 2) {
 log::warn("IDRC - {}: wayPointBase null=? wayPointCount: {}", __func__, wayPointCount);
 			return;
 		}
@@ -553,7 +553,7 @@ log::warn("IDRC - {}: wayPointBase null=? wayPointCount: {}", __func__, wayPoint
 
 		// Each entry is 0x48 bytes; XYZ floats at byte offsets +0, +4, +8
 		constexpr std::size_t kStride = 0x48 / sizeof(float);  // = 0x12 floats
-		for (std::uint32_t i = 0; i < std::min(std::max(wayPointCount - 2, 0u), currentIndex + 8u); ++i) {
+		for (std::uint32_t i = 0; i < std::min(wayPointCount - 2, currentIndex + 8u); ++i) {
 			// #Adjusting the first waypoints to impact the immediate path.
 			// Other waypoints do not be adjusted in this frame,
 			// because they do not impact the form of the interpolated path close to the dragon.  
@@ -685,6 +685,24 @@ APIs::TrueHUD->DrawPoint(waypointToUpdate, 5.0f, 0.0f, 0xFF0000FF);
 
 		reinterpret_cast<decltype(&StopCombat)>(_StopCombat)(a_actor);
 //log::info("IDRC - {}: StopCombat original function returned", __func__);
+	}
+
+	RE::TESObjectREFR* FlushQueuedFormLoadsHook::TESForm_AsReference2_Guard(RE::TESForm* a_form)
+	{
+		// a_form (rcx) = TESForm* from BGSLoadFormData::GetForm — guaranteed non-null by caller.
+		// Read the vtable pointer (first 8 bytes of any C++ virtual-dispatch object).
+		const auto vtable = *reinterpret_cast<const std::uintptr_t*>(a_form);
+		if (vtable < m_imageBase || vtable >= m_imageEnd) {
+			// Vtable is outside SkyrimSE.exe image: the form was freed and the memory
+			// has been reused (or zeroed). Returning nullptr is safe — the caller checks for nullptr
+log::warn("IDRC - {}: ------------------->>>>>>>>>>>>> FlushQueuedFormLoads: stale TESForm at {:#018x} "
+"(vtable={:#018x}) — use-after-free detected, skipping", __func__, reinterpret_cast<std::uintptr_t>(a_form), vtable);
+			return nullptr;
+		}
+
+		// Vtable is valid — execute the original TESForm::AsReference2 virtual dispatch.
+		using AsReference2_t = RE::TESObjectREFR* (*)(RE::TESForm*);
+		return (*reinterpret_cast<AsReference2_t*>(vtable + 0x160))(a_form);
 	}
 
 	void ActivateHandlerHook::sub_140708bf0(RE::ActivateHandler* a_this, std::uint64_t a_param2, std::uint64_t a_param3, bool a_param4)
