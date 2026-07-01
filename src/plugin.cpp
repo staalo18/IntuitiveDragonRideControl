@@ -204,15 +204,6 @@ namespace IDRC {
             CameraLockManager::GetSingleton().SetIgnoredCameraPitch(a_pitch);
         }
 
-        RE::BSScript::LatentStatus ForceHover_SKSE_Latent(RE::BSScript::Internal::VirtualMachine* a_vm, RE::VMStackID a_stackID, RE::StaticFunctionTag*) {
-            std::thread([a_vm, a_stackID]() {
-                bool result = FlyingModeManager::GetSingleton().ForceHover();
-                a_vm->ReturnLatentResult(a_stackID, result);
-            }).detach();
-        
-            return RE::BSScript::LatentStatus::kStarted;
-        }
-
         RE::BSScript::LatentStatus DragonLandPlayerRiding_SKSE_Latent(RE::BSScript::Internal::VirtualMachine* a_vm, RE::VMStackID a_stackID, RE::StaticFunctionTag*, RE::TESObjectREFR* a_landTarget, bool a_displayMode) {
             std::thread([a_vm, a_stackID, a_landTarget, a_displayMode]() {
                 bool result = FlyingModeManager::GetSingleton().DragonLandPlayerRiding(a_landTarget, a_displayMode);
@@ -297,7 +288,6 @@ namespace IDRC {
                     from original: this->_retType = GetRawType<latentR>();
                     to patched:  this->_retType = GetRawType<latentR>()();
             */
-            a_vm->RegisterLatentFunction<bool>("ForceHover_SKSE", "_ts_DR_RideControlScript", ForceHover_SKSE_Latent);
             a_vm->RegisterLatentFunction<bool>("DragonLandPlayerRiding_SKSE", "_ts_DR_RideControlScript", DragonLandPlayerRiding_SKSE_Latent);
             // functions for GoTDragonCompanions
             a_vm->RegisterLatentFunction<bool>("DragonAttack_SKSE", "_ts_DR_RideControlScript", DragonAttack_SKSE_Latent);

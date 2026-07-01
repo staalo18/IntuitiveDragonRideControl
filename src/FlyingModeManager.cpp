@@ -36,6 +36,18 @@ namespace IDRC {
         m_mode = kLanded;
     }
 
+    void FlyingModeManager::Update() {
+        auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
+        if (dragonActor) {
+            WorldSpaceData worldSpaceData; 
+            worldSpaceData = WorldSpaceData(dragonActor->GetWorldspace()); 
+            if (!IsInBorderRegion(worldSpaceData.m_borderRegionName)) {
+                DisplayManager::GetSingleton().DisplayLeavingBorderRegion();
+                ForceHover();
+            }
+        }
+    }
+    
     void FlyingModeManager::SetMinHeight(float a_minHeight) {
         m_minHeight = a_minHeight;
     }

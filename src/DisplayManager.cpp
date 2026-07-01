@@ -85,6 +85,16 @@ namespace IDRC {
         RE::SendHUDMessage::ShowHUDMessage((DataManager::GetSingleton().GetDragonName() + " Health: " + std::to_string(roundedHealth) + "%").c_str());
     }
 
+    void DisplayManager::DisplayLeavingBorderRegion() {
+        auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
+        if (!dragonActor) {
+            log::error("IDRC - {}: Dragon actor is null", __func__);
+            return;
+        }
+    
+        RE::SendHUDMessage::ShowHUDMessage("You cannot go that way :-(");
+    }
+
     void  DisplayManager::DisplayHoverStatus(const bool a_displayMode) {
         Utils::RegisterForSingleUpdate(0.5f);
         SetRegisteredForDisplayUpdate(true);

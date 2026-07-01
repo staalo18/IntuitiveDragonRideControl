@@ -36,8 +36,6 @@ Shout Property UnrelentingForceShout auto
 Formlist Property BreathShoutList auto
 Formlist Property BallShoutList auto
 
-Scene Property BorderRegionScene Auto
-
 
 
 ; Initialization 
@@ -71,10 +69,6 @@ function InitVariables(bool bIsOnLoad)
 _ts_Debug_Trace_Message("IDRC - _ts_DR_RideControlScript - InitVariables: IsUsingGamepad = " + game.UsingGamepad())
 	
 	SetIniVars()
-
-	if !BorderRegionScene.IsPlaying()
-		BorderRegionScene.Start()
-	endif	
 
 	RegisterCustomEvents()
 	CheckIDRCVersion()
@@ -367,18 +361,11 @@ endfunction
 
 
 ; DragonFollowAliasScript, DragonRegisterScript
+; GoTDragonCompanions
 function SetFlyingMode_SKSE(int iState) global native
 Function SetFlyingState(int iState)
 	iFlyingState = iState
 	SetFlyingMode_SKSE(iFlyingState)
-endFunction
-
-
-; BorderRegionSceneScript
-bool function ForceHover_SKSE() global native
-function ForceHover()
-_ts_Debug_Trace_Message("IDRC - _ts_DR_RideControlScript - ForceHover")
-ForceHover_SKSE()
 endFunction
 
 
@@ -392,6 +379,8 @@ endFunction
 
 ; Interface to GoTDragonCompanions
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;Function SetFlyingState(int iState) (see above)
 
 function SetAutoCombat_SKSE(bool bAuto) global native
 function SetAutoCombat(bool bValue)

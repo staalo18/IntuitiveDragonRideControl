@@ -117,6 +117,7 @@ namespace Hooks
 		IDRC::CameraLockManager::GetSingleton().Update();
 		IDRC::TargetReticleManager::GetSingleton().Update();
 		IDRC::CombatManager::GetSingleton().Update();
+		IDRC::FlyingModeManager::GetSingleton().Update();
 		IDRC::FastTravelManager::GetSingleton().Update();
 		bool fastTravelFlag = GetFlyingMountFastTravelStateFlag();
 		bool patrolQueuedFlag = GetFlyingMountPatrolQueuedStateFlag();

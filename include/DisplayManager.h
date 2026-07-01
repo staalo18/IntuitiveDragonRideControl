@@ -29,6 +29,8 @@ namespace IDRC {
 
             void DisplayDragonHealth();
 
+            void DisplayLeavingBorderRegion();
+
             void UpdateDisplay();
             
             void DisplayHoverStatus(const bool a_displayMode);

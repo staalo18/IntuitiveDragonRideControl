@@ -30,6 +30,8 @@ namespace IDRC {
                             RE::TESObjectREFR* a_flyToTargetMarker,
                             RE::SpellItem* a_noFlyAbility);
 
+        void Update();
+
         float GetMinHeight();
 
         RE::TESObjectREFR* GetDragonTurnMarker();

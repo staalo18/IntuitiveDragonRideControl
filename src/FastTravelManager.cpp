@@ -11,7 +11,6 @@ namespace IDRC {
     void FastTravelManager::Update() {
         auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
         if (!dragonActor) {
-            log::error("IDRC - {}: dragonActor is None", __func__);
             return;
         }
 
