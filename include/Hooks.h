@@ -2,6 +2,8 @@
 
 #include "RE/D/DragonCameraState.h"
 #include <_ts_SKSEFunctions.h>
+#include "RE/F/FindTriangleForLocationFilterCheckDeltaZ.h"
+
 namespace Hooks
 {
 	class ReadyWeaponHook
@@ -119,6 +121,7 @@ namespace Hooks
 	public:
 		static void Hook()
 		{
+// required hooks:
 			_SetGroundPath = _ts_SKSEFunctions::WriteFunctionHook(
 				REL::VariantID(88302, 90713, 0),
 				5,
@@ -133,23 +136,222 @@ namespace Hooks
 				REL::VariantID(90006, 92491, 0),
 				6,
 				reinterpret_cast<std::uintptr_t>(FlightPlannerUpdate));
+
+			_SetupPathingRequest = _ts_SKSEFunctions::WriteFunctionHook(
+				REL::VariantID(40612, 41642, 0),
+				5,
+				reinterpret_cast<std::uintptr_t>(SetupPathingRequest));
+
+			_GetCurrentPathingLocation  = _ts_SKSEFunctions::WriteFunctionHook(
+				REL::VariantID(29819, 30635, 0),
+				7,
+				reinterpret_cast<std::uintptr_t>(GetCurrentPathingLocation ));
+
+// Hooks for exploration / debugging only:
+			_GetCurrentMountCellOrWorldspaceForm = _ts_SKSEFunctions::WriteFunctionHook(
+				REL::VariantID(36393, 37384, 0),
+				5,
+				reinterpret_cast<std::uintptr_t>(GetCurrentMountCellOrWorldspaceForm));
+
+			_TESPackage_sub_140437ac0 = _ts_SKSEFunctions::WriteFunctionHook(
+				REL::VariantID(28783, 29559, 0),
+				5,
+				reinterpret_cast<std::uintptr_t>(TESPackage_sub_140437ac0));
+
+			_BuildFlyLandPath = _ts_SKSEFunctions::WriteFunctionHook(
+				REL::VariantID(30669, 31513, 0),
+				5,
+				reinterpret_cast<std::uintptr_t>(BuildFlyLandPath));
+/*
+			_SetPathingLocFromPos = _ts_SKSEFunctions::WriteFunctionHook(
+				REL::VariantID(87972, 90353, 0),
+				6,
+				reinterpret_cast<std::uintptr_t>(SetPathingLocFromPos));
+
+			_FindNavmeshTriangleForLocation = _ts_SKSEFunctions::WriteFunctionHook(
+				REL::VariantID(87985, 90369, 0),
+				7,
+				reinterpret_cast<std::uintptr_t>(FindNavmeshTriangleForLocation));
+
+			_FindNavmeshTriangleForLocation2 = _ts_SKSEFunctions::WriteFunctionHook(
+				REL::VariantID(87983, 90367, 0),
+				7,
+				reinterpret_cast<std::uintptr_t>(FindNavmeshTriangleForLocation2));				
+*/
 		}
 
+// member functions:
+		static RE::BSPathing* GetPathingSingleton() {return m_pathingSingleton;};
 	private:
+// required hooks:
 		static void SetGroundPath(std::uintptr_t  a_subPtr, std::uintptr_t* a_newNode, std::uintptr_t* a_newData);
 		static void SetFlightPath(std::uintptr_t  a_subPtr, std::uintptr_t* a_newNode, std::uintptr_t* a_newData);
 		static void FlightPlannerUpdate(std::uintptr_t a_plannerSubPtr,
 									float* a_deltaTime,
 									float* a_outMovementIntention,
 									void* a_context);
-		static void UpdateFlightPathData(std::byte* a_agent);
+		static void SetupPathingRequest(RE::Actor* _ts_a_actor, void* _ts_a_request, RE::NiPoint3* _ts_a_targetPos, float _ts_a_speed, RE::TESObjectREFR* _ts_a_targetRef);
+		static void* GetCurrentPathingLocation (RE::BSPathing* a_pathing,RE::BSPathingLocation* a_loc, RE::Actor* a_actor, std::uintptr_t param4);
 
+// Hooks for exploration / debugging only:
+		static RE::TESForm* GetCurrentMountCellOrWorldspaceForm(RE::Actor *_ts_a_actor,void* _ts_a_param2,void* _ts_a_param3, bool _ts_a_param4);
+		static void* TESPackage_sub_140437ac0(void* a_package, void* a_param2, void* a_param3, void* a_param4);
+		static bool BuildFlyLandPath(void** a_request, RE::BSPathingSolution* a_result);
+//		static void SetPathingLocFromPos(RE::BSPathingLocation* a_loc, RE::NiPoint3 a_pos);
+//		static bool FindNavmeshTriangleForLocation(RE::BSPathingLocation* a_loc, RE::FindTriangleForLocationFilter* a_filter);
+//		static bool FindNavmeshTriangleForLocation2(RE::BSPathingLocation* a_loc, RE::FindTriangleForLocationFilter* a_filter);
+		
+// required hooks:
 		static inline std::uintptr_t _SetGroundPath{ 0 };
 		static inline std::uintptr_t _SetFlightPath{ 0 };
 		static inline std::uintptr_t _FlightPlannerUpdate{ 0 };
+		static inline std::uintptr_t _SetupPathingRequest{ 0 };
+		static inline std::uintptr_t _GetCurrentPathingLocation{ 0 };
+
+// Hooks for exploration / debugging only:
+		static inline std::uintptr_t _GetCurrentMountCellOrWorldspaceForm{ 0 };
+		static inline std::uintptr_t _TESPackage_sub_140437ac0{ 0 };
+		static inline std::uintptr_t _BuildFlyLandPath{ 0 };
+//		static inline std::uintptr_t _SetPathingLocFromPos{ 0 };
+//		static inline std::uintptr_t _FindNavmeshTriangleForLocation{ 0 };
+//		static inline std::uintptr_t _FindNavmeshTriangleForLocation2{ 0 };
+
+// member functions:
+		static void UpdateFlightPathData(std::byte* a_agent);
+
+// members variables:
+		static inline RE::BSPathing* m_pathingSingleton = nullptr; // pathing singleton is initialize with the first vanilla GetCurrentPathingLocation call
 		static inline std::uintptr_t m_actorOffset = REL::Module::get().version() >= SKSE::RUNTIME_SSE_1_6_629 ? 0xC0 : 0xB8;
 	};
 
+
+	// Patches BGSSaveLoadGame::FlushQueuedFormLoads (REL: 34645, 35567)
+
+// TODO - VALIDATE: AND FUN_14057b120 / FUN_1405ae2d0 (REL: est.34648, 35570) — the respawn/unload save helper —
+
+	// to guard virtual dispatches against use-after-free and partially-initialized-form crashes.
+	// Dragon flight causes rapid exterior cell loads/unloads; forms can be freed or only partially
+	// initialized when these functions try to dispatch through their vtables.
+	//
+	// Guarded call sites (SE offset, AE offset):
+	// In FlushQueuedFormLoads (34645 / 35567):
+	//   SE+0x111 / AE+0x111: 'call [rdx+0x160]' — TESForm::AsReference2   1st pass, on TESForm
+	//   SE+0x1DF / AE+0x1C1: 'call [rax+0x80]'  — TESForm::InitLoadGame   1st pass, on TESForm
+	//   SE+0x304 / AE+0x2E4: 'call [rax+0x88]'  — TESForm::FinishLoadGame 2nd pass, on TESForm
+	//   SE+0x356 / AE+0x336: 'call [rax+0x160]' — TESForm::AsReference2   2nd pass, on TESObjectREFR
+
+// TODO: Validate below patch	
+	// In FUN_14057b120 / FUN_1405ae2d0 (est.34648 / 35570) — also called from cell activation (19799):
+	//   SE+0x153 / AE+0x1A8: 'call [rax+0x68]'  — TESObjectREFR::CheckSaveGame
+	//   Both SE and AE compile as 'ff 50 68' (3-byte disp8): JMP thunk required for both.
+	//   Crash 35570+0x219 was inside SaveGame (CALL [R8+0x70] at AE+0x215, 4-byte 41ff5070);
+	//   guarding CheckSaveGame prevents reaching SaveGame for invalid/partial forms.
+	//   Also noted: 'call [rax+0x790]' at SE+0x10D / AE+0x166 on Character actors — TODO guard.
+	//   AE-only additional vtable dispatches before CheckSaveGame (no SE equivalent):
+	//     AE+0x0A0: vtable+0x160, AE+0x0BA: vtable+0x478, AE+0x0CB: vtable+0x5a0, AE+0x0DF: vtable+0x470
+	class FlushQueuedFormLoadsHook
+	{
+	public:
+		static void Hook()
+		{
+			// All patched instructions are 6-byte indirect calls.
+			// write_call<5> replaces bytes 0-4 with a 5-byte relative call stub.
+			// Byte 5 (the trailing 0x00) must be explicitly NOP'd to prevent it from
+			// executing as 'ADD [rax],al' after hook returns.
+
+			m_imageBase = REL::Module::get().base();
+			const auto* dos = reinterpret_cast<const IMAGE_DOS_HEADER*>(m_imageBase);
+			const auto* nt  = reinterpret_cast<const IMAGE_NT_HEADERS*>(m_imageBase + dos->e_lfanew);
+			m_imageEnd = m_imageBase + static_cast<std::uintptr_t>(nt->OptionalHeader.SizeOfImage);
+
+			REL::Relocation<std::uintptr_t> func{ RELOCATION_ID(34645, 35567) };
+			auto& trampoline = SKSE::GetTrampoline();
+
+			// SE+0x111 / AE+0x111: 'call [rdx+0x160]' — TESForm::AsReference2 (1st pass)
+			const auto patchAddr = func.address() + RELOCATION_OFFSET(0x111, 0x111);
+			trampoline.write_call<5>(patchAddr, TESForm_AsReference2_Guard);
+			REL::safe_write(patchAddr + 5, std::uint8_t{ 0x90 });
+
+			// SE+0x1DF / AE+0x1C1: 'call [rax+0x80]' — TESForm::InitLoadGame (1st pass)
+			const auto patchAddr2 = func.address() + RELOCATION_OFFSET(0x1DF, 0x1C1);
+			trampoline.write_call<5>(patchAddr2, TESForm_InitLoadGame_Guard);
+			REL::safe_write(patchAddr2 + 5, std::uint8_t{ 0x90 });
+
+			// SE+0x304 / AE+0x2E4: 'call [rax+0x88]' — TESForm::FinishLoadGame (2nd pass)
+			const auto patchAddr3 = func.address() + RELOCATION_OFFSET(0x304, 0x2E4);
+			trampoline.write_call<5>(patchAddr3, TESForm_FinishLoadGame_Guard);
+			REL::safe_write(patchAddr3 + 5, std::uint8_t{ 0x90 });
+
+			// SE+0x356 / AE+0x336: 'call [rax+0x160]' — TESForm::AsReference2 (2nd pass, on TESObjectREFR from GetReference)
+			const auto patchAddr4 = func.address() + RELOCATION_OFFSET(0x356, 0x336);
+			trampoline.write_call<5>(patchAddr4, TESForm_AsReference2_Guard);
+			REL::safe_write(patchAddr4 + 5, std::uint8_t{ 0x90 });
+
+// TODO: Validate below patch
+/*			// FUN_14057b120 (SE RELOC 34648) / FUN_1405ae2d0 (AE RELOC 35570)
+			// SE+0x153 / AE+0x1A8: 'mov rcx,rsi; call [rax+0x68]' — CheckSaveGame, 6 bytes.
+			// Both SE and AE compile 'call [rax+0x68]' as 'ff 50 68' (3-byte disp8).
+			// Patch covers MOV RCX,RSI + CALL; JMP thunk restores RCX=RSI before calling guard.
+			{
+				REL::Relocation<std::uintptr_t> respawnFunc{ RELOCATION_ID(34648, 35570) };
+				const auto patchAddr  = respawnFunc.address() + RELOCATION_OFFSET(0x153, 0x1A8);
+				const auto resumeAddr = patchAddr + 6;  // TEST AL,AL
+				std::uint8_t th[13] = {
+					0x48, 0x89, 0xF1,               // MOV RCX, RSI
+					0xE8, 0x00, 0x00, 0x00, 0x00,   // CALL CheckSaveGame_Guard (rel32)
+					0xE9, 0x00, 0x00, 0x00, 0x00    // JMP resumeAddr (rel32)
+				};
+				auto* thunkMem = static_cast<std::uint8_t*>(trampoline.allocate(sizeof(th)));
+				const auto thunkBase = reinterpret_cast<std::uintptr_t>(thunkMem);
+				const auto guardFn   = reinterpret_cast<std::uintptr_t>(&CheckSaveGame_Guard);
+				*reinterpret_cast<std::int32_t*>(th + 4) =
+					static_cast<std::int32_t>(guardFn   - (thunkBase + 3 + 5));
+				*reinterpret_cast<std::int32_t*>(th + 9) =
+					static_cast<std::int32_t>(resumeAddr - (thunkBase + 8 + 5));
+				std::memcpy(thunkMem, th, sizeof(th));
+				trampoline.write_branch<5>(patchAddr, thunkBase);
+				REL::safe_write(patchAddr + 5, std::uint8_t{ 0x90 });
+			} */
+		}
+
+	private:
+		// Replaces 'call [rdx+0x160]' — TESForm::AsReference2 virtual dispatch.
+		// a_form (rcx) = TESForm* from BGSLoadFormData::GetForm (non-null).
+		// rdx = *a_form = vtable pointer — null or garbage when form has been freed.
+		// Returns nullptr (safe: caller skips the form) when vtable is outside the image.
+		static RE::TESObjectREFR* TESForm_AsReference2_Guard(RE::TESForm* a_form);
+
+		// Replaces 'call [rax+0x80]' — TESForm::InitLoadGame virtual dispatch.
+		// a_form (rcx) = TESForm*, a_loadBuffer (rdx) = BGSLoadGameBuffer*.
+		// rax = *a_form = vtable pointer — garbage when form has been freed.
+		// Skips the call silently when vtable is outside the image.
+		static void TESForm_InitLoadGame_Guard(RE::TESForm* a_form, void* a_loadBuffer);
+
+		// Replaces 'call [rax+0x88]' — TESForm::FinishLoadGame virtual dispatch (2nd pass).
+		// a_form (rcx) = TESForm*, a_loadBuffer (rdx) = BGSLoadGameBuffer*.
+		// rax = *a_form = vtable pointer — garbage when form has been freed.
+		// Skips the call silently when vtable is outside the image.
+		static void TESForm_FinishLoadGame_Guard(RE::TESForm* a_form, void* a_loadBuffer);
+
+// TODO: Validate below patch
+		// Replaces 'call [rax+0x68]' — TESObjectREFR::CheckSaveGame virtual dispatch
+		// in FUN_14057b120 / FUN_1405ae2d0 (the respawn/unload save helper).
+		// a_ref (rcx) = TESObjectREFR*, a_saveFormBuffer (rdx) = BGSSaveFormBuffer*.
+		// Returns std::int8_t (char) — 0 = don't save, non-zero = save.
+		// On SE, RCX is restored to RSI (the ref) by the JMP thunk before this is called.
+		// Guards against:
+		//   (1) stale vtable (use-after-free): vtable outside image range → return 0
+		//   (2) null parentCell (partially-initialized actor, e.g. loaded but cell already
+		//       unloaded): a_ref->parentCell == nullptr → return 0, avoids null sub-pointer
+		//       crash inside CheckSaveGame implementation (33243+0x56: mov ecx,[rax+0x04])
+//		static std::int8_t CheckSaveGame_Guard(RE::TESObjectREFR* a_ref, void* a_saveFormBuffer);
+
+		static inline std::uintptr_t m_imageBase{ 0 };
+		static inline std::uintptr_t m_imageEnd{ 0 };
+	};
+
+
+/*  UNUSED HOOKS:
 
 	class CombatHook
 	{
@@ -172,68 +374,70 @@ namespace Hooks
 		static inline std::uintptr_t _StopCombat{ 0 };
 	};
 
-	// Patches BGSSaveLoadGame::FlushQueuedFormLoads (REL: 34645, 35567, SE address: 0x14057a950) 
-	// to guard the TESForm::AsReference2 virtual dispatch against use-after-free -> crash.
-	// Dragon flight causes rapid exterior cell loads/unloads; if a TESForm queued
-	// in BGSSaveLoadGame::loadFormData is freed before FlushQueuedFormLoads runs,
-	// the GetForm() null check passes (pointer non-null) but the vtable at *form
-	// is garbage, crashing at 'call [rdx+0x160]' (at address <function+0x111>, both SE and AE).
-	class FlushQueuedFormLoadsHook
+
+	class DragonFlyLandHook
 	{
 	public:
 		static void Hook()
 		{
-			// Patch offset 0x111 within the function: 6-byte 'call [rdx+0x160]'
-			//
-			// The original instruction is FF 92 60 01 00 00 (6 bytes).
-			// write_call<5> replaces bytes 0-4 with a 5-byte relative call stub.
-			// Byte 5 (the trailing 0x00) must be explicitly NOP'd to prevent it from
-			// executing as 'ADD [rax],al' after our hook returns.
-
-			m_imageBase = REL::Module::get().base();
-			const auto* dos = reinterpret_cast<const IMAGE_DOS_HEADER*>(m_imageBase);
-			const auto* nt  = reinterpret_cast<const IMAGE_NT_HEADERS*>(m_imageBase + dos->e_lfanew);
-			m_imageEnd = m_imageBase + static_cast<std::uintptr_t>(nt->OptionalHeader.SizeOfImage);
-
-			REL::Relocation<std::uintptr_t> func{ RELOCATION_ID(34645, 35567) };
-			const auto patchAddr = func.address() + RELOCATION_OFFSET(0x111, 0x111);
-
-			auto& trampoline = SKSE::GetTrampoline();
-			trampoline.write_call<5>(patchAddr, TESForm_AsReference2_Guard);
-			// NOP the 6th byte of the original instruction
-			REL::safe_write(patchAddr + 5, std::uint8_t{ 0x90 });
+			_SetAllowFlying = _ts_SKSEFunctions::WriteFunctionHook(
+				REL::VariantID(22173, 22656, 0),
+				5,
+				reinterpret_cast<std::uintptr_t>(SetAllowFlying));
+			_SetAllowFlyingEx_papyrus = _ts_SKSEFunctions::WriteFunctionHook(
+				REL::VariantID(53923, 54745, 0),
+				6,
+				reinterpret_cast<std::uintptr_t>(SetAllowFlyingEx_papyrus));
+			_InitiateForcedLanding = _ts_SKSEFunctions::WriteFunctionHook(
+				REL::VariantID(36417, 37411, 0),
+				6,
+				reinterpret_cast<std::uintptr_t>(InitiateForcedLanding));
+			_RunFlyLandPackageProcedure = _ts_SKSEFunctions::WriteFunctionHook(
+				REL::VariantID(38616, 39647, 0),
+				5,
+				reinterpret_cast<std::uintptr_t>(RunFlyLandPackageProcedure));
+			_RunFlyLandProcedure = _ts_SKSEFunctions::WriteFunctionHook(
+				REL::VariantID(38639, 39670, 0),
+				5,
+				reinterpret_cast<std::uintptr_t>(RunFlyLandProcedure));
 		}
-
 	private:
-		// Replaces 'call [rdx+0x160]' — TESForm::AsReference2 virtual dispatch.
-		// a_form (rcx) = TESForm* from BGSLoadFormData::GetForm (non-null).
-		// rdx = *a_form = vtable pointer — null or garbage when form has been freed.
-		// Returns nullptr (safe: caller skips the form) when vtable is outside the image.
-		static RE::TESObjectREFR* TESForm_AsReference2_Guard(RE::TESForm* a_form);
-
-		static inline std::uintptr_t m_imageBase{ 0 };
-		static inline std::uintptr_t m_imageEnd{ 0 };
+		static bool SetAllowFlying(void* param_1,void* param_2,RE::Actor* param_3,void* param_4,
+          void* param_5,void* param_6,void* param_7,void* param_8);
+		static void SetAllowFlyingEx_papyrus(RE::BSScript::IVirtualMachine* a_vm,          // Papyrus VM (unused)
+											RE::VMStackID          a_stackID,     // Papyrus call stack (unused)
+											RE::Actor*                     a_actor,       // Target actor
+											char                       a_bAllow,      // 1 = grant flying, 0 = revoke
+											char                       a_searchFlag,  // Forwarded to GetCurrentMountCellOrWorldspaceForm
+											void*                 a_pkgFlag       // Forwarded to _ts_InitiateForcedLanding as param_3
+			);
+		static void InitiateForcedLanding(RE::Actor* a_actor, RE::TESForm* a_targetForm, bool a_packageFlag3, bool a_packageFlag4);
+		static void RunFlyLandPackageProcedure(RE::AIProcess* a_this, RE::Actor* a_actor);
+		static void RunFlyLandProcedure(RE::AIProcess* a_this, RE::Actor* a_actor);
+		static inline std::uintptr_t _SetAllowFlying{ 0 };
+		static inline std::uintptr_t _SetAllowFlyingEx_papyrus{ 0 };
+		static inline std::uintptr_t _InitiateForcedLanding{ 0 };
+		static inline std::uintptr_t _RunFlyLandPackageProcedure{ 0 };
+		static inline std::uintptr_t _RunFlyLandProcedure{ 0 };
 	};
 
-	class ActivateHandlerHook
+	class TestHook
 	{
 	public:
 		static void Hook()
 		{
-			_sub_140708bf0 = _ts_SKSEFunctions::WriteFunctionHook(
-				REL::VariantID(39366, 40438, 0),
-				6,
-				reinterpret_cast<std::uintptr_t>(sub_140708bf0));
-
-			_sub_1406a9f90 = _ts_SKSEFunctions::WriteFunctionHook(
-				REL::VariantID(39471, 40548, 0),
+			_HighProcessUpdate = _ts_SKSEFunctions::WriteFunctionHook(
+				REL::VariantID(38606, 39637, 0),
 				5,
-				reinterpret_cast<std::uintptr_t>(sub_1406a9f90));
-			_FUN_1406ba8e0 = _ts_SKSEFunctions::WriteFunctionHook(
-				REL::VariantID(39710, 40812, 0),
-				12,
-				reinterpret_cast<std::uintptr_t>(FUN_1406ba8e0));
-
+				reinterpret_cast<std::uintptr_t>(HighProcessUpdate));
+			_GetProcedureIndexRunning = _ts_SKSEFunctions::WriteFunctionHook(
+				REL::VariantID(38196, 39156, 0),
+				6,
+				reinterpret_cast<std::uintptr_t>(GetProcedureIndexRunning));
+			_PlayerCharacter_Update = _ts_SKSEFunctions::WriteFunctionHook(
+				REL::VariantID(39375, 40447, 0),
+				5,
+				reinterpret_cast<std::uintptr_t>(PlayerCharacter_Update));
 			_ObjectRefActivate = _ts_SKSEFunctions::WriteFunctionHook(
 				REL::VariantID(19369, 19796, 0),
 				7,
@@ -247,22 +451,22 @@ namespace Hooks
 				6,
 				reinterpret_cast<std::uintptr_t>(FlyingMountActivate));
 		}
-		static void FlyingMountActivate(void* a_this, void* a_param2);
 	private:
-		static void sub_140708bf0(RE::ActivateHandler* a_this, std::uint64_t a_param2, std::uint64_t a_param3, bool a_param4);
-		static void sub_1406a9f90(RE::PlayerCharacter* a_this);
-		static void FUN_1406ba8e0(std::uint64_t a_param1, std::uint64_t a_param2, std::uint64_t a_param3, bool a_param4);
+		static void HighProcessUpdate(RE::AIProcess* a_this, RE::Actor* a_actor);
+		static std::uint32_t GetProcedureIndexRunning(RE::AIProcess* a_this);
+		static void PlayerCharacter_Update(RE::PlayerCharacter* a_this, float a_param2);
 		static bool ObjectRefActivate(void* a_this, void* a_activator,void* a_arg2,void* a_object,void* a_count,
                bool a_defaultProcessingOnly);
 		static void FlyingMountTriggerLand(void* a_this, void* a_param2, void* a_param3, void* a_param4);
-		static inline std::uintptr_t _sub_140708bf0{ 0 };
-		static inline std::uintptr_t _sub_1406a9f90{ 0 };
-		static inline std::uintptr_t _FUN_1406ba8e0{ 0 };
+		static void FlyingMountActivate(void* a_this, void* a_param2);
+		static inline std::uintptr_t _HighProcessUpdate{ 0 };
+		static inline std::uintptr_t _GetProcedureIndexRunning{ 0 };
+		static inline std::uintptr_t _PlayerCharacter_Update{ 0 };
 		static inline std::uintptr_t _ObjectRefActivate{ 0 };
 		static inline std::uintptr_t _FlyingMountTriggerLand{ 0 };
 		static inline std::uintptr_t _FlyingMountActivate{ 0 };
 	};
-/*  UNUSED HOOKS:
+
 
 FastTravel-related hooks:
 *************************
@@ -560,34 +764,6 @@ END FastTravel-related hooks
 		static inline std::uintptr_t _StartVoiceShoutCast{ 0 };
 	};
 */
-/*
-#include <MinHook.h>
-
-class GetMountHook
-{
-public:
-    static void Hook()
-    {
-        MH_Initialize();
-        auto target = REL::Relocation<std::uintptr_t>(RELOCATION_ID(37757, 38702)).address();
-        MH_CreateHook(
-            reinterpret_cast<LPVOID>(target),
-            reinterpret_cast<LPVOID>(GetMount),
-            reinterpret_cast<LPVOID*>(&_original_fn)
-        );
-        MH_EnableHook(reinterpret_cast<LPVOID>(target));
-    }
-
-private:
-    using GetMount_t = bool(RE::Actor*, RE::NiPointer<RE::Actor>&);
-    static bool GetMount(RE::Actor* a_this, RE::NiPointer<RE::Actor>& a_outMount)
-    {
-        // Call the original function via MinHook's trampoline
-        return _original_fn(a_this, a_outMount);
-    }
-
-    static inline GetMount_t* _original_fn = nullptr;
-}; */
 	void Install();
 } // namespace Hooks	
 

@@ -66,6 +66,10 @@ add_library(${PROJECT_NAME} SHARED ${SOURCES})
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_23) # <--- use C++23 standard
 target_precompile_headers(${PROJECT_NAME} PRIVATE include/PCH.h) # <--- PCH.h is required!
 
+# Generate PDB files for all build types (Release uses /Zi + /DEBUG to keep optimizations)
+target_compile_options(${PROJECT_NAME} PRIVATE $<$<CONFIG:Release>:/Zi>)
+target_link_options(${PROJECT_NAME} PRIVATE $<$<CONFIG:Release>:/DEBUG /OPT:REF /OPT:ICF>)
+
 target_include_directories(${PROJECT_NAME} PRIVATE include ${TSSKSEFUNCTIONS_INCLUDE_DIR} ${CMAKE_CURRENT_BINARY_DIR}/include)
 
 find_package(spdlog CONFIG REQUIRED)
@@ -100,15 +104,13 @@ if(DEFINED OUTPUT_FOLDER)
         VERBATIM
     )
 
-    # If you perform a "Debug" build, also copy .pdb file (for debug symbols)
-    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-        add_custom_command(
-            TARGET "${PROJECT_NAME}"
-            POST_BUILD
-            COMMAND "${CMAKE_COMMAND}" -E copy_if_different "$<TARGET_PDB_FILE:${PROJECT_NAME}>" "${DLL_FOLDER}/$<TARGET_PDB_FILE_NAME:${PROJECT_NAME}>"
-            VERBATIM
-        )
-    endif()
+    # Copy .pdb file (debug symbols) for all build types
+    add_custom_command(
+        TARGET "${PROJECT_NAME}"
+        POST_BUILD
+        COMMAND "${CMAKE_COMMAND}" -E copy_if_different "$<TARGET_PDB_FILE:${PROJECT_NAME}>" "${DLL_FOLDER}/$<TARGET_PDB_FILE_NAME:${PROJECT_NAME}>"
+        VERBATIM
+    )
 
     # Copy compiled Papyrus scripts (.pex files) from Scripts/ to output Scripts/ folder
     set(SCRIPTS_FOLDER "${OUTPUT_FOLDER}/Scripts")

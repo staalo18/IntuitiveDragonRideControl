@@ -16,8 +16,6 @@ namespace IDRC {
 
         bool RegisterForSingleUpdate(float a_seconds);
 
-        bool SetAllowFlying(bool a_allowFlying);
-
         float GetHorizontalDistance(RE::TESObjectREFR* a_from, RE::TESObjectREFR* a_to);
 
         std::vector<WorldspaceIniData> LoadWorldspaceIniData(const std::string& a_iniFilename);

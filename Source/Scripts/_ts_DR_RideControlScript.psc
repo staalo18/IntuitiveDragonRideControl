@@ -150,7 +150,6 @@ _ts_Debug_Trace_Message("IDRC - _ts_DR_RideControlScript - RegisterCustomEvents"
 	; NOTE: These custom events MUST be registered each time the game is loaded - see OnPlayerLoadGame() in _ts_DR_PlayerAliasScript
 	
 	RegisterForModEvent("OnProperyUpdate_SKSE", "OnPropertyUpdate_SKSE")
-	RegisterForModEvent("OnSetAllowFlying_SKSE", "OnSetAllowFlying_SKSE")
 EndFunction
 
 
@@ -222,22 +221,6 @@ _ts_Debug_Trace_Message("IDRC - _ts_DR_RideControlScript - OnProperyUpdate_SKSE:
 
 	; ensure any updates that involve package changes are evaluated
 	dragonAlias.GetActorRef().EvaluatePackage()
-endevent
-
-
-; Interface with SKSE plugin -> SKSE plugin using Papyrus functions (no C++ native implementation yet)
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-Event OnSetAllowFlying_SKSE(bool bValue)
-	if bValue
-		dragonAlias.GetActorRef().SetAllowFlying(true)
-	else
-		dragonAlias.GetActorRef().SetAllowFlyingEx(abAllowed = false, abAllowCrash = false, abAllowSearch = true)		
-	endif
-
-	dragonAlias.GetActorRef().EvaluatePackage()
-
-_ts_Debug_Trace_Message("IDRC - _ts_DR_RideControlScript - OnSetAllowFlying_SKSE: AllowFlying = " + bValue)
 endevent
 
 

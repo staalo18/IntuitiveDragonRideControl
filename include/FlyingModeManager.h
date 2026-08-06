@@ -71,6 +71,8 @@ namespace IDRC {
         void ChangeDragonHeight(float a_upDown, bool a_isAbsoluteValue = false);
 
         bool DragonTurnPlayerRiding(float a_turnAngle);
+
+        bool GetLandingPosSearchOngoing() { return m_landingPosSearchOngoing; }
     private:
         FlyingModeManager() = default;
         ~FlyingModeManager() = default;
@@ -90,9 +92,12 @@ namespace IDRC {
         bool m_toggledAutoCombatLand = false;
         bool m_skipOrbiting = true; // Always skip orbiting
         bool m_vanillaAttack = false;
+        bool m_finalizeTriggerLand = false;
+        bool m_landingPosSearchOngoing = false;
 
         FlyingMode m_mode = kLanded;
         RE::SpellItem* m_noFlyAbility = nullptr;
+        RE::NiPoint3 m_landingPos;
 
         class WorldSpaceData {
         public:
@@ -150,9 +155,13 @@ namespace IDRC {
         float GetDistanceToRegionBoundingBox(const WorldSpaceData& a_worldspaceData, 
                                              float a_posX, float a_posY, float a_angle);
         
-        bool IsInBorderRegion(std::string a_regionName) const;
+        bool IsInBorderRegion() const;
 
         void SetFlyingMode(FlyingMode a_mode);
+
+        void FinalizeTriggerLand();
+
+        void GetValidLandingPosition();
     
     }; // class FlyingModeManager
 

@@ -37,9 +37,19 @@ namespace IDRC {
             }
         } else if (m_lastPatrolQueuedState || m_lastFastTravelState) {
             // leaving FastTravel mode
+            auto& flyingModeManager = FlyingModeManager::GetSingleton();
             if (!dragonActor->AsActorState()->actorState2.allowFlying) {
                 log::info("IDRC - {}: Leaving FastTravel and not allowed to fly - trigger land", __func__);
-                FlyingModeManager::GetSingleton().DragonLandPlayerRiding(dragonActor, false);
+                if (flyingModeManager.GetRegisteredForLanding()) {
+                    if (!flyingModeManager.GetLandingPosSearchOngoing()) {
+                        flyingModeManager.TriggerLand();
+                    }
+                } else {
+                    std::thread([dragonActor]() {
+                        // send to new thread so that DragonLandPlayerRiding() is not blocking Update()
+                        FlyingModeManager::GetSingleton().DragonLandPlayerRiding(dragonActor, false);
+                    }).detach();
+                }
             }
         }
 
@@ -84,6 +94,12 @@ namespace IDRC {
             return;
         }
 
+        // Block immediately subsequent FastTravel requests to prevent multiple 
+        // concurrent pathing requests for the dragon,
+        // until this FastTravel request has successfully triggered UpdatePathData() with valid pathData.
+        // Unclear if this is really needed but should prevent  game freeze observed in such a situation.
+        // UpdateFlightPathData() will clear this flag once valid pathData is available.
+        m_skipFastTravelRequest = true;
 
         SKSE::GetTaskInterface()->AddTask([a_fastTravelTarget, dragonActor]() {
             // When modifying Game objects, send task to TaskInterface to ensure thread safety
@@ -116,7 +132,7 @@ namespace IDRC {
             GetRefHandle(a_fastTravelTarget, &loc->fastTravelMarker);
             loc->resetWeather  = false;
             loc->allowAutoSave = false;
-            loc->isValid       = true;  // fires the teleport on next per-frame ExecuteTeleport call
+            loc->isValid       = true;  // triggers the fast travel on next per-frame ExecuteTeleport call
 
 // Previous solution: call the Papyrus function Game.FastTravel(). 
 // This works as well and is an alternative to setting the loc values.

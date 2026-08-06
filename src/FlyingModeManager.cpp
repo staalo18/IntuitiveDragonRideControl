@@ -39,11 +39,25 @@ namespace IDRC {
     void FlyingModeManager::Update() {
         auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
         if (dragonActor) {
-            WorldSpaceData worldSpaceData; 
-            worldSpaceData = WorldSpaceData(dragonActor->GetWorldspace()); 
-            if (!IsInBorderRegion(worldSpaceData.m_borderRegionName)) {
+            if (!IsInBorderRegion()) {
                 DisplayManager::GetSingleton().DisplayLeavingBorderRegion();
                 ForceHover();
+            }
+
+            if (GetRegisteredForLanding()) {
+                if (!m_finalizeTriggerLand && !m_landingPosSearchOngoing) {
+                    auto* currentPackage = dragonActor->GetCurrentPackage();
+                    if (currentPackage && currentPackage->procedureType != RE::PACKAGE_PROCEDURE_TYPE::kLanding) {
+    log::info("IDRC - {}: ---------------->>>>>>>>>>>>>>> Dragon dropped out of landing package during landing - re-trigger land", __func__);
+                        // Dragon dropped out of landing package during landing.
+                        // This can happen eg during ongoing combat,
+                        // when dragon sometimes changes to kSpectator package / kObserveCombat procedure.
+                        // Re-Trigger landing to switch back to Landing package
+                        TriggerLand();
+                    } 
+                } else {
+                    FinalizeTriggerLand();
+                }
             }
         }
     }
@@ -290,9 +304,7 @@ namespace IDRC {
         }
     
         bool flyingModeNotification = false;
-        WorldSpaceData worldSpaceData; 
-        worldSpaceData = WorldSpaceData(dragonActor->GetWorldspace()); 
-        if (!controlsManager.GetControlBlocked() && IsInBorderRegion(worldSpaceData.m_borderRegionName)) {
+        if (!controlsManager.GetControlBlocked() && IsInBorderRegion()) {
             if (dragonActor->IsBeingRidden()) {
                 if ((a_key == kForward || a_key == kBack) && 
                         dataManager.GetAutoCombat() && _ts_SKSEFunctions::GetCombatState(dragonActor) > 0) {
@@ -633,36 +645,172 @@ namespace IDRC {
             a_landTarget = dragonActor;
         }
     
-        // Get the landing height with water and adjust for minimum height
-        float zPos = _ts_SKSEFunctions::GetLandHeightWithWater(a_landTarget) + GetMinHeight();
-    
         // Move the orbit marker to the landing position
         auto* orbitMarker = DataManager::GetSingleton().GetOrbitMarker();
-        
-        SKSE::GetTaskInterface()->AddTask([this, dragonActor, orbitMarker, a_landTarget, zPos]() {
-            // When modifying Game objects, send task to TaskInterface to ensure thread safety
-            if (orbitMarker) {
-                _ts_SKSEFunctions::MoveTo(orbitMarker, a_landTarget, 0.0f, 0.0f, zPos);
-            } else {
-                log::warn("IDRC - {}: Orbit marker is null", __func__);
-            }
-            
-            if (this->m_noFlyAbility) {
-                dragonActor->AddSpell(this->m_noFlyAbility);
-            } else {
-                log::warn("IDRC - {}: NoFlyAbility is null", __func__);
-            }
-        });
-        Utils::SetAllowFlying(false);
+        if (!orbitMarker) {
+            log::error("IDRC - {}: orbitMarker is null", __func__);
+        }
 
-        SKSE::GetTaskInterface()->AddTask([dragonActor]() {
-            // When modifying Game objects, send task to TaskInterface to ensure thread safety
-            dragonActor->AsActorValueOwner()->SetActorValue(RE::ActorValue::kVariable03, 0); // Orbit package
-            dragonActor->EvaluatePackage();
-        });
+        m_landingPosSearchOngoing = true;
+        m_finalizeTriggerLand = true;
     
+        SKSE::GetTaskInterface()->AddTask([this, orbitMarker, a_landTarget]() {
+            // When modifying Game objects, send task to TaskInterface to ensure thread safety
+
+            // MoveTo ensures orbit marker is in same worldspace as a_landTarget:
+            _ts_SKSEFunctions::MoveTo(orbitMarker, a_landTarget); 
+
+            m_landingPos = a_landTarget->GetPosition(); // fallback in case GetValidLandingPosition() fails to find a valid landing position
+            std::thread([this]() {
+                // send to new thread so that TriggerLand is not blocking in case search takes longer
+                // (this can happen if additional cells get loaded in GetValidLandingPosition()
+                // Once GetValidLandingPosition returns, FinalizeTriggerLand() is triggered in the next Update() 
+                // by checking for m_landingPosSearchOngoing == true
+                this->GetValidLandingPosition();
+                this->m_landingPosSearchOngoing = false;
+            }).detach();
+        });
         return true;
     }
+
+    void FlyingModeManager::FinalizeTriggerLand() {
+        log::info("IDRC - {}", __func__);
+
+        if (m_finalizeTriggerLand && !m_landingPosSearchOngoing) {
+            m_finalizeTriggerLand = false;
+
+            auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
+            if (!dragonActor) {
+                log::error("IDRC - {}: dragonActor is null", __func__);
+                return;
+            }
+            auto* orbitMarker = DataManager::GetSingleton().GetOrbitMarker();
+            SKSE::GetTaskInterface()->AddTask([this, dragonActor, orbitMarker]() {
+
+log::info("IDRC - {}: Valid landing position found: {}, {}, {}, dragonPos = {}, {}, {}, distance = {}", __func__,
+this->m_landingPos.x, this->m_landingPos.y, this->m_landingPos.z, 
+dragonActor->GetPosition().x, dragonActor->GetPosition().y, dragonActor->GetPosition().z, 
+(this->m_landingPos - dragonActor->GetPosition()).Length()); 
+
+                orbitMarker->SetPosition(this->m_landingPos);
+                
+                // Instead of calling SetAllowFlying(false), which 
+                //  * determines a landing location via GetCurrentMountCellOrWorldspaceForm()
+                //  * calls InitiateForcedLanding() with that location to put dragon into kLanding package
+                //  * sets actorState2.allowFlying = false
+                // call InitiateForcedLanding directly with a_landTarget as landing target.
+                // This avoids 'awkward' landing locations, eg very far away-
+                // But this also means that the dragon will land almost anywhere directly on the spot, also when it shouldn't.
+                // Eg it will land on water, and then start to sink.
+                
+                InitiateForcedLanding(dragonActor, orbitMarker, true, false);
+                if (this->m_noFlyAbility) {
+                    dragonActor->AddSpell(this->m_noFlyAbility);
+                } else {
+                    log::warn("IDRC - {}: NoFlyAbility is null", __func__);
+                }
+
+                // need to set allowFlying explicitly, because SetAllowFlying is not used
+                dragonActor->AsActorState()->actorState2.allowFlying = false;
+                dragonActor->AsActorValueOwner()->SetActorValue(RE::ActorValue::kVariable03, 0); // Orbit package
+                dragonActor->EvaluatePackage();
+            });        
+        }
+    }
+
+	void FlyingModeManager::GetValidLandingPosition()
+	{
+log::info("IDRC - {}", __FUNCTION__);
+
+        auto* pathingSingleton = Hooks::PathingHook::GetPathingSingleton();
+		if (!pathingSingleton) {
+			log::warn("IDRC - {}: Pathing singleton not initialized!", __func__);
+			return;
+		}
+
+		auto* dragonActor = IDRC::DataManager::GetSingleton().GetDragonActor();
+		if (!dragonActor) {
+			log::warn("IDRC - {}: Dragon actor not found!", __func__);
+			return;
+		}
+
+		RE::BSPathingLocation loc;
+		GetCurrentPathingLocation(pathingSingleton, &loc, dragonActor, 0);
+
+		if (loc.navMeshInfo == nullptr || loc.triangle < 0) {
+			log::warn("IDRC - {}: Current pathing location is invalid!", __func__);
+			return;
+		}
+
+		RE::NiPoint3 searchPos = loc.location;
+
+		// FindNavmeshTriangleForLocation always returns the closest point with navmesh, but does not filter for water level
+		if (FindNavmeshTriangleForLocation(&loc, &pathingSingleton->defaultTriangleFilter)) {
+			if (loc.location.z > RE::PlayerCharacter::GetSingleton()->GetWaterHeight()) {
+log::info("IDRC - {}: Found valid landing spot without distance search at ({}, {}, {})", __func__, loc.location.x, loc.location.y, loc.location.z);
+				m_landingPos = loc.location;
+				return;
+			}
+		}
+
+		// Fallback: no landing spot found around dragon location, or found spot under water
+		// start area search for alternative landing location
+		
+		float dragonForwardAngle = dragonActor->GetHeading(false);
+		const float searchDistanceStep = 1000.f;
+		int angleSteps = 16;
+		const float searchAngleStep = PI / angleSteps;
+
+		RE::NiPoint3 candidatePos = { searchPos.x, searchPos.y, searchPos.z };
+		float offsetX = 0.f;
+		float offsetY = 0.f;
+		float offset = 0.f;
+		float angleOffset = 0.f;
+		float searchAngle = 0.f;
+		for (int distanceStep = 1; distanceStep <= 50; ++distanceStep) {
+			// max search distance (50 * searchDistanceStep = 50000 units) should be sufficient to find a valid spot
+log::info("IDRC - {}: Searching for landing spot at distance {}", __func__, searchDistanceStep * distanceStep);
+			offset = searchDistanceStep * distanceStep;
+
+			for (int step = 0; step <= angleSteps; ++step) {
+				angleOffset = step * searchAngleStep;
+				searchAngle = dragonForwardAngle + angleOffset;
+log::info("IDRC - {}: Searching for landing spot at angle offset {}", __func__, 180.f / PI * angleOffset);
+
+				offsetX = std::sin(searchAngle) * offset;
+				offsetY = std::cos(searchAngle) * offset;
+
+				candidatePos.x = searchPos.x + offsetX;
+				candidatePos.y = searchPos.y + offsetY;
+
+				if (_ts_SKSEFunctions::HasNavmesh(candidatePos, true)) {
+log::info("IDRC - {}: Found valid landing spot on loaded navmesh at ({}, {}, {})", __func__, candidatePos.x, candidatePos.y, candidatePos.z);
+APIs::TrueHUD->DrawPoint(candidatePos, 5.0f, 20.f, 0x00FF00FF);
+					m_landingPos = candidatePos;
+					return;
+				}
+
+				// check the other direction
+				if (step != 0 && step != angleSteps) { // skip 0 and 180 degrees, already checked
+					searchAngle = dragonForwardAngle - angleOffset;
+
+					offsetX = std::sin(searchAngle) * offset;
+					offsetY = std::cos(searchAngle) * offset;
+
+					candidatePos.x = searchPos.x + offsetX;
+					candidatePos.y = searchPos.y + offsetY;
+
+					if (_ts_SKSEFunctions::HasNavmesh(candidatePos, true)) {
+log::info("IDRC - {}: Found valid landing spot on loaded navmesh at ({}, {}, {})", __func__, candidatePos.x, candidatePos.y, candidatePos.z);
+APIs::TrueHUD->DrawPoint(candidatePos, 5.0f, 20.f, 0x00FF00FF);
+						m_landingPos = candidatePos;
+						return;
+					}
+				}
+			}
+		}
+	}
+
 
     bool FlyingModeManager::CancelDragonLandPlayerRiding() {
         log::info("IDRC - {}", __func__);
@@ -687,11 +835,10 @@ namespace IDRC {
     
         if (GetRegisteredForLanding()) {
             log::info("IDRC - {}: Trying to stop landing", __func__);
-    
-            Utils::SetAllowFlying(true);
 
             SKSE::GetTaskInterface()->AddTask([this, dragonActor]() {
                 // When modifying Game objects, send task to TaskInterface to ensure thread safety
+                dragonActor->AsActorState()->actorState2.allowFlying = true;
                 if (this->m_noFlyAbility) {
                     dragonActor->RemoveSpell(this->m_noFlyAbility);
                 } else {
@@ -761,12 +908,7 @@ namespace IDRC {
 
         if (_ts_SKSEFunctions::GetHealthPercentage(dragonActor) > injuredHealthPercentage &&
             (flyingMode != FlyingMode::kHovering || _ts_SKSEFunctions::GetFlyingState(dragonActor) != 3)) {
-            Utils::SetAllowFlying(true);
 
-            if (!dragonActor->AsActorState()->actorState2.allowFlying) {
-                log::info("IDRC - {}: Could not enable Flying - cancel hover", __func__);
-                return false;
-            }
     
             SetFlyingMode(FlyingMode::kHovering);
             if (a_displayMode) {
@@ -775,6 +917,7 @@ namespace IDRC {
     
             SKSE::GetTaskInterface()->AddTask([dragonActor]() {
             // When modifying Game objects, send task to TaskInterface to ensure thread safety
+                dragonActor->AsActorState()->actorState2.allowFlying = true;
                 dragonActor->AsActorValueOwner()->SetActorValue(RE::ActorValue::kWaitingForPlayer, 0);
             });
     
@@ -926,17 +1069,13 @@ namespace IDRC {
             float angleZ = dragonActor->GetAngleZ();    
             RE::NiPoint3 angle = { dragonActor->GetAngleX(), dragonActor->GetAngleY(), angleZ };
             
-            SKSE::GetTaskInterface()->AddTask([this, orbitMarker, angle, a_takeOffTarget, angleZ]() {
+            SKSE::GetTaskInterface()->AddTask([this, dragonActor, orbitMarker, angle, a_takeOffTarget, angleZ]() {
             // When modifying Game objects, send task to TaskInterface to ensure thread safety
                 _ts_SKSEFunctions::SetAngle(orbitMarker, angle);
                 _ts_SKSEFunctions::MoveTo(orbitMarker, a_takeOffTarget, 
                     100.0f * std::sin(angleZ), 100.0f * std::cos(angleZ),  this->GetMinHeight());
-            });    
 
-            Utils::SetAllowFlying(true);
-
-            SKSE::GetTaskInterface()->AddTask([this, dragonActor]() {
-            // When modifying Game objects, send task to TaskInterface to ensure thread safety
+                    dragonActor->AsActorState()->actorState2.allowFlying = true;
                 if (m_noFlyAbility) {
                     dragonActor->RemoveSpell(this->m_noFlyAbility);
                 } else {
@@ -1044,22 +1183,6 @@ namespace IDRC {
     
             // Place the travel-to marker below the dragon
             PlaceTravelToMarker(dragonActor);
-
-// Below is papyrus (unconverted) - commented out because currently not used.
-//
-//		if !PO3_SKSEFunctions.IsRefUnderwater(DragonTravelToMarker) && (BorderRegionScene as _ts_DR_BorderRegionSceneScript).IsPlayerInBorderRegion()
-// Only if landing spot is not underwater
-// and is within the limits of Skyrim / Solstheim 
-// (this is tracked via a Scene that continuously checks against the condition IsPlayerInRegion,
-//   with regions "BorderRegionSkyrim" and "DLC2SolstheimBorderRegion")
-
-// SetForcedLandingMarker() helps ensure that the dragon does not start to fly far away to land 
-// (sometimes happens if the engine cannot identify a suitable landing spot)
-// Do not use SetForcedLandingMarker() for now
-// this sometimes leads to the dragon landing at spots that trigger a "skyshot"
-//			dragonActor.SetForcedLandingMarker(DragonTravelToMarker)
-// don't forget to clear the forced landing marker when the dragon has landed!
-//		endIf
     
             // Trigger the landing process
             if (_ts_SKSEFunctions::IsFlyingMountFastTravelling(dragonActor) ||
@@ -1380,7 +1503,7 @@ namespace IDRC {
 
         float distance = GetDistanceToRegionBoundingBox(worldSpaceData, posX, posY, angleNorm);
 
-        if(!IsInBorderRegion(worldSpaceData.m_borderRegionName)){
+        if(!IsInBorderRegion()){
             log::info("IDRC - {}: Player is not in border region {} - cancel FlyTo...", __func__, worldSpaceData.m_borderRegionName);
             return false;
         }  
@@ -1613,10 +1736,15 @@ log::info("IDRC - {}: Worldspace {} - BorderRegion: {} / {}", __func__, region->
        }
     }
 
-    bool FlyingModeManager::IsInBorderRegion(std::string a_regionName) const {
-        bool isInBorderRegion = _ts_SKSEFunctions::IsPlayerInRegion(a_regionName);
+    bool FlyingModeManager::IsInBorderRegion() const {
 
-        if (!isInBorderRegion && a_regionName == "BorderRegionSkyrim") {
+        auto player = RE::PlayerCharacter::GetSingleton();
+        WorldSpaceData worldSpaceData; 
+        worldSpaceData = WorldSpaceData(player->GetWorldspace()); 
+
+        bool isInBorderRegion = _ts_SKSEFunctions::IsPlayerInRegion(worldSpaceData.m_borderRegionName);
+
+        if (!isInBorderRegion && worldSpaceData.m_borderRegionName == "BorderRegionSkyrim") {
             // if in Worldspace Tamriel / Skyrim, also check for Castle Volkihar
             isInBorderRegion = _ts_SKSEFunctions::IsPlayerInRegion("DLC1BorderRegionSkyrim");
         }

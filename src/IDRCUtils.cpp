@@ -48,61 +48,6 @@ namespace IDRC {
             return true;
         }
 
-// TODO: Try to implement a plugin function for SetAllowFlyingEx() to avoid this workaround
-        bool SetAllowFlying(bool a_allowFlying) {
-/*
-            auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
-            if (!dragonActor) {
-                log::error("IDRC - {}: dragonActor is null", __func__);
-                return false;
-            }
-        SKSE::GetTaskInterface()->AddTask([dragonActor, a_allowFlying]() {
-            // When modifying Game objects, send task to TaskInterface to ensure thread safety
-            dragonActor->AsActorState()->actorState2.allowFlying = static_cast<uint32_t>(a_allowFlying);
-            dragonActor->EvaluatePackage();
-        });
-//            return true;
- */           
-            auto& dataManager = DataManager::GetSingleton();
-
-            auto* RideQuest = dataManager.GetRideQuest();
-            if (!RideQuest) {
-                log::error("IDRC - {}: RideQuest is null", __func__);
-                return false;
-            }
-
-            // Workaround: Send request to execute SetAllowFlying to Papyrus
-            auto* args = RE::MakeFunctionArguments(bool(a_allowFlying));
-            auto handle = _ts_SKSEFunctions::GetHandle(DataManager::GetSingleton().GetRideQuest());
-            if(!handle){
-                log::error("IDRC - {}: Quest handle is null", __func__);
-                return false;
-            }
-            SKSE::GetTaskInterface()->AddTask([handle, args]() {
-                // When modifying Game objects, send task to TaskInterface to ensure thread safety
-                _ts_SKSEFunctions::SendCustomEvent(handle, "OnSetAllowFlying_SKSE", args);
-            });
-
-            // Now wait for the Papyrus SetAllowFlying() command to be completed
-            int count = 0;
-            while (count < 100 && dataManager.GetDragonActor()->AsActorState()->actorState2.allowFlying != static_cast<uint32_t>(a_allowFlying)) {
-                _ts_SKSEFunctions::WaitWhileGameIsPaused();
-                std::this_thread::sleep_for(std::chrono::milliseconds(10));
-                count++;
-//log::info("IDRC - {}: Waiting for SetAllowFlying to complete... ({} ms)", __func__, count * 10);
-            }
-            if (count >= 100) { // waited > 1sec
-                log::error("IDRC - {}: ERROR - Timed out while waiting for SetAllowFlying to complete!", __func__);
-                return false;
-            }
-//        SKSE::GetTaskInterface()->AddTask([dragonActor, a_allowFlying]() {
-            // When modifying Game objects, send task to TaskInterface to ensure thread safety
-//            dragonActor->EvaluatePackage();
-//        });
-
-            return true;
-        }
-        
 
         /* loads worldspace data from ini file. ini file format:
                 [Worldspace]
