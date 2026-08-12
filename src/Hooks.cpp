@@ -129,8 +129,9 @@ namespace Hooks
 			bool fastTravelFlag = GetFlyingMountFastTravelStateFlag();
 			bool patrolQueuedFlag = GetFlyingMountPatrolQueuedStateFlag();
 			bool isAllowedToFly = dragonActor->AsActorState()->actorState2.allowFlying;
-log::info("IDRC - {}: FastTravelFlag={}, PatrolQueuedFlag={}, combatState={}, AV3= {}, isAllowedToFly= {}", __func__, 
-fastTravelFlag, patrolQueuedFlag, combatState, dragonActor->AsActorValueOwner()->GetActorValue(RE::ActorValue::kVariable03), isAllowedToFly);
+log::info("IDRC - {}: FastTravelFlag={}, PatrolQueuedFlag={}, combatState={}, AV1 = {}, AV3= {}, isAllowedToFly= {}", __func__, 
+fastTravelFlag, patrolQueuedFlag, combatState, dragonActor->AsActorValueOwner()->GetActorValue(RE::ActorValue::kVariable01),
+dragonActor->AsActorValueOwner()->GetActorValue(RE::ActorValue::kVariable03), isAllowedToFly);
 			auto currentPackage = dragonActor->GetCurrentPackage();
 			if (currentPackage) {
 				auto packageType = currentPackage->packData.packType;
@@ -139,10 +140,10 @@ log::info("IDRC - {}: DragonActor current package: {:0x}, packType: {}, procedur
 			}
 
 			RE::NiPoint3 testPos = dragonActor->GetPosition();
+			int flyingState = _ts_SKSEFunctions::GetFlyingState(dragonActor);
 //			testPos.z = _ts_SKSEFunctions::GetLandHeightWithWater(testPos, false);
 //			bool isValidForLanding = PathingHook::IsPositionValidForLanding(testPos);
-bool isValidForLanding = true;
-log::info("IDRC - {}: DragonActor position: {}, isValidForLanding={}", __func__, dragonActor->GetPosition(), isValidForLanding ? "true" : "false");
+log::info("IDRC - {}: DragonActor position: {}, flyingState={}", __func__, dragonActor->GetPosition(), flyingState);
 		}
 /*
 		auto* player = RE::PlayerCharacter::GetSingleton();
@@ -444,6 +445,25 @@ log::info("IDRC - {}: ReadyWeaponHook-ProcessButton called with event IDCode = {
 	}
 */
 
+	bool PathingHook::IsDragonPathingRequest(std::byte* a_agent) {
+		if (!a_agent) {
+			log::warn("IDRC - {}: Agent pointer is null", __func__);
+			return false;
+		}
+		auto* actorState = *reinterpret_cast<RE::ActorState**>(a_agent + 0x10);
+		if (!actorState) {
+			log::warn("IDRC - {}: ActorState pointer is null", __func__);
+			return false;
+		}
+
+		auto* actor = reinterpret_cast<RE::Actor*>(reinterpret_cast<std::uintptr_t>(actorState) - m_actorOffset);
+		auto* dragonActor = IDRC::DataManager::GetSingleton().GetDragonActor();
+		if (dragonActor && actor == dragonActor) {
+			return true;
+		}
+
+		return false;
+	}
 
 	void PathingHook::SetFlightPath(std::uintptr_t  a_subPtr, std::uintptr_t* a_newNode, std::uintptr_t* a_newData) {
 
@@ -456,8 +476,6 @@ log::info("IDRC - {}: ReadyWeaponHook-ProcessButton called with event IDCode = {
 		using FuncType = decltype(&SetFlightPath);
 		reinterpret_cast<FuncType>(_SetFlightPath)(a_subPtr, a_newNode, a_newData);
 log::info("IDRC - {}: SetFlightPath called", __func__);
-//		auto agent = reinterpret_cast<std::byte*>(a_subPtr - 0x20);
-//		UpdateFlightPathData(agent);
 	}
 
 	void PathingHook::FlightPlannerUpdate(std::uintptr_t a_plannerSubPtr,
@@ -472,7 +490,7 @@ log::info("IDRC - {}: SetFlightPath called", __func__);
 			return;
 		}
 
-		auto agent = reinterpret_cast<std::byte*>(a_plannerSubPtr - 0x18);
+		auto agent = reinterpret_cast<std::byte*>(a_plannerSubPtr - 0x18);  // same offset for SE and AE
 		UpdateFlightPathData(agent);
 
 		// call the original function
@@ -482,28 +500,28 @@ log::info("IDRC - {}: SetFlightPath called", __func__);
 
 
 	void PathingHook::UpdateFlightPathData(std::byte* a_agent) {
-		if (!a_agent) {
-log::warn("IDRC - {}: Agent pointer is null", __func__);
+		if (!IsDragonPathingRequest(a_agent)) {
 			return;
 		}
 
-		auto* actorState = *reinterpret_cast<RE::ActorState**>(a_agent + 0x10);
-		if (!actorState) {
-log::warn("IDRC - {}: ActorState pointer is null", __func__);
+		if(!IDRC::CameraLockManager::GetSingleton().IsEnabled()) {
 			return;
 		}
 
-		auto* actor = reinterpret_cast<RE::Actor*>(reinterpret_cast<std::uintptr_t>(actorState) - m_actorOffset);
 		auto* dragonActor = IDRC::DataManager::GetSingleton().GetDragonActor();
+		if (!dragonActor) {
+			return;
+		}
 
-		if(!IDRC::CameraLockManager::GetSingleton().IsEnabled() || 
-		   !dragonActor ||
-		   actor != dragonActor ||
-		   IDRC::FlyingModeManager::GetSingleton().GetFlyingMode() != IDRC::FlyingMode::kFlying ||
-		   (dragonActor && _ts_SKSEFunctions::GetFlyingState(dragonActor) != 2)) 
+bool skipRePathing = false;
+		if(IDRC::FlyingModeManager::GetSingleton().GetFlyingMode() == IDRC::FlyingMode::kFlying)// ||
 		{
-			// only update path data for the mounted dragon, while in flying mode and in the correct flying state
-log::info("IDRC - {}: Skipping path update. Conditions not met. CameraLockEnabled={}, dragonActor valid={}, actor is dragon={}, flying mode={}, flying state={}", __func__, IDRC::CameraLockManager::GetSingleton().IsEnabled(), dragonActor != nullptr, actor == dragonActor, IDRC::FlyingModeManager::GetSingleton().GetFlyingMode() == IDRC::FlyingMode::kFlying, dragonActor ? _ts_SKSEFunctions::GetFlyingState(dragonActor) : -1);
+		} else if (IDRC::FlyingModeManager::GetSingleton().GetFlyingMode() == IDRC::FlyingMode::kHovering) {
+skipRePathing = true;
+		} else if (IDRC::FlyingModeManager::GetSingleton().GetFlyingMode() == IDRC::FlyingMode::kLanded) {
+skipRePathing = true;
+		} else {
+log::info("IDRC - {}: Skipping path update.", __func__);
 			return;
 		}
 
@@ -570,6 +588,20 @@ log::warn("IDRC - {}: wayPointBase null=? wayPointCount: {}", __func__, wayPoint
 		const float tanPitch = std::tan(targetPitch);
 		const float minHeightAboveGround = 500.f;
 
+if(skipRePathing) {
+constexpr std::size_t kStride = 0x48 / sizeof(float);  // = 0x12 floats
+int color = 0xFFFF00FF;
+
+for (std::uint32_t i = 0; i < wayPointCount; ++i) {
+auto& waypointToUpdate = *reinterpret_cast<RE::NiPoint3*>(&wayPointBase[i * kStride]);
+if (i == wayPointCount - 1) {
+APIs::TrueHUD->DrawPoint(waypointToUpdate, 10.0f, 0.0f, 0x0000FFFF);
+} else {
+APIs::TrueHUD->DrawPoint(waypointToUpdate, 5.0f, 0.0f, color);
+}	
+}
+return;
+}		
 		// Each entry is 0x48 bytes; XYZ floats at byte offsets +0, +4, +8
 		constexpr std::size_t kStride = 0x48 / sizeof(float);  // = 0x12 floats
 		for (std::uint32_t i = 0; i < std::min(wayPointCount - 2, currentIndex + 8u); ++i) {
@@ -595,8 +627,44 @@ APIs::TrueHUD->DrawPoint(waypointToUpdate, 10.0f, 0.0f, 0x00FF00FF);
 } else {
 APIs::TrueHUD->DrawPoint(waypointToUpdate, 5.0f, 0.0f, 0xFF0000FF);
 }
-}		
+}
 
+	}
+
+	void PathingHook::LinearPathToTarget(std::byte** a_pathData, std::uint32_t a_startIndex, const RE::NiPoint3& a_targetPos) {
+		if (!a_pathData) {
+			return;
+		}
+
+		auto* pathData = *a_pathData;
+		if (!pathData) {
+			return;
+		}
+
+		auto dragonActor = IDRC::DataManager::GetSingleton().GetDragonActor();
+		if (!dragonActor) {
+			return;
+		}
+
+		auto* wayPointBase  = *reinterpret_cast<float**>(pathData + 0x90);
+		auto  wayPointCount = *reinterpret_cast<std::uint32_t*>(pathData + 0xA0);
+
+		if (a_startIndex >= wayPointCount) {
+			log::warn("IDRC - {}: Invalid start index: {}, waypoint count: {}", __func__, a_startIndex, wayPointCount);
+			return;
+		}
+
+log::info("IDRC - {}: LinearPathToTarget called. StartIndex: {}, WaypointCount: {}, TargetPos: ({}, {}, {})", __func__, a_startIndex, wayPointCount, a_targetPos.x, a_targetPos.y, a_targetPos.z);
+		RE::NiPoint3 dragonPos = dragonActor->GetPosition();
+		constexpr std::size_t kStride = 0x48 / sizeof(float);  // = 0x12 floats
+		for (std::uint32_t i = a_startIndex; i < wayPointCount; ++i) {
+			// linearly interpolate between dragonPos and the target position
+			auto& waypointToUpdate = *reinterpret_cast<RE::NiPoint3*>(&wayPointBase[i * kStride]);
+			float t = static_cast<float>(i) / static_cast<float>(wayPointCount - 1);
+			waypointToUpdate.x = (1.0f - t) * dragonPos.x + t * a_targetPos.x;
+			waypointToUpdate.y = (1.0f - t) * dragonPos.y + t * a_targetPos.y;
+			waypointToUpdate.z = (1.0f - t) * dragonPos.z + t * a_targetPos.z;
+		}
 	}
 
 

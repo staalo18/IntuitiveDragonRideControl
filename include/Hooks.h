@@ -218,6 +218,10 @@ namespace Hooks
 
 // member functions:
 		static void UpdateFlightPathData(std::byte* a_agent);
+		static bool IsDragonPathingRequest(std::byte* a_agent);
+
+		// unused:
+		static void LinearPathToTarget(std::byte** a_pathData, std::uint32_t a_startIndex, const RE::NiPoint3& a_targetPos);
 
 // members variables:
 		static inline RE::BSPathing* m_pathingSingleton = nullptr; // pathing singleton is initialize with the first vanilla GetCurrentPathingLocation call

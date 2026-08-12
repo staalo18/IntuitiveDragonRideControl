@@ -43,6 +43,13 @@ namespace IDRC {
                 DisplayManager::GetSingleton().DisplayLeavingBorderRegion();
                 ForceHover();
             }
+if (this->m_noFlyAbility) {
+bool hasNoFlyAbility = dragonActor->HasSpell(this->m_noFlyAbility);
+log::info("IDRC - {}: Dragon has NoFlyAbility = {}", __func__, hasNoFlyAbility ? "true" : "false");
+} else {
+log::warn("IDRC - {}: NoFlyAbility is null", __func__);
+}
+log::info("IDRC - {}: FFlyingMode = {}", __func__, m_mode);
 
             if (GetRegisteredForLanding()) {
                 if (!m_finalizeTriggerLand && !m_landingPosSearchOngoing) {
@@ -58,6 +65,8 @@ namespace IDRC {
                 } else {
                     FinalizeTriggerLand();
                 }
+
+                FinalizeLand();
             }
         }
     }
@@ -152,17 +161,7 @@ namespace IDRC {
     void FlyingModeManager::SetFlyingMode(FlyingMode a_mode) {
         m_mode = a_mode;
 
-        auto handle = _ts_SKSEFunctions::GetHandle(DataManager::GetSingleton().GetRideQuest());
-        if(!handle){
-            log::error("IDRC - {}: Quest handle is null", __func__);
-            return;
-        }
-        int mode = static_cast<int>(m_mode);
-        auto* args = RE::MakeFunctionArguments((int)mode);
-        SKSE::GetTaskInterface()->AddTask([handle, args, mode]() {
-            // When modifying Game objects, send task to TaskInterface to ensure thread safety
-            DataManager::GetSingleton().SendPropertyUpdateEvent("FlyingState", false, 0.0f, mode);
-        });
+        DataManager::GetSingleton().SendPropertyUpdateEvent("FlyingState", false, 0.0f, static_cast<int>(m_mode));
     }
 
     float FlyingModeManager::GetRunFactor(float a_modifier) {
@@ -299,6 +298,8 @@ namespace IDRC {
                     RE::SendHUDMessage::ShowHUDMessage("Commanding Hovering Mode - Landing cancelled");
                     controlsManager.SetControlBlocked(false);
                     std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                } else {
+                    return;
                 }
             }
         }
@@ -676,14 +677,31 @@ namespace IDRC {
     void FlyingModeManager::FinalizeTriggerLand() {
         log::info("IDRC - {}", __func__);
 
+        auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
+        if (!dragonActor) {
+            log::error("IDRC - {}: dragonActor is null", __func__);
+            return;
+        }
+
         if (m_finalizeTriggerLand && !m_landingPosSearchOngoing) {
+            if (_ts_SKSEFunctions::IsFlyingMountFastTravelling(dragonActor) ||
+                _ts_SKSEFunctions::IsFlyingMountPatrolQueued(dragonActor)) {
+                // still in fast travel or patrol, ensure orbit package 
+                // to force stop fast travel via package conditions
+log::info("IDRC - {}: Dragon is still in fast travel or patrol, ensure orbit package", __func__);
+                SKSE::GetTaskInterface()->AddTask([dragonActor]() {
+                    // When modifying Game objects, send task to TaskInterface to ensure thread safety
+                    dragonActor->AsActorValueOwner()->SetActorValue(RE::ActorValue::kVariable03, 0); // Orbit package
+                    dragonActor->EvaluatePackage();
+                });
+
+                // don't initiate landing while fast travel or patrol
+                // or else dragon will be still in that mode while grounded
+                return;              
+            }
+
             m_finalizeTriggerLand = false;
 
-            auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
-            if (!dragonActor) {
-                log::error("IDRC - {}: dragonActor is null", __func__);
-                return;
-            }
             auto* orbitMarker = DataManager::GetSingleton().GetOrbitMarker();
             SKSE::GetTaskInterface()->AddTask([this, dragonActor, orbitMarker]() {
 
@@ -699,11 +717,38 @@ dragonActor->GetPosition().x, dragonActor->GetPosition().y, dragonActor->GetPosi
                 //  * calls InitiateForcedLanding() with that location to put dragon into kLanding package
                 //  * sets actorState2.allowFlying = false
                 // call InitiateForcedLanding directly with a_landTarget as landing target.
-                // This avoids 'awkward' landing locations, eg very far away-
+                // This avoids 'awkward' landing locations, eg very far away. 
                 // But this also means that the dragon will land almost anywhere directly on the spot, also when it shouldn't.
                 // Eg it will land on water, and then start to sink.
                 
                 InitiateForcedLanding(dragonActor, orbitMarker, true, false);
+                m_waitForLanded = true;
+            });        
+        }
+    }
+
+    void FlyingModeManager::FinalizeLand() {
+        log::info("IDRC - {}", __func__);
+
+        auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
+        if (!dragonActor) {
+            log::error("IDRC - {}: dragonActor is null", __func__);
+            return;
+        }
+
+        if (m_waitForLanded && _ts_SKSEFunctions::GetFlyingState(dragonActor) == 0) {
+            m_waitForLanded = false;
+            if (_ts_SKSEFunctions::IsFlyingMountFastTravelling(dragonActor) ||
+                _ts_SKSEFunctions::IsFlyingMountPatrolQueued(dragonActor)) {
+                // This should never happen!
+                log::warn("IDRC - {}: Dragon is still in fast travel or patrol after landing, triggering take-off", __func__);
+                SetLandedCompleted();
+                DragonTakeOffPlayerRiding(dragonActor, false);
+                return;
+            }
+
+log::info("IDRC - {}: Dragon has landed", __func__);
+            SKSE::GetTaskInterface()->AddTask([this, dragonActor]() {
                 if (this->m_noFlyAbility) {
                     dragonActor->AddSpell(this->m_noFlyAbility);
                 } else {
@@ -714,11 +759,33 @@ dragonActor->GetPosition().x, dragonActor->GetPosition().y, dragonActor->GetPosi
                 dragonActor->AsActorState()->actorState2.allowFlying = false;
                 dragonActor->AsActorValueOwner()->SetActorValue(RE::ActorValue::kVariable03, 0); // Orbit package
                 dragonActor->EvaluatePackage();
-            });        
+            });      
+            
+            SetLandedCompleted();
+            Utils::RegisterForSingleUpdate(0.5f);
+            DisplayManager::GetSingleton().SetRegisteredForDisplayUpdate(true);
         }
     }
 
-	void FlyingModeManager::GetValidLandingPosition()
+
+    void FlyingModeManager::SetLandedCompleted() {
+        // Restore auto-combat if it was toggled off
+        if (m_toggledAutoCombatLand) {
+            log::info("IDRC - {}: AutoCombat toggled to TRUE", __func__);
+            DataManager::GetSingleton().SetAutoCombat(true);
+            m_toggledAutoCombatLand = false;
+        }
+
+        // Reset dragon height and place the travel-to marker
+        ResetDragonHeight();
+        PlaceTravelToMarker(IDRC::DataManager::GetSingleton().GetDragonActor());
+
+        // Clear landing registration and register for updates
+        SetRegisteredForLanding(false);
+    }
+
+
+    void FlyingModeManager::GetValidLandingPosition()
 	{
 log::info("IDRC - {}", __FUNCTION__);
 
@@ -815,6 +882,10 @@ APIs::TrueHUD->DrawPoint(candidatePos, 5.0f, 20.f, 0x00FF00FF);
     bool FlyingModeManager::CancelDragonLandPlayerRiding() {
         log::info("IDRC - {}", __func__);
     
+        if (!GetRegisteredForLanding()) {
+            return false;
+        }
+
         auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
         if (!dragonActor) {
             log::error("IDRC - {}: dragonActor is null", __func__);
@@ -822,49 +893,27 @@ APIs::TrueHUD->DrawPoint(candidatePos, 5.0f, 20.f, 0x00FF00FF);
         }
     
         // Check if the dragon is already landing or landed
-        auto flyingMode = FlyingModeManager::GetSingleton().GetFlyingMode();
-        int dragonFlyingState = _ts_SKSEFunctions::GetFlyingState(dragonActor);
-    
-        if (flyingMode == FlyingMode::kLanded &&
-            (dragonFlyingState == 0 || dragonFlyingState == 4) &&
-            !_ts_SKSEFunctions::IsFlyingMountFastTravelling(dragonActor) &&
-            !_ts_SKSEFunctions::IsFlyingMountPatrolQueued(dragonActor)) {
+        if (GetFlyingMode() == FlyingMode::kLanded &&
+            (m_waitForLanded || _ts_SKSEFunctions::GetFlyingState(dragonActor) == 0)) {
             log::info("IDRC - {}: Already in Landing or landed. Ignore CancelLand request.", __func__);
             return false;
         }
     
-        if (GetRegisteredForLanding()) {
-            log::info("IDRC - {}: Trying to stop landing", __func__);
+        log::info("IDRC - {}: Trying to stop landing", __func__);
 
-            SKSE::GetTaskInterface()->AddTask([this, dragonActor]() {
-                // When modifying Game objects, send task to TaskInterface to ensure thread safety
-                dragonActor->AsActorState()->actorState2.allowFlying = true;
-                if (this->m_noFlyAbility) {
-                    dragonActor->RemoveSpell(this->m_noFlyAbility);
-                } else {
-                    log::warn("IDRC - {}: NoFlyAbility is null", __func__);
-                }
-            });
-    
-            auto* orbitMarker = DataManager::GetSingleton().GetOrbitMarker();
-            if (orbitMarker) {
-                SKSE::GetTaskInterface()->AddTask([orbitMarker, dragonActor]() {
-                    // When modifying Game objects, send task to TaskInterface to ensure thread safety
-                    _ts_SKSEFunctions::MoveTo(orbitMarker, dragonActor);
-                });
+        SKSE::GetTaskInterface()->AddTask([this, dragonActor]() {
+            // When modifying Game objects, send task to TaskInterface to ensure thread safety
+            dragonActor->AsActorState()->actorState2.allowFlying = true;
+            if (this->m_noFlyAbility) {
+                dragonActor->RemoveSpell(this->m_noFlyAbility);
             } else {
-                log::warn("IDRC - {}: Orbit marker is null", __func__);
+                log::warn("IDRC - {}: NoFlyAbility is null", __func__);
             }
-    
-            if (m_toggledAutoCombatLand) {
-                log::info("IDRC - {}: AutoCombat toggled to TRUE", __func__);
-                DataManager::GetSingleton().SetAutoCombat(true);
-                m_toggledAutoCombatLand = false;
-            }   
-            SetRegisteredForLanding(false);
-   
-            DragonTakeOffPlayerRiding(dragonActor, false);
-        }
+            dragonActor->EvaluatePackage();
+        });
+
+        SetLandedCompleted();
+        DragonTakeOffPlayerRiding(dragonActor, false);
     
         return true;
     }
@@ -915,10 +964,16 @@ APIs::TrueHUD->DrawPoint(candidatePos, 5.0f, 20.f, 0x00FF00FF);
                 displayManager.DisplayFlyingMode();
             }
     
-            SKSE::GetTaskInterface()->AddTask([dragonActor]() {
+            SKSE::GetTaskInterface()->AddTask([this, dragonActor]() {
             // When modifying Game objects, send task to TaskInterface to ensure thread safety
                 dragonActor->AsActorState()->actorState2.allowFlying = true;
+                if (this->m_noFlyAbility) {
+                    dragonActor->RemoveSpell(this->m_noFlyAbility);
+                } else {
+                    log::warn("IDRC - {}: NoFlyAbility is null", __func__);
+                }
                 dragonActor->AsActorValueOwner()->SetActorValue(RE::ActorValue::kWaitingForPlayer, 0);
+                dragonActor->EvaluatePackage();
             });
     
             std::string searchMessage = "";
@@ -1075,16 +1130,13 @@ APIs::TrueHUD->DrawPoint(candidatePos, 5.0f, 20.f, 0x00FF00FF);
                 _ts_SKSEFunctions::MoveTo(orbitMarker, a_takeOffTarget, 
                     100.0f * std::sin(angleZ), 100.0f * std::cos(angleZ),  this->GetMinHeight());
 
-                    dragonActor->AsActorState()->actorState2.allowFlying = true;
+                dragonActor->AsActorState()->actorState2.allowFlying = true;
                 if (m_noFlyAbility) {
                     dragonActor->RemoveSpell(this->m_noFlyAbility);
                 } else {
                     log::warn("IDRC - {}: NoFlyAbility is null", __func__);
                 }
-            });    
-    
-            SKSE::GetTaskInterface()->AddTask([dragonActor]() {
-            // When modifying Game objects, send task to TaskInterface to ensure thread safety
+
                 dragonActor->AsActorValueOwner()->SetActorValue(RE::ActorValue::kVariable03, 3); // Hover package
                 dragonActor->EvaluatePackage();
             });
@@ -1140,9 +1192,12 @@ APIs::TrueHUD->DrawPoint(candidatePos, 5.0f, 20.f, 0x00FF00FF);
 
     bool FlyingModeManager::DragonLandPlayerRiding(RE::TESObjectREFR* a_landTarget, bool a_displayMode) {
         log::info("IDRC - {}", __func__);
+
+        if (GetRegisteredForLanding()) {
+            return false;
+        }
         
         auto& dataManager = DataManager::GetSingleton();
-        auto& displayManager = DisplayManager::GetSingleton();
         auto* dragonActor = dataManager.GetDragonActor();
         if (!dragonActor) {
             log::error("IDRC - {}: dragonActor is null", __func__);
@@ -1150,99 +1205,32 @@ APIs::TrueHUD->DrawPoint(candidatePos, 5.0f, 20.f, 0x00FF00FF);
         }
         
         // Check if the dragon is already landing or landed
-        int dragonFlyingState = _ts_SKSEFunctions::GetFlyingState(dragonActor);
-        if (GetFlyingMode() == FlyingMode::kLanded && (dragonFlyingState == 0 || dragonFlyingState == 4)) {
+        if (GetFlyingMode() == FlyingMode::kLanded && 
+            (m_waitForLanded || _ts_SKSEFunctions::GetFlyingState(dragonActor) == 0)) {
             log::info("IDRC - {}: Already in Landing or landed. Ignore Land request.", __func__);
             return false;
         }
-    
-        if (!GetRegisteredForLanding()) {
-            // Set flying state to landed
-            SetFlyingMode(FlyingMode::kLanded);
-    
-            if (a_displayMode) {
-                displayManager.DisplayFlyingMode();
-            }
-    
-            SetRegisteredForLanding(true);
-    
-            std::string searchMessage = "";
-            std::string timeoutMessage = "";
-            if (a_displayMode) {
-                searchMessage = "The dragon is still searching for a place to land";
-                timeoutMessage = "Could not find a landing spot - Land cancelled";
-            }
-        
-            // Handle auto-combat toggling
-            m_toggledAutoCombatLand = false;
-            if (dataManager.GetAutoCombat()) {
-                log::info("IDRC - {}: AutoCombat toggled to FALSE", __func__);
-                dataManager.SetAutoCombat(false);
-                m_toggledAutoCombatLand = true;
-            }
-    
-            // Place the travel-to marker below the dragon
-            PlaceTravelToMarker(dragonActor);
-    
-            // Trigger the landing process
-            if (_ts_SKSEFunctions::IsFlyingMountFastTravelling(dragonActor) ||
-                _ts_SKSEFunctions::IsFlyingMountPatrolQueued(dragonActor)) {
-                log::info("IDRC - {}: Cancelling Land!", __func__);
-                CancelDragonLandPlayerRiding();
-                return false;
-            }
-    
-            TriggerLand(a_landTarget);
-    
-            // Wait for the dragon to land
-            int count = 0;
-            int notificationCount = 0;
-            while (_ts_SKSEFunctions::GetFlyingState(dragonActor) != 0 && GetRegisteredForLanding()) {
-                _ts_SKSEFunctions::WaitWhileGameIsPaused();
-                count++;
-                notificationCount++;
-    
-                if (count >= 200) { // Timeout after 20 seconds
-                    log::info("IDRC - {}: Timeout - Trying to cancel Land", __func__);
-                    if (CancelDragonLandPlayerRiding()) {
-                        if (!timeoutMessage.empty()) {
-                            RE::SendHUDMessage::ShowHUDMessage(timeoutMessage.c_str());
-                        }
-                        log::info("IDRC - {}: Cancelled Land", __func__);
-                        return false;
-                    }
-                }
-    
-                if (a_displayMode && notificationCount >= 50) {
-                    RE::SendHUDMessage::ShowHUDMessage(searchMessage.c_str());
-                    notificationCount = 0;
-                }
-    
-                std::this_thread::sleep_for(std::chrono::milliseconds(100));
-            }
-    
-            log::info("IDRC - {}: Landed", __func__);
-    
-            // Restore auto-combat if it was toggled off
-            if (m_toggledAutoCombatLand) {
-                log::info("IDRC - {}: AutoCombat toggled to TRUE", __func__);
-                DataManager::GetSingleton().SetAutoCombat(true);
-                m_toggledAutoCombatLand = false;
-            }
-    
-            // Reset dragon height and place the travel-to marker
-            ResetDragonHeight();
-            PlaceTravelToMarker(dragonActor);
-    
-            // Clear landing registration and register for updates
-            SetRegisteredForLanding(false);
-            Utils::RegisterForSingleUpdate(0.5f);
-            displayManager.SetRegisteredForDisplayUpdate(true);
-    
-            return true;
+
+        SetRegisteredForLanding(true);
+
+        if (a_displayMode) {
+            DisplayManager::GetSingleton().DisplayFlyingMode();
         }
-    
-        return false;
+
+        SetFlyingMode(FlyingMode::kLanded);
+
+        // Handle auto-combat toggling
+        m_toggledAutoCombatLand = false;
+        if (dataManager.GetAutoCombat()) {
+            log::info("IDRC - {}: AutoCombat toggled to FALSE", __func__);
+            dataManager.SetAutoCombat(false);
+            m_toggledAutoCombatLand = true;
+        }
+
+        PlaceTravelToMarker(dragonActor);
+
+        TriggerLand(a_landTarget);
+        return true;
     }
 
     bool FlyingModeManager::DragonOrbitPlayerRiding(RE::TESObjectREFR* a_orbitTarget) {
@@ -1501,8 +1489,8 @@ APIs::TrueHUD->DrawPoint(candidatePos, 5.0f, 20.f, 0x00FF00FF);
         float posY = player->GetPositionY();
         float angleNorm = NormalizeAngle(a_angle);
 
-        float distance = GetDistanceToRegionBoundingBox(worldSpaceData, posX, posY, angleNorm);
-
+        // keep the target position close to the dragon, to avoid the need for the engine to frequently re-compute long paths
+        float distance = 10000.f; // previously: GetDistanceToRegionBoundingBox(worldSpaceData, posX, posY, angleNorm);
         if(!IsInBorderRegion()){
             log::info("IDRC - {}: Player is not in border region {} - cancel FlyTo...", __func__, worldSpaceData.m_borderRegionName);
             return false;
@@ -1763,7 +1751,7 @@ log::info("IDRC - {}: Worldspace {} - BorderRegion: {} / {}", __func__, region->
         return angleNorm;
     }
 
-
+/*
     float FlyingModeManager::GetDistanceToRegionBoundingBox(const WorldSpaceData& a_worldspaceData,
          float a_posX, float a_posY, float a_angle){
         // Calculate distances
@@ -1816,4 +1804,5 @@ log::info("IDRC - {}: Worldspace {} - BorderRegion: {} / {}", __func__, region->
         // Take smaller of the distances
         return std::min(distance1, distance2);
     }
+*/
 } // namespace IDRC

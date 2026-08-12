@@ -94,6 +94,7 @@ namespace IDRC {
         bool m_vanillaAttack = false;
         bool m_finalizeTriggerLand = false;
         bool m_landingPosSearchOngoing = false;
+        bool m_waitForLanded = false;
 
         FlyingMode m_mode = kLanded;
         RE::SpellItem* m_noFlyAbility = nullptr;
@@ -152,14 +153,18 @@ namespace IDRC {
 
         float GetWorldSpaceCenterY();
 
-        float GetDistanceToRegionBoundingBox(const WorldSpaceData& a_worldspaceData, 
-                                             float a_posX, float a_posY, float a_angle);
+//        float GetDistanceToRegionBoundingBox(const WorldSpaceData& a_worldspaceData, 
+//                                             float a_posX, float a_posY, float a_angle);
         
         bool IsInBorderRegion() const;
 
         void SetFlyingMode(FlyingMode a_mode);
 
         void FinalizeTriggerLand();
+
+        void FinalizeLand();
+
+        void SetLandedCompleted();
 
         void GetValidLandingPosition();
     
