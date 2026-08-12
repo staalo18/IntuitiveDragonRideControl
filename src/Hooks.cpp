@@ -514,7 +514,7 @@ log::info("IDRC - {}: SetFlightPath called", __func__);
 		}
 
 bool skipRePathing = false;
-		if(IDRC::FlyingModeManager::GetSingleton().GetFlyingMode() == IDRC::FlyingMode::kFlying)// ||
+		if(IDRC::FlyingModeManager::GetSingleton().GetFlyingMode() == IDRC::FlyingMode::kFlying)
 		{
 		} else if (IDRC::FlyingModeManager::GetSingleton().GetFlyingMode() == IDRC::FlyingMode::kHovering) {
 skipRePathing = true;

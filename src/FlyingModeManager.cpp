@@ -294,6 +294,7 @@ log::info("IDRC - {}: FFlyingMode = {}", __func__, m_mode);
         if (a_key == kForward || a_key == kStrafeLeft || a_key == kStrafeRight) {
     
             if (m_registeredForLanding && a_key == kForward) {
+log::info("IDRC - {}: Landing is registered and forward key pressed - cancel landing", __func__);
                 if (CancelDragonLandPlayerRiding()) {
                     RE::SendHUDMessage::ShowHUDMessage("Commanding Hovering Mode - Landing cancelled");
                     controlsManager.SetControlBlocked(false);
@@ -891,29 +892,42 @@ APIs::TrueHUD->DrawPoint(candidatePos, 5.0f, 20.f, 0x00FF00FF);
             log::error("IDRC - {}: dragonActor is null", __func__);
             return false;
         }
-    
-        // Check if the dragon is already landing or landed
-        if (GetFlyingMode() == FlyingMode::kLanded &&
-            (m_waitForLanded || _ts_SKSEFunctions::GetFlyingState(dragonActor) == 0)) {
-            log::info("IDRC - {}: Already in Landing or landed. Ignore CancelLand request.", __func__);
+
+        if (GetFlyingMode() != FlyingMode::kLanded) {
+            SetLandedCompleted();
+            return false;
+        }
+        
+        if (!(_ts_SKSEFunctions::GetFlyingState(dragonActor) == 2 ||
+              _ts_SKSEFunctions::GetFlyingState(dragonActor) == 3)) {
+            log::info("IDRC - {}: Already landing (4) or landed (1). Ignore CancelLand request.", __func__);
             return false;
         }
     
         log::info("IDRC - {}: Trying to stop landing", __func__);
 
+        SetLandedCompleted();
         SKSE::GetTaskInterface()->AddTask([this, dragonActor]() {
             // When modifying Game objects, send task to TaskInterface to ensure thread safety
+            auto currentProcess = dragonActor->GetActorRuntimeData().currentProcess;
+            if (currentProcess) {
+                currentProcess->SetRunOncePackage(nullptr, dragonActor);
+            } else {
+                log::warn("IDRC - {}: currentProcess is null", __func__);
+            }
+
             dragonActor->AsActorState()->actorState2.allowFlying = true;
             if (this->m_noFlyAbility) {
                 dragonActor->RemoveSpell(this->m_noFlyAbility);
             } else {
                 log::warn("IDRC - {}: NoFlyAbility is null", __func__);
             }
-            dragonActor->EvaluatePackage();
-        });
 
-        SetLandedCompleted();
-        DragonTakeOffPlayerRiding(dragonActor, false);
+            dragonActor->AsActorValueOwner()->SetActorValue(RE::ActorValue::kVariable03, 3);
+            dragonActor->EvaluatePackage();
+
+            this->DragonHoverPlayerRiding(dragonActor, false);
+        });
     
         return true;
     }
