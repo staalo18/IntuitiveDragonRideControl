@@ -59,8 +59,6 @@ namespace IDRC {
         switch (a_mode) {
             case FlyingMode::kHovering:
                 return "Hovering";
-            case FlyingMode::kOrbiting:
-                return "Orbiting";
             case FlyingMode::kPerching:
                 return "Perching";
             case FlyingMode::kLanded:
@@ -119,7 +117,6 @@ namespace IDRC {
             auto mode = FlyingModeManager::GetSingleton().GetFlyingMode();
             // Check flying state transitions
             if ((mode == FlyingMode::kFlying && dragonFlyingState == 2) || 
-                (mode == FlyingMode::kOrbiting && dragonFlyingState == 2) ||
                 (mode == FlyingMode::kHovering && dragonFlyingState == 3) ||
                 (mode == FlyingMode::kLanded && dragonFlyingState == 0) ||
                 (mode == FlyingMode::kPerching && dragonFlyingState == 5)) {

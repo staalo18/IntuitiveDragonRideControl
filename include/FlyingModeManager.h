@@ -9,7 +9,7 @@ namespace IDRC {
 
     enum FlyingMode {
         kFlying = 0,
-        kOrbiting = 1,
+        kOrbiting = 1,  // unused
         kHovering = 2,
         kLanded = 3,
         kPerching = 4
@@ -90,7 +90,6 @@ namespace IDRC {
         bool m_registeredForLanding = false;
         bool m_registeredForPerch = false;
         bool m_toggledAutoCombatLand = false;
-        bool m_skipOrbiting = true; // Always skip orbiting
         bool m_vanillaAttack = false;
         bool m_finalizeTriggerLand = false;
         bool m_landingPosSearchOngoing = false;
@@ -134,8 +133,6 @@ namespace IDRC {
         void PlaceTravelToMarker(RE::TESObjectREFR* a_ref, float a_distance = 0.0f, float a_angle = 0.0f, float a_offsetZ = 0.0f);
 
         bool DragonNewDirection(float a_angle, bool a_displayMode = false);
-
-        bool DragonOrbitPlayerRiding(RE::TESObjectREFR* a_orbitTarget);
 
         bool DragonPerchPlayerRiding();
         

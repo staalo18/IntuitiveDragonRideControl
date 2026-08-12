@@ -31,7 +31,6 @@ namespace IDRC {
         m_registeredForLanding = false;
         m_registeredForPerch = false;
         m_toggledAutoCombatLand = false;
-        m_skipOrbiting = true; // Always skip orbiting
         m_vanillaAttack = false;
         m_mode = kLanded;
     }
@@ -296,7 +295,6 @@ log::info("IDRC - {}: FFlyingMode = {}", __func__, m_mode);
             if (m_registeredForLanding && a_key == kForward) {
 log::info("IDRC - {}: Landing is registered and forward key pressed - cancel landing", __func__);
                 if (CancelDragonLandPlayerRiding()) {
-                    RE::SendHUDMessage::ShowHUDMessage("Commanding Hovering Mode - Landing cancelled");
                     controlsManager.SetControlBlocked(false);
                     std::this_thread::sleep_for(std::chrono::milliseconds(500));
                 } else {
@@ -341,7 +339,7 @@ log::info("IDRC - {}: Landing is registered and forward key pressed - cancel lan
                     flyingModeNotification = TriggerTurn();
                 } else if (a_key == IDRCKey::kUp) {
                     if (_ts_SKSEFunctions::GetFlyingState(dragonActor) == 2 && 
-                            (m_mode == kFlying || m_mode == kOrbiting)) { // Orbiting or flying
+                            m_mode == kFlying) {
                         while (controlsManager.GetIsKeyPressed(kUp) && m_minHeight < 10000) {
                             ChangeDragonHeight(1.f);
                             std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -355,7 +353,7 @@ log::info("IDRC - {}: Landing is registered and forward key pressed - cancel lan
                         flyingModeNotification = true;
                     }
                 } else if (a_key == kDown && _ts_SKSEFunctions::GetFlyingState(dragonActor) == 2 
-                            && (m_mode == kFlying || m_mode == kOrbiting)) { // Orbiting or flying
+                            && m_mode == kFlying) {
                     while (controlsManager.GetIsKeyPressed(kDown) && m_minHeight > 100) {
                         ChangeDragonHeight(-1.f);
                         std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -392,20 +390,10 @@ log::info("IDRC - {}: Landing is registered and forward key pressed - cancel lan
                     if (mode == FlyingMode::kFlying && !_ts_SKSEFunctions::IsFlyingMountFastTravelling(dragonActor)) {
                         DragonNewDirection(dragonActor->GetAngleZ(), false);
                         wait = 0.1f;
-                    } else if (mode == FlyingMode::kOrbiting && _ts_SKSEFunctions::GetFlyingState(dragonActor) == 2) {
+                    } else if (mode == FlyingMode::kHovering && dragonActor->AsActorState()->actorState2.allowFlying) {
                         mode = FlyingMode::kFlying;
                         DragonNewDirection(dragonActor->GetAngleZ(), true);
                         wait = 0.1f;
-                    } else if (mode == FlyingMode::kHovering && dragonActor->AsActorState()->actorState2.allowFlying) {
-                        if (m_skipOrbiting) {
-                            mode = FlyingMode::kFlying;
-                            DragonNewDirection(dragonActor->GetAngleZ(), true);
-                            wait = 0.1f;
-                        } else {
-                            mode = FlyingMode::kOrbiting;
-                            DragonOrbitPlayerRiding(RE::PlayerCharacter::GetSingleton());
-                            wait = 0.75f;
-                        }
                     } else if ((mode == FlyingMode::kLanded && _ts_SKSEFunctions::GetFlyingState(dragonActor) == 0) ||
                                (mode == FlyingMode::kPerching && _ts_SKSEFunctions::GetFlyingState(dragonActor) == 5)) {
                         mode = FlyingMode::kHovering;
@@ -437,7 +425,7 @@ log::info("IDRC - {}: Landing is registered and forward key pressed - cancel lan
     bool FlyingModeManager::FlyingModeDown() {
         log::info("IDRC - {}", __func__);
     
-        if (!GetRegisteredForLanding() && !GetRegisteredForPerch()) {
+        if (!GetRegisteredForPerch()) {
             auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
             if (!dragonActor) {
                 log::error("IDRC - {}: Dragon actor is null", __func__);
@@ -451,10 +439,7 @@ log::info("IDRC - {}: Landing is registered and forward key pressed - cancel lan
                 if (!(controlsManager.GetIsKeyPressed(IDRCKey::kStrafeLeft) || controlsManager.GetIsKeyPressed(IDRCKey::kStrafeRight))) {
                     controlsManager.SetControlBlocked(true);
     
-                    if (mode == FlyingMode::kFlying && !m_skipOrbiting) {
-                        mode = FlyingMode::kOrbiting;
-                        DragonOrbitPlayerRiding(RE::PlayerCharacter::GetSingleton());
-                    } else if ((mode == FlyingMode::kFlying && m_skipOrbiting) || mode == FlyingMode::kOrbiting) {
+                    if (mode == FlyingMode::kFlying) {
                         mode = FlyingMode::kHovering;
     
                         std::thread([this, dragonActor]() {
@@ -676,7 +661,8 @@ log::info("IDRC - {}: Landing is registered and forward key pressed - cancel lan
     }
 
     void FlyingModeManager::FinalizeTriggerLand() {
-        log::info("IDRC - {}", __func__);
+        log::info("IDRC - {}, m_finalizeTriggerLand: {}, m_landingPosSearchOngoing: {}", __func__,
+            m_finalizeTriggerLand ? "true" : "false", m_landingPosSearchOngoing ? "true" : "false");
 
         auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
         if (!dragonActor) {
@@ -1207,8 +1193,10 @@ APIs::TrueHUD->DrawPoint(candidatePos, 5.0f, 20.f, 0x00FF00FF);
     bool FlyingModeManager::DragonLandPlayerRiding(RE::TESObjectREFR* a_landTarget, bool a_displayMode) {
         log::info("IDRC - {}", __func__);
 
+        bool isReTriggered = false;
         if (GetRegisteredForLanding()) {
-            return false;
+            log::info("IDRC - {}: Already registered for landing - re-triggering landing", __func__);
+            isReTriggered = true;
         }
         
         auto& dataManager = DataManager::GetSingleton();
@@ -1220,25 +1208,27 @@ APIs::TrueHUD->DrawPoint(candidatePos, 5.0f, 20.f, 0x00FF00FF);
         
         // Check if the dragon is already landing or landed
         if (GetFlyingMode() == FlyingMode::kLanded && 
-            (m_waitForLanded || _ts_SKSEFunctions::GetFlyingState(dragonActor) == 0)) {
+            _ts_SKSEFunctions::GetFlyingState(dragonActor) == 0) {
             log::info("IDRC - {}: Already in Landing or landed. Ignore Land request.", __func__);
             return false;
         }
 
-        SetRegisteredForLanding(true);
+        if (!isReTriggered) {
+            SetRegisteredForLanding(true);
 
-        if (a_displayMode) {
-            DisplayManager::GetSingleton().DisplayFlyingMode();
-        }
+            if (a_displayMode) {
+                DisplayManager::GetSingleton().DisplayFlyingMode();
+            }
 
-        SetFlyingMode(FlyingMode::kLanded);
+            SetFlyingMode(FlyingMode::kLanded);
 
-        // Handle auto-combat toggling
-        m_toggledAutoCombatLand = false;
-        if (dataManager.GetAutoCombat()) {
-            log::info("IDRC - {}: AutoCombat toggled to FALSE", __func__);
-            dataManager.SetAutoCombat(false);
-            m_toggledAutoCombatLand = true;
+            // Handle auto-combat toggling
+            m_toggledAutoCombatLand = false;
+            if (dataManager.GetAutoCombat()) {
+                log::info("IDRC - {}: AutoCombat toggled to FALSE", __func__);
+                dataManager.SetAutoCombat(false);
+                m_toggledAutoCombatLand = true;
+            }
         }
 
         PlaceTravelToMarker(dragonActor);
@@ -1247,52 +1237,6 @@ APIs::TrueHUD->DrawPoint(candidatePos, 5.0f, 20.f, 0x00FF00FF);
         return true;
     }
 
-    bool FlyingModeManager::DragonOrbitPlayerRiding(RE::TESObjectREFR* a_orbitTarget) {
-        log::info("IDRC - {}", __func__);
-    
-        auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
-        if (!dragonActor) {
-            log::error("IDRC - {}: dragonActor is null", __func__);
-            return false;
-        }
-    
-        // Check if the dragon is allowed to fly
-        if (dragonActor->AsActorState()->actorState2.allowFlying) {
-            // Set flying state to orbiting
-            SetFlyingMode(FlyingMode::kOrbiting);
-            DisplayManager::GetSingleton().DisplayFlyingMode();
-    
-            auto* orbitMarker = DataManager::GetSingleton().GetOrbitMarker();
-            if (a_orbitTarget && orbitMarker) {
-                SKSE::GetTaskInterface()->AddTask([orbitMarker, a_orbitTarget]() {
-                // When modifying Game objects, send task to TaskInterface to ensure thread safety
-                    _ts_SKSEFunctions::MoveTo(orbitMarker, a_orbitTarget);
-                });
-            } else {
-                log::info("IDRC - {}: No OrbitTarget provided - cancel orbit", __func__);
-                return false;
-            }
-    
-            // Stop fast travel if currently ongoing
-            std::string waitMessage = "The dragon is still approaching orbit position";
-            std::string timeoutMessage = "Aborting orbit attempt...";
-    
-            SKSE::GetTaskInterface()->AddTask([dragonActor]() {
-                // When modifying Game objects, send task to TaskInterface to ensure thread safety
-                dragonActor->AsActorValueOwner()->SetActorValue(RE::ActorValue::kWaitingForPlayer, 0);
-                dragonActor->AsActorValueOwner()->SetActorValue(RE::ActorValue::kVariable03, 0); // Orbiting
-                dragonActor->EvaluatePackage();
-            });
-    
-            Utils::RegisterForSingleUpdate(0.5f);
-            DisplayManager::GetSingleton().SetRegisteredForDisplayUpdate(true);
-    
-            return true;
-        }
-    
-        log::info("IDRC - {}: Dragon is not allowed to fly - cancel orbit", __func__);
-        return false;
-    }
 
     bool FlyingModeManager::DragonPerchPlayerRiding() {
         log::info("IDRC - {}", __func__);
@@ -1429,11 +1373,11 @@ APIs::TrueHUD->DrawPoint(candidatePos, 5.0f, 20.f, 0x00FF00FF);
                 dragonActor->EvaluatePackage();
             });    
         } else if (flyingState == 1) { // Taking off
-            if (m_mode == kOrbiting || m_mode == kHovering || m_mode == kFlying) {
+            if (m_mode == kHovering || m_mode == kFlying) {
                 return DragonNewDirection(angleZ);
             }
         } else if (flyingState == 2) { // Cruising
-            if ((m_mode == kOrbiting || m_mode == kHovering || m_mode == kFlying)  && !m_registeredForLanding && !m_registeredForPerch) {
+            if ((m_mode == kHovering || m_mode == kFlying)  && !m_registeredForLanding && !m_registeredForPerch) {
                 return DragonNewDirection(angleZ);
             }
         }
