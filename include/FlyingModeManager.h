@@ -2,6 +2,7 @@
 
 #include "ControlsManager.h"
 #include "IDRCUtils.h"
+#include "_ts_SKSEFunctions.h"
 
 namespace IDRC {
     class CombatManager;
@@ -32,8 +33,6 @@ namespace IDRC {
 
         void Update();
 
-        float GetMinHeight();
-
         RE::TESObjectREFR* GetDragonTurnMarker();
 
         void OnKeyDown(IDRCKey a_key);
@@ -56,9 +55,11 @@ namespace IDRC {
 
         bool CheckForTurn() const;
 
+        bool CheckForHeightChange() const;
+
         void SetYawOffset(float a_angle);
 
-        void SetPitchOffset(float a_angle);
+        void SetTargetPitch(float a_angle);
 
         float GetTargetYaw();
 
@@ -74,9 +75,7 @@ namespace IDRC {
 
         void SetRegisteredForPerch(bool a_registeredForPerch);
 
-        void ResetDragonHeight();
-
-        void ChangeDragonHeight(float a_upDown, bool a_isAbsoluteValue = false);
+        void ChangeDragonHeight();
 
         bool DragonTurnPlayerRiding(float a_turnAngle);
 
@@ -90,11 +89,10 @@ namespace IDRC {
         RE::TESObjectREFR* m_flyToTargetMarker = nullptr;
 
         float m_minHeight = 1000.0f;  
-        float m_maxHeight = 1000.0f;
-        float m_arrivalHeight = 1000.0f;
         float m_yawOffset = 0.0;
-        float m_pitchOffset = 0.0;
+        float m_targetPitch = 0.0;
         float m_turnSpeed = 25.0;
+        float m_deltaPitch = 20.0f * PI / 180.0f;
         bool m_toggleAlwaysRun = true;
         bool m_registeredForLanding = false;
         bool m_registeredForPerch = false;
@@ -124,8 +122,6 @@ namespace IDRC {
 
             void InitializeData(const std::string& a_regionName);
         };
-
-        void SetMinHeight(float a_minHeight);
 
         float GetRunFactor(float a_modifier = 1.0f);
 

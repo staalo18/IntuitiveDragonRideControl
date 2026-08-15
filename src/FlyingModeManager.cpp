@@ -1,5 +1,4 @@
 #include "FlyingModeManager.h"
-#include "_ts_SKSEFunctions.h"
 #include "CombatManager.h"
 #include "DataManager.h"
 #include "DisplayManager.h"
@@ -24,10 +23,10 @@ namespace IDRC {
         m_flyToTargetMarker = a_flyToTargetMarker;
         m_noFlyAbility = a_noFlyAbility;
 
-        ResetDragonHeight();
         m_yawOffset = 0.0;
-        m_pitchOffset = 0.0;
+        m_targetPitch = 0.0;
         m_turnSpeed = 25.0;
+        m_deltaPitch = 20.0f * PI / 180.0f;
         m_toggleAlwaysRun = true;
         m_registeredForLanding = false;
         m_registeredForPerch = false;
@@ -70,80 +69,21 @@ log::info("IDRC - {}: FFlyingMode = {}", __func__, m_mode);
             }
 
             TriggerTurn();
-        }
-    }
-    
-    void FlyingModeManager::SetMinHeight(float a_minHeight) {
-        m_minHeight = a_minHeight;
-    }
 
-    float FlyingModeManager::GetMinHeight() {
-        return m_minHeight;
-    }
-
-    void FlyingModeManager::ResetDragonHeight() {
-        m_minHeight = 1000.0f;
-        m_maxHeight = 1000.0f;
-        m_arrivalHeight = 1000.0f;
-    
-        SKSE::GetTaskInterface()->AddTask([this]() {
-            // When modifying Game objects, send task to TaskInterface to ensure thread safety
-            _ts_SKSEFunctions::UpdateIniSetting("fPlayerFlyingMountTravelMinHeight:General", this->m_minHeight);
-            _ts_SKSEFunctions::UpdateIniSetting("fPlayerFlyingMountTravelMaxHeight:General", this->m_maxHeight);
-            _ts_SKSEFunctions::UpdateIniSetting("fFlyingMountFastTravelArrivalHeight:General", this->m_arrivalHeight);
-        });    }
-
-    void FlyingModeManager::ChangeDragonHeight(float a_upDown, bool a_isAbsoluteValue) {
-//        log::info("IDRC - {}", __func__);
-    
-        // Calculate the height change
-        float changeHeight = a_upDown;
-        if (!a_isAbsoluteValue) {
-            changeHeight *= 50.0f;
-        }
-        m_minHeight += changeHeight * GetRunFactor();
-    
-        // Clamp m_minHeight to the valid range [100, 10000]
-        if (m_minHeight < 100.0f) {
-            m_minHeight = 100.0f;
-        } else if (m_minHeight > 10000.0f) {
-            m_minHeight = 10000.0f;
-        }
-    
-        // Synchronize other height-related variables
-        m_maxHeight = m_minHeight;
-        m_arrivalHeight = m_minHeight;
-
-        SKSE::GetTaskInterface()->AddTask([this]() {
-            // When modifying Game objects, send task to TaskInterface to ensure thread safety
-            _ts_SKSEFunctions::UpdateIniSetting("fPlayerFlyingMountTravelMinHeight:General", this->m_minHeight);
-            _ts_SKSEFunctions::UpdateIniSetting("fPlayerFlyingMountTravelMaxHeight:General", this->m_maxHeight);
-            _ts_SKSEFunctions::UpdateIniSetting("fFlyingMountFastTravelArrivalHeight:General", this->m_arrivalHeight);
-        });
-    
-        // Get the dragon actor
-        auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
-        if (!dragonActor) {
-            log::error("IDRC - {}: Dragon actor is null", __func__);
-            return;
-        }
-    
-        auto* orbitMarker = DataManager::GetSingleton().GetOrbitMarker();
-
-        // Update FastTravel if the dragon is allowed to fly
-        if (dragonActor->AsActorState()->actorState2.allowFlying) {
-            // Move the orbit marker vertically by the height change
-            if (orbitMarker) {
-                SKSE::GetTaskInterface()->AddTask([orbitMarker, changeHeight]() {
-                // When modifying Game objects, send task to TaskInterface to ensure thread safety
-//                    _ts_SKSEFunctions::MoveTo(orbitMarker, orbitMarker, 0.0f, 0.0f, changeHeight);
-                });
+            if (_ts_SKSEFunctions::GetFlyingState(dragonActor) == 2) {
+                ChangeDragonHeight();
             }
-/*    
-            // Update the dragon's direction
-            SKSE::GetTaskInterface()->AddTask([this, dragonActor]() {
-                this->DragonNewDirection(dragonActor->GetAngleZ());
-            }); */
+        }
+    }
+    
+    void FlyingModeManager::ChangeDragonHeight() {
+        auto& controlsManager =ControlsManager::GetSingleton();
+        if (controlsManager.GetIsKeyPressed(IDRCKey::kUp)) {
+            m_targetPitch = GetRunFactor() * m_deltaPitch;
+        } else if (controlsManager.GetIsKeyPressed(IDRCKey::kDown)) {
+            m_targetPitch = -GetRunFactor() * m_deltaPitch;
+        } else {
+            m_targetPitch = 0.0f;
         }
     }
 
@@ -341,25 +281,13 @@ log::info("IDRC - {}: Landing is registered and forward key pressed - cancel lan
                 } else if (a_key == kStrafeLeft || a_key == kStrafeRight) {
                     flyingModeNotification = (GetFlyingMode() != FlyingMode::kLanded && GetFlyingMode() != FlyingMode::kPerching);
                 } else if (a_key == IDRCKey::kUp) {
-                    if (_ts_SKSEFunctions::GetFlyingState(dragonActor) == 2 && 
-                            m_mode == kFlying) {
-                        while (controlsManager.GetIsKeyPressed(kUp) && m_minHeight < 10000) {
-                            ChangeDragonHeight(1.f);
-                            std::this_thread::sleep_for(std::chrono::milliseconds(100));
-                        }
-                    } else if ((m_mode == kLanded && _ts_SKSEFunctions::GetFlyingState(dragonActor) == 0) || 
+                    if ((m_mode == kLanded && _ts_SKSEFunctions::GetFlyingState(dragonActor) == 0) || 
                                (m_mode == kPerching && _ts_SKSEFunctions::GetFlyingState(dragonActor) == 5)) { // Landed or perching
                         FlyingModeUp(a_key);
                         flyingModeNotification = true;
                     } else if (m_mode == kHovering && _ts_SKSEFunctions::GetFlyingState(dragonActor) == 3) { // Hovering
                         FlyingModeUp(a_key);
                         flyingModeNotification = true;
-                    }
-                } else if (a_key == kDown && _ts_SKSEFunctions::GetFlyingState(dragonActor) == 2 
-                            && m_mode == kFlying) {
-                    while (controlsManager.GetIsKeyPressed(kDown) && m_minHeight > 100) {
-                        ChangeDragonHeight(-1.f);
-                        std::this_thread::sleep_for(std::chrono::milliseconds(100));
                     }
                 } else if (a_key == kDisplayHealth) {
                     displayManager.DisplayDragonHealth();
@@ -413,11 +341,6 @@ log::info("IDRC - {}: Landing is registered and forward key pressed - cancel lan
                 }
     
                 std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(wait * 1000)));
-            }
-    
-            while (controlsManager.GetIsKeyPressed(IDRCKey::kUp) && mode == FlyingMode::kFlying && _ts_SKSEFunctions::GetFlyingState(dragonActor) == 2 && m_minHeight < 10000) {
-                ChangeDragonHeight(1.f);
-                std::this_thread::sleep_for(std::chrono::milliseconds(100));
             }
     
             controlsManager.SetControlBlocked(false);
@@ -484,10 +407,10 @@ log::info("IDRC - {}: Landing is registered and forward key pressed - cancel lan
         }
         
         if (!CheckForTurn()) {
-            // m_yawOffset and m_pitchOffset are already set in CameraLockManager::Update() via camera movement earlier in this frame
+            // m_yawOffset and m_targetPitch are already set in CameraLockManager::Update() via camera movement earlier in this frame
             controlsManager.SetControlBlocked(false);
         } else {
-            // set m_yawOffset  and m_pitchOffset directly in case user turns via keyboard
+            // set m_yawOffset  and m_targetPitch directly in case user turns via keyboard
             controlsManager.SetControlBlocked(true);
             m_yawOffset = GetTurnFactor() * m_turnSpeed;
         }
@@ -502,7 +425,7 @@ log::info("IDRC - {}: Landing is registered and forward key pressed - cancel lan
     }
 
     bool FlyingModeManager::CheckForTurn() const {
-        auto& controlsManager =ControlsManager::GetSingleton();
+        auto& controlsManager = ControlsManager::GetSingleton();
         bool turn = false;
         if (controlsManager.IsThumbstickPressed()) {
             if (controlsManager.GetIsKeyPressed(kForward) &&
@@ -516,6 +439,11 @@ log::info("IDRC - {}: Landing is registered and forward key pressed - cancel lan
             turn = controlsManager.GetIsKeyPressed(IDRCKey::kStrafeLeft) || controlsManager.GetIsKeyPressed(IDRCKey::kStrafeRight);
         }
         return turn;
+    }
+
+    bool FlyingModeManager::CheckForHeightChange() const {
+        auto& controlsManager = ControlsManager::GetSingleton();
+        return controlsManager.GetIsKeyPressed(IDRCKey::kUp) || controlsManager.GetIsKeyPressed(IDRCKey::kDown);
     }
 
     float FlyingModeManager::GetTurnFactor() {
@@ -729,8 +657,6 @@ log::info("IDRC - {}: Dragon has landed", __func__);
             m_toggledAutoCombatLand = false;
         }
 
-        // Reset dragon height and place the travel-to marker
-        ResetDragonHeight();
         PlaceTravelToMarker(IDRC::DataManager::GetSingleton().GetDragonActor());
 
         // Clear landing registration and register for updates
@@ -966,8 +892,8 @@ APIs::TrueHUD->DrawPoint(candidatePos, 5.0f, 20.f, 0x00FF00FF);
             float dragonPosZ = dragonActor->GetPositionZ();
             float heightAboveGround = dragonPosZ - _ts_SKSEFunctions::GetLandHeightWithWater(RE::PlayerCharacter::GetSingleton());
     
-            if (heightAboveGround < GetMinHeight()) {
-                heightAboveGround = GetMinHeight();
+            if (heightAboveGround < m_minHeight) {
+                heightAboveGround = m_minHeight;
             }
     
             // Adjust the hover target's position
@@ -1094,7 +1020,7 @@ APIs::TrueHUD->DrawPoint(candidatePos, 5.0f, 20.f, 0x00FF00FF);
             // When modifying Game objects, send task to TaskInterface to ensure thread safety
                 _ts_SKSEFunctions::SetAngle(orbitMarker, angle);
                 _ts_SKSEFunctions::MoveTo(orbitMarker, a_takeOffTarget, 
-                    100.0f * std::sin(angleZ), 100.0f * std::cos(angleZ),  this->GetMinHeight());
+                    100.0f * std::sin(angleZ), 100.0f * std::cos(angleZ),  this->m_minHeight);
 
                 dragonActor->AsActorState()->actorState2.allowFlying = true;
                 if (m_noFlyAbility) {
@@ -1418,7 +1344,7 @@ APIs::TrueHUD->DrawPoint(candidatePos, 5.0f, 20.f, 0x00FF00FF);
             float markerPosX = posX + distance * std::sin(angleNorm);
             float markerPosY = posY + distance * std::cos(angleNorm);
 
-            float height = worldSpaceData.m_seaLevel + GetMinHeight();
+            float height = worldSpaceData.m_seaLevel + m_minHeight;
             SKSE::GetTaskInterface()->AddTask([dragonActor, orbitMarker, markerPosX, markerPosY, height]() {
                 // When modifying Game objects, send task to TaskInterface to ensure thread safety
                 orbitMarker->MoveTo(dragonActor); // ensures orbitMarker is in same worldspace as dragonActor
@@ -1444,8 +1370,8 @@ APIs::TrueHUD->DrawPoint(candidatePos, 5.0f, 20.f, 0x00FF00FF);
         m_yawOffset = a_angle;
     }
 
-    void FlyingModeManager::SetPitchOffset(float a_angle) {
-        m_pitchOffset = a_angle;
+    void FlyingModeManager::SetTargetPitch(float a_angle) {
+        m_targetPitch = a_angle;
     }
 
     float FlyingModeManager::GetTargetYaw() {
@@ -1460,14 +1386,7 @@ APIs::TrueHUD->DrawPoint(candidatePos, 5.0f, 20.f, 0x00FF00FF);
     }
 
     float FlyingModeManager::GetTargetPitch() {
-        auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
-        if (!dragonActor) {
-            log::error("IDRC - {}: dragonActor is null", __func__);
-            return 0.0f;
-        }
-
-        float targetPitch = dragonActor->GetAngleX() + PI/180.f * m_pitchOffset;
-        return targetPitch;
+        return m_targetPitch;
     }
 
     float FlyingModeManager::GetAngleToCoordinate(float a_posX, float a_posY) {

@@ -41,7 +41,6 @@ namespace IDRC {
             return;
         }
 
-        auto& controlsManager = ControlsManager::GetSingleton();
         auto& flyingModeManager = FlyingModeManager::GetSingleton();
         auto& dataManager = DataManager::GetSingleton();
         

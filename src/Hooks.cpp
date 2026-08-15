@@ -565,28 +565,28 @@ log::warn("IDRC - {}: wayPointBase null=? wayPointCount: {}", __func__, wayPoint
 		}
 
 		float targetPitch = 0.0f;
-		float targetYaw = 0.0f;
-		if(IDRC::CameraLockManager::GetSingleton().IsEnabled() && !flyingModeManager.CheckForTurn()) {
+		if(IDRC::CameraLockManager::GetSingleton().IsEnabled() && !flyingModeManager.CheckForHeightChange()) {
 			targetPitch = _ts_SKSEFunctions::GetPitch(dragonCameraState->rotation);
-			targetYaw = _ts_SKSEFunctions::GetYaw(dragonCameraState->rotation);
 		} else {
 			targetPitch = flyingModeManager.GetTargetPitch();
+			flyingModeManager.SetTargetPitch(0.0f);
+		}
+
+		float targetYaw = 0.0f;
+		if(IDRC::CameraLockManager::GetSingleton().IsEnabled() && !flyingModeManager.CheckForTurn()) {
+			targetYaw = _ts_SKSEFunctions::GetYaw(dragonCameraState->rotation);
+		} else {
 			targetYaw = flyingModeManager.GetTargetYaw();
 			flyingModeManager.SetYawOffset(0.0f);
-log::info("IDRC - {}: CameraLockManager is disabled, using targetYaw from FlyingModeManager: {}", __func__, targetYaw);	
 		}
 
 		const RE::NiPoint3 dragonPos = dragonActor->GetPosition();
 		auto& combatManager = IDRC::CombatManager::GetSingleton();
-		if (combatManager.IsShoutActive() && combatManager.GetShoutTarget()) {
-			// If a shout target exists, use its position as the yaw target to keep the dragon oriented towards the target while shouting.
-			// Also see the similar logic in CameraLockManager::Update(), to place the orbit marker in the direction of the shout target.
-			auto orbitMarker = IDRC::DataManager::GetSingleton().GetOrbitMarker();
-			if (!orbitMarker) {
-				log::warn("IDRC - {}: Orbit marker is null", __func__);
-				return;
-			}
-			auto targetPos = orbitMarker->GetPosition();
+		auto* shoutTarget = combatManager.GetShoutTarget();
+		if (combatManager.IsShoutActive() && shoutTarget) {
+			auto targetPos = shoutTarget->GetPosition();
+			targetPos.z += 500;
+
 			targetYaw = std::atan2f(targetPos.x - dragonPos.x, targetPos.y - dragonPos.y);
 		}
 

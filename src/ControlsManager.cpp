@@ -107,8 +107,6 @@ namespace IDRC {
             log::warn("IDRC - {}: Already registered for controls", __func__);
         }
 
-        FlyingModeManager::GetSingleton().ResetDragonHeight();
-
         CameraLockManager::GetSingleton().ResetEnabled();
         
         if (!a_reRegisterOnLoad){
