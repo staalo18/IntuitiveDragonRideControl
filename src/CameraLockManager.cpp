@@ -66,14 +66,11 @@ namespace IDRC {
             return;
         }
 
-        bool isCameraTurnOngoing = false;
+        bool isKeyboardTurn = flyingModeManager.CheckForTurn();
         float currentCameraYaw = _ts_SKSEFunctions::GetYaw(dragonCameraState->rotation);
-        if (m_isUserTurning) {
+        if (m_isUserTurning || isKeyboardTurn) {
             m_storedCameraYaw = currentCameraYaw;
         } else {
-            if (fabs(_ts_SKSEFunctions::NormalRelativeAngle(currentCameraYaw - m_storedCameraYaw)) > 0.1f * PI / 180.f) {
-                isCameraTurnOngoing = true;
-            }
             currentCameraYaw = m_storedCameraYaw;
         }
 
@@ -155,16 +152,17 @@ namespace IDRC {
             // Turning
             if  ((isTDMLocked || m_isUserTurning || m_turnOngoing || flyState == 2) // only if user is actively triggering a turn (via mouse or gamepad, or TDM Lock), or such a user-triggered turn is not yet completed
                   && (flyState == 2 ||fabs(currentDragonYawOffset) > 2.f * PI / 180.f) // ignore turn angles smaller than 2 degrees
-                  && !controlsManager.GetIsKeyPressed(kStrafeLeft) && !controlsManager.GetIsKeyPressed(kStrafeRight)
+                  && !isKeyboardTurn
                 ) {
                 // dragon yaw follows user-triggered camera rotation
-                flyingModeManager.DragonTurnPlayerRiding(180.f / PI * currentDragonYawOffset);
+                flyingModeManager.SetYawOffset(180.f / PI * currentDragonYawOffset);
                 m_turnOngoing = true;
             } 
         }
 
-        if ((_ts_SKSEFunctions::GetFlyingState(dragonActor) == 2 && combatManager.IsShoutActive() && combatManager.GetShoutTarget()) ||
-            (isDragonTurning && !m_isUserTurning && !m_turnOngoing && !isTDMLocked && !isCameraTurnOngoing)) {
+        if ((flyState == 2 && combatManager.IsShoutActive() && combatManager.GetShoutTarget()) || 
+            isKeyboardTurn ||
+            (isDragonTurning && !m_isUserTurning && !m_turnOngoing && !isTDMLocked)) {
             // camera rotation follows dragon yaw
             m_cameraLocked = true;
             float currentCameraRotation = _ts_SKSEFunctions::NormalRelativeAngle(dragonCameraState->freeRotation.x);

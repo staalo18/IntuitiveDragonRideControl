@@ -504,21 +504,19 @@ log::info("IDRC - {}: SetFlightPath called", __func__);
 			return;
 		}
 
-		if(!IDRC::CameraLockManager::GetSingleton().IsEnabled()) {
-			return;
-		}
 
 		auto* dragonActor = IDRC::DataManager::GetSingleton().GetDragonActor();
 		if (!dragonActor) {
 			return;
 		}
 
+		auto& flyingModeManager = IDRC::FlyingModeManager::GetSingleton();
 bool skipRePathing = false;
-		if(IDRC::FlyingModeManager::GetSingleton().GetFlyingMode() == IDRC::FlyingMode::kFlying)
+		if(flyingModeManager.GetFlyingMode() == IDRC::FlyingMode::kFlying)
 		{
-		} else if (IDRC::FlyingModeManager::GetSingleton().GetFlyingMode() == IDRC::FlyingMode::kHovering) {
+		} else if (flyingModeManager.GetFlyingMode() == IDRC::FlyingMode::kHovering) {
 skipRePathing = true;
-		} else if (IDRC::FlyingModeManager::GetSingleton().GetFlyingMode() == IDRC::FlyingMode::kLanded) {
+		} else if (flyingModeManager.GetFlyingMode() == IDRC::FlyingMode::kLanded) {
 skipRePathing = true;
 		} else {
 log::info("IDRC - {}: Skipping path update.", __func__);
@@ -566,8 +564,17 @@ log::warn("IDRC - {}: wayPointBase null=? wayPointCount: {}", __func__, wayPoint
 			return;
 		}
 
-		const float targetPitch = _ts_SKSEFunctions::GetPitch(dragonCameraState->rotation);
-		float targetYaw = _ts_SKSEFunctions::GetYaw(dragonCameraState->rotation);
+		float targetPitch = 0.0f;
+		float targetYaw = 0.0f;
+		if(IDRC::CameraLockManager::GetSingleton().IsEnabled() && !flyingModeManager.CheckForTurn()) {
+			targetPitch = _ts_SKSEFunctions::GetPitch(dragonCameraState->rotation);
+			targetYaw = _ts_SKSEFunctions::GetYaw(dragonCameraState->rotation);
+		} else {
+			targetPitch = flyingModeManager.GetTargetPitch();
+			targetYaw = flyingModeManager.GetTargetYaw();
+			flyingModeManager.SetYawOffset(0.0f);
+log::info("IDRC - {}: CameraLockManager is disabled, using targetYaw from FlyingModeManager: {}", __func__, targetYaw);	
+		}
 
 		const RE::NiPoint3 dragonPos = dragonActor->GetPosition();
 		auto& combatManager = IDRC::CombatManager::GetSingleton();

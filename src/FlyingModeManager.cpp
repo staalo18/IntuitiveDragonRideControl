@@ -25,8 +25,9 @@ namespace IDRC {
         m_noFlyAbility = a_noFlyAbility;
 
         ResetDragonHeight();
-        m_flyToAngle = 0.0;
-        m_turnSpeed = 40.0;
+        m_yawOffset = 0.0;
+        m_pitchOffset = 0.0;
+        m_turnSpeed = 25.0;
         m_toggleAlwaysRun = true;
         m_registeredForLanding = false;
         m_registeredForPerch = false;
@@ -67,6 +68,8 @@ log::info("IDRC - {}: FFlyingMode = {}", __func__, m_mode);
 
                 FinalizeLand();
             }
+
+            TriggerTurn();
         }
     }
     
@@ -336,7 +339,7 @@ log::info("IDRC - {}: Landing is registered and forward key pressed - cancel lan
                     }
                     flyingModeNotification = true;
                 } else if (a_key == kStrafeLeft || a_key == kStrafeRight) {
-                    flyingModeNotification = TriggerTurn();
+                    flyingModeNotification = (GetFlyingMode() != FlyingMode::kLanded && GetFlyingMode() != FlyingMode::kPerching);
                 } else if (a_key == IDRCKey::kUp) {
                     if (_ts_SKSEFunctions::GetFlyingState(dragonActor) == 2 && 
                             m_mode == kFlying) {
@@ -392,6 +395,7 @@ log::info("IDRC - {}: Landing is registered and forward key pressed - cancel lan
                         wait = 0.1f;
                     } else if (mode == FlyingMode::kHovering && dragonActor->AsActorState()->actorState2.allowFlying) {
                         mode = FlyingMode::kFlying;
+                        SetFlyingMode(kFlying);
                         DragonNewDirection(dragonActor->GetAngleZ(), true);
                         wait = 0.1f;
                     } else if ((mode == FlyingMode::kLanded && _ts_SKSEFunctions::GetFlyingState(dragonActor) == 0) ||
@@ -469,70 +473,32 @@ log::info("IDRC - {}: Landing is registered and forward key pressed - cancel lan
         return true;
     }
 
-    bool FlyingModeManager::TriggerTurn() {
+    void FlyingModeManager::TriggerTurn() {
         log::info("IDRC - {}", __func__);
 
-        auto& controlsManager =ControlsManager::GetSingleton();
-
-        bool flyingModeNotification = false;
-    
+        auto& controlsManager = ControlsManager::GetSingleton();
         auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
         if (!dragonActor) {
             log::error("IDRC - {}: Dragon actor is null", __func__);
-            return false;
-        }
-    
-        int flyState = _ts_SKSEFunctions::GetFlyingState(dragonActor);
-    
-        float speedMod = 1.0f;
-        if (flyState == 0 || flyState == 3 || flyState == 5) { // dragon is landed, hovering, perching
-            speedMod = 0.25f; // Reduce turn speed when grounded or hovering
+            return;
         }
         
-        controlsManager.SetControlBlocked(true);
-    
-        int flyCount = 0;
-        int waitTime = 50; // 50ms
-        while (CheckForTurn()) {
-            _ts_SKSEFunctions::WaitWhileGameIsPaused();
-            if (_ts_SKSEFunctions::GetFlyingState(dragonActor) == 2) { // flying
-                // only trigger new turn every 300ms, to allow dragon to react on new direction
-                flyCount ++;
-                if (flyCount < 6) {
-                    std::this_thread::sleep_for(std::chrono::milliseconds(waitTime));
-                    continue;
-                }
-            }
-
-            flyCount = 0;
-            DragonTurnPlayerRiding(speedMod * m_turnSpeed * GetTurnFactor());
-            std::this_thread::sleep_for(std::chrono::milliseconds(waitTime));
+        if (!CheckForTurn()) {
+            // m_yawOffset and m_pitchOffset are already set in CameraLockManager::Update() via camera movement earlier in this frame
+            controlsManager.SetControlBlocked(false);
+        } else {
+            // set m_yawOffset  and m_pitchOffset directly in case user turns via keyboard
+            controlsManager.SetControlBlocked(true);
+            m_yawOffset = GetTurnFactor() * m_turnSpeed;
         }
 
-        controlsManager.SetControlBlocked(false);
+        DragonTurnPlayerRiding(m_yawOffset);
 
-        if (GetFlyingMode() == FlyingMode::kFlying &&
-            !controlsManager.GetIsKeyPressed(IDRCKey::kBack) &&
-            !controlsManager.GetIsKeyPressed(IDRCKey::kStrafeLeft) &&
-            !controlsManager.GetIsKeyPressed(IDRCKey::kStrafeRight)) {
-            // Stop ongoing turning by setting the new target  to the current direction.
-            DragonTurnPlayerRiding(0.0f);
+        if (_ts_SKSEFunctions::GetFlyingState(dragonActor) != 2) {
+            // do not reset while flying so that FlightPath can be updated
+            // in PathingHook::UpdateFlightPathData
+            m_yawOffset = 0.0f;
         }
-    
-        if (GetFlyingMode() != FlyingMode::kLanded && GetFlyingMode() != FlyingMode::kPerching) {
-            // no notificiation when turning while grounded
-            flyingModeNotification = true;
-        }
-
-        if (GetFlyingMode() == kLanded && _ts_SKSEFunctions::GetFlyingState(dragonActor) == 0) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(6*waitTime));
-            // if forward key is (still) pressed, trigger ground travel forward
-            if (controlsManager.GetIsKeyPressed(kForward)) {
-                OnKeyDown(kForward);
-            }
-        }
-    
-        return flyingModeNotification;
     }
 
     bool FlyingModeManager::CheckForTurn() const {
@@ -1340,7 +1306,7 @@ APIs::TrueHUD->DrawPoint(candidatePos, 5.0f, 20.f, 0x00FF00FF);
 
 
     bool FlyingModeManager::DragonTurnPlayerRiding(float a_turnAngle) {
-        log::info("IDRC - {}", __func__);
+        log::info("IDRC - {}, angle: {}", __func__, a_turnAngle);
 
         auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
         auto* orbitMarker = DataManager::GetSingleton().GetOrbitMarker();
@@ -1372,14 +1338,8 @@ APIs::TrueHUD->DrawPoint(candidatePos, 5.0f, 20.f, 0x00FF00FF);
                 _ts_SKSEFunctions::SetAngleZ(orbitMarker, angleZ);
                 dragonActor->EvaluatePackage();
             });    
-        } else if (flyingState == 1) { // Taking off
-            if (m_mode == kHovering || m_mode == kFlying) {
-                return DragonNewDirection(angleZ);
-            }
-        } else if (flyingState == 2) { // Cruising
-            if ((m_mode == kHovering || m_mode == kFlying)  && !m_registeredForLanding && !m_registeredForPerch) {
-                return DragonNewDirection(angleZ);
-            }
+        } else if (flyingState == 2 && m_mode == kFlying  && !m_registeredForLanding && !m_registeredForPerch) {
+            return DragonNewDirection(angleZ);
         }
         return true;
     }
@@ -1397,13 +1357,6 @@ APIs::TrueHUD->DrawPoint(candidatePos, 5.0f, 20.f, 0x00FF00FF);
             log::info("IDRC - {}: Dragon is not allowed to fly (injured) - cancel new direction", __func__);
             return false;
         }
-    
-    
-//        SKSE::GetTaskInterface()->AddTask([dragonActor]() {
-//            // When modifying Game objects, send task to TaskInterface to ensure thread safety
-//            dragonActor->AsActorValueOwner()->SetActorValue(RE::ActorValue::kVariable03, 0); // Set to orbit
-//            dragonActor->EvaluatePackage();
-//        });
     
         return DragonFlyTo(a_angle, a_displayMode);
     }
@@ -1426,8 +1379,6 @@ APIs::TrueHUD->DrawPoint(candidatePos, 5.0f, 20.f, 0x00FF00FF);
             log::info("IDRC - {}: Dragon is not allowed to fly - cancel FlyTo", __func__);
             return false;
         }
-
-        SetFlyingMode(kFlying); // flying to target
 
         if (a_displayMode) {  // only if requested through "Forward", not through "Strafe Left/Right"
             DisplayManager::GetSingleton().DisplayFlyingMode();
@@ -1475,17 +1426,11 @@ APIs::TrueHUD->DrawPoint(candidatePos, 5.0f, 20.f, 0x00FF00FF);
                 dragonActor->AsActorValueOwner()->SetActorValue(RE::ActorValue::kVariable03, 2); // FastTravel
 
                 dragonActor->EvaluatePackage();
+
+                // Start the FastTravel mode
+                FastTravelManager::GetSingleton().FastTravel(orbitMarker);
             });
         }
-
-        if (GetFlyingMode() != kFlying) {
-            log::info("IDRC - {}: no longer in Flying mode - cancel FlyTo...", __func__);
-            return false;
-        }
-
-        // Start the FastTravel mode
-        FastTravelManager::GetSingleton().FastTravel(orbitMarker);
-log::info("IDRC - {}: FastTravel started", __func__);
     
         if (a_displayMode) {
            Utils::RegisterForSingleUpdate(0.5f);
@@ -1495,8 +1440,34 @@ log::info("IDRC - {}: FastTravel started", __func__);
         return true;
     }
 
-    float FlyingModeManager::GetFlyToAngle() {
-        return m_flyToAngle;
+    void FlyingModeManager::SetYawOffset(float a_angle) {
+        m_yawOffset = a_angle;
+    }
+
+    void FlyingModeManager::SetPitchOffset(float a_angle) {
+        m_pitchOffset = a_angle;
+    }
+
+    float FlyingModeManager::GetTargetYaw() {
+        auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
+        if (!dragonActor) {
+            log::error("IDRC - {}: dragonActor is null", __func__);
+            return 0.0f;
+        }
+
+        float targetYaw = dragonActor->GetHeading(false) + PI/180.f * m_yawOffset;
+        return targetYaw;
+    }
+
+    float FlyingModeManager::GetTargetPitch() {
+        auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
+        if (!dragonActor) {
+            log::error("IDRC - {}: dragonActor is null", __func__);
+            return 0.0f;
+        }
+
+        float targetPitch = dragonActor->GetAngleX() + PI/180.f * m_pitchOffset;
+        return targetPitch;
     }
 
     float FlyingModeManager::GetAngleToCoordinate(float a_posX, float a_posY) {

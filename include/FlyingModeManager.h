@@ -54,7 +54,15 @@ namespace IDRC {
 
         bool DragonFlyTo(float a_angle, bool a_displayMode = false);
 
-        float GetFlyToAngle();
+        bool CheckForTurn() const;
+
+        void SetYawOffset(float a_angle);
+
+        void SetPitchOffset(float a_angle);
+
+        float GetTargetYaw();
+
+        float GetTargetPitch();
 
         FlyingMode GetFlyingMode();
 
@@ -84,8 +92,9 @@ namespace IDRC {
         float m_minHeight = 1000.0f;  
         float m_maxHeight = 1000.0f;
         float m_arrivalHeight = 1000.0f;
-        float m_flyToAngle = 0.0;
-        float m_turnSpeed = 40.0;
+        float m_yawOffset = 0.0;
+        float m_pitchOffset = 0.0;
+        float m_turnSpeed = 25.0;
         bool m_toggleAlwaysRun = true;
         bool m_registeredForLanding = false;
         bool m_registeredForPerch = false;
@@ -136,13 +145,11 @@ namespace IDRC {
 
         bool DragonPerchPlayerRiding();
         
-        bool TriggerTurn();
+        void TriggerTurn();
         
         float NormalizeAngle(float a_angle);
 
         float GetTurnFactor();
-
-        bool CheckForTurn() const;
 
         float GetAngleToCoordinate(float a_posX, float a_posY);
 
