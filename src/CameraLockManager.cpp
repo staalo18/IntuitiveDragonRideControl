@@ -164,17 +164,48 @@ namespace IDRC {
             (isDragonTurning && !m_isUserTurning && !m_turnOngoing && !isTDMLocked)) {
             // camera rotation follows dragon yaw
             m_cameraLocked = true;
-            float currentCameraRotation = _ts_SKSEFunctions::NormalRelativeAngle(dragonCameraState->freeRotation.x);
+
+            float freeRotationX = _ts_SKSEFunctions::NormalRelativeAngle(dragonCameraState->freeRotation.x);
             float realTimeDeltaTime = _ts_SKSEFunctions::GetRealTimeDeltaTime() < 0.05f ? _ts_SKSEFunctions::GetRealTimeDeltaTime() : 0.05f;
             float damping = 1.0f - 2.5f * realTimeDeltaTime;
-            float newCameraRotation =  _ts_SKSEFunctions::NormalRelativeAngle(damping *currentCameraRotation);
 
-//            SKSE::GetTaskInterface()->AddTask([dragonCameraState, newCameraRotation]() {
-                // When modifying Game objects, send task to TaskInterface to ensure thread safety
-                dragonCameraState->freeRotation.x = newCameraRotation;
-//            });
+            bool shoutTargetingActive = combatManager.IsShoutActive() && combatManager.GetShoutTarget();
+            if (shoutTargetingActive) {
+                auto dragonPos = dragonActor->GetPosition();
+                auto shoutTargetPos = combatManager.GetShoutTarget()->GetPosition();
+                float dragonHeading = dragonActor->GetHeading(false);
+                float yawToTarget = atan2(shoutTargetPos.x - dragonPos.x, shoutTargetPos.y - dragonPos.y);
+                float shoutTargetYaw = _ts_SKSEFunctions::NormalRelativeAngle(yawToTarget - dragonHeading);
+                
+                if (!m_wasShoutTargetingActive) {
+                    m_shoutTransitionStartYaw = freeRotationX;
+                    m_shoutTransitionElapsed = 0.0f;
+                    m_shoutCameraTransitionDuration = 0.5f * std::fabs(shoutTargetYaw) / PI; // up to 0.5 sec for 180 deg camera turn towards target.
+                }
+
+                float deltaZ = shoutTargetPos.z - dragonPos.z;
+                float dX = shoutTargetPos.x - dragonPos.x;
+                float dY = shoutTargetPos.y - dragonPos.y;
+                float deltaXY = std::sqrt(dX * dX + dY * dY);
+                float pitchToTarget = atan2(deltaZ, deltaXY);
+log::info("IDRC - {}: freeRotationY: {}, pitchToTarget: {}", __func__, 180.f/PI * dragonCameraState->freeRotation.y, 180.f/PI * pitchToTarget);
+                dragonCameraState->freeRotation.y = _ts_SKSEFunctions::NormalRelativeAngle(damping * pitchToTarget);
+
+                if (m_shoutTransitionElapsed < m_shoutCameraTransitionDuration) {
+                    m_shoutTransitionElapsed = std::min(m_shoutTransitionElapsed + realTimeDeltaTime, m_shoutCameraTransitionDuration);
+                    float t = _ts_SKSEFunctions::ApplyEasing(m_shoutTransitionElapsed / m_shoutCameraTransitionDuration, true, true);
+                    float rotationDelta = _ts_SKSEFunctions::NormalRelativeAngle(shoutTargetYaw - m_shoutTransitionStartYaw);
+                    freeRotationX = _ts_SKSEFunctions::NormalRelativeAngle(m_shoutTransitionStartYaw + rotationDelta * t);
+                } else {
+                    freeRotationX = shoutTargetYaw;
+                }
+            }
+            
+            m_wasShoutTargetingActive = shoutTargetingActive;
+            dragonCameraState->freeRotation.x = _ts_SKSEFunctions::NormalRelativeAngle(damping * freeRotationX);
         } else {
             m_cameraLocked = false;
+            m_wasShoutTargetingActive = false;
         }
 
         m_isUserTurning = false; // reset flag. Is set to true in LookHook::ProcessMouseMove() in case of user-triggered camera rotation
@@ -217,35 +248,4 @@ namespace IDRC {
     void CameraLockManager::SetIgnoredCameraPitch(float a_pitch) {
         m_ignoredCameraPitch = -a_pitch * PI / 180.f;
     }
-/*
-    void CameraLockManager::LockTurn(int a_lockTime)
-    {
-        m_turnLocked = true;
-
-        std::thread([this, a_lockTime]() {
-            int singleWait = 10;
-            int maxCount = a_lockTime / singleWait;
-            for (int i = 0; i < maxCount; i++) {
-                _ts_SKSEFunctions::WaitWhileGameIsPaused();
-                std::this_thread::sleep_for(std::chrono::milliseconds(singleWait));
-            }
-            this->m_turnLocked = false;
-        }).detach();
-    }    
-
-    void CameraLockManager::LockHeight(int a_lockTime)
-    {
-        m_heightLocked = true;
-
-        std::thread([this, a_lockTime]() {
-            int singleWait = 10;
-            int maxCount = a_lockTime / singleWait;
-            for (int i = 0; i < maxCount; i++) {
-                _ts_SKSEFunctions::WaitWhileGameIsPaused();
-                std::this_thread::sleep_for(std::chrono::milliseconds(singleWait));
-            }
-            this->m_heightLocked = false;
-        }).detach();
-    } 
-*/  
 }  // namespace IDRC

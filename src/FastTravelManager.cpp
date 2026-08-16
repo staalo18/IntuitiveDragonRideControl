@@ -9,6 +9,10 @@
 namespace IDRC {
 
     void FastTravelManager::Update() {
+        if (RE::UI::GetSingleton()->GameIsPaused()) {
+            return;
+        }
+                
         auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
         if (!dragonActor) {
             return;

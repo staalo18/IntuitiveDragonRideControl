@@ -32,6 +32,8 @@ namespace IDRC {
     
         bool IsShoutActive() {return m_shoutActive;}
 
+        float GetShoutDirection() { return m_shoutDirection; }
+
         RE::Actor* GetShoutTarget() { return m_shoutTarget ? m_shoutTarget.get().get() : nullptr; }
 
     private:
@@ -47,6 +49,7 @@ namespace IDRC {
         const float m_maxTargetDistance = 2000.0f;
         const float m_maxCombatDistance = 8000.0f;
         float m_shoutTimer = 0.0f;
+        float m_shoutDirection = 1.0f;
         bool m_shoutActive = false;
         bool m_restartCombatPending = false;
         RE::ActorHandle m_shoutTarget{};
@@ -63,6 +66,8 @@ namespace IDRC {
         void UpdatePlayerCell();
 
         void UpdateAttack();
+
+        void ExecuteAttack();
 
         float GetMaxTargetDistance();
     }; // class CombatManager

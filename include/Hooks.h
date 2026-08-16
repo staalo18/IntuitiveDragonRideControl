@@ -226,6 +226,8 @@ namespace Hooks
 // members variables:
 		static inline RE::BSPathing* m_pathingSingleton = nullptr; // pathing singleton is initialize with the first vanilla GetCurrentPathingLocation call
 		static inline std::uintptr_t m_actorOffset = REL::Module::get().version() >= SKSE::RUNTIME_SSE_1_6_629 ? 0xC0 : 0xB8;
+		const static inline float m_minShoutDistance = 1000.f;
+		const static inline float m_shoutHeight = 500.f;
 	};
 
 

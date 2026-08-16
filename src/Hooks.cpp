@@ -114,6 +114,10 @@ namespace Hooks
 	{
 		_Nullsub();
 
+        if (RE::UI::GetSingleton()->GameIsPaused()) {
+            return;
+        }
+
 		IDRC::CameraLockManager::GetSingleton().Update();
 		IDRC::TargetReticleManager::GetSingleton().Update();
 		IDRC::CombatManager::GetSingleton().Update();
@@ -145,6 +149,18 @@ log::info("IDRC - {}: DragonActor current package: {:0x}, packType: {}, procedur
 //			bool isValidForLanding = PathingHook::IsPositionValidForLanding(testPos);
 log::info("IDRC - {}: DragonActor position: {}, flyingState={}", __func__, dragonActor->GetPosition(), flyingState);
 		}
+
+auto* playerCamera = RE::PlayerCamera::GetSingleton();
+RE::ThirdPersonState* dragonCameraState = nullptr;
+
+if (playerCamera && playerCamera->currentState && (playerCamera->currentState->id == RE::CameraState::kDragon)) {
+dragonCameraState = static_cast<RE::ThirdPersonState*>(playerCamera->currentState.get());
+if (dragonCameraState) {
+log::info("IDRC - {}: AfterMainUpdate: freeRotationY: {}", __func__, 180.f/PI * dragonCameraState->freeRotation.y);
+}
+}
+
+
 /*
 		auto* player = RE::PlayerCharacter::GetSingleton();
 		if (player) {
@@ -308,6 +324,16 @@ log::info("IDRC - {}: ReadyWeaponHook-ProcessButton called with event IDCode = {
 
 	void DragonCameraStateHook::UpdateRotation(RE::DragonCameraState* a_this)
 	{
+auto* playerCamera = RE::PlayerCamera::GetSingleton();
+RE::ThirdPersonState* dragonCameraState = nullptr;
+
+if (playerCamera && playerCamera->currentState && (playerCamera->currentState->id == RE::CameraState::kDragon)) {
+dragonCameraState = static_cast<RE::ThirdPersonState*>(playerCamera->currentState.get());
+if (dragonCameraState) {
+log::info("IDRC - {}: Before UpdateRotation: freeRotationY: {}", __func__, 180.f/PI * dragonCameraState->freeRotation.y);
+}
+}
+
 		// This is copied from True Directional Movement. All credits go to the original author Ersh!
 
 //		auto directionalMovementHandler = DirectionalMovementHandler::GetSingleton();
@@ -583,15 +609,32 @@ log::warn("IDRC - {}: wayPointBase null=? wayPointCount: {}", __func__, wayPoint
 		const RE::NiPoint3 dragonPos = dragonActor->GetPosition();
 		auto& combatManager = IDRC::CombatManager::GetSingleton();
 		auto* shoutTarget = combatManager.GetShoutTarget();
-		if (combatManager.IsShoutActive() && shoutTarget) {
-			auto targetPos = shoutTarget->GetPosition();
-			targetPos.z += 500;
 
-			targetYaw = std::atan2f(targetPos.x - dragonPos.x, targetPos.y - dragonPos.y);
+		bool shoutActive = combatManager.IsShoutActive() && shoutTarget;
+		float distanceToTarget = 0.0f;
+		RE::NiPoint3 pathTargetPos;
+
+		if (shoutActive) {
+			pathTargetPos = shoutTarget->GetPosition();
+			float dX = pathTargetPos.x - dragonPos.x;
+			float dY = pathTargetPos.y - dragonPos.y;
+			float yawtoShoutTarget = atan2f(dX, dY);
+
+			pathTargetPos.z += m_shoutHeight; // move path target to shoutHeight units above shout target ...
+			// ... and minShoutDistance to left / right of the shout target (depending on GetShoutDirection)
+			pathTargetPos.x -= combatManager.GetShoutDirection() * m_minShoutDistance * std::cos(yawtoShoutTarget);
+			pathTargetPos.y += combatManager.GetShoutDirection() * m_minShoutDistance * std::sin(yawtoShoutTarget);
+
+			distanceToTarget = pathTargetPos.GetDistance(dragonPos);
+
+			// re-calculate targetYaw to point towards the adjusted pathTargetPos
+			dX= pathTargetPos.x - dragonPos.x;
+			dY = pathTargetPos.y - dragonPos.y;
+			targetYaw = std::atan2f(dX, dY);
 		}
 
-		const float sinYaw = std::sin(targetYaw);
-		const float cosYaw = std::cos(targetYaw);
+		float sinYaw = std::sin(targetYaw);
+		float cosYaw = std::cos(targetYaw);
 		const float tanPitch = std::tan(targetPitch);
 		const float minHeightAboveGround = 500.f;
 
@@ -620,10 +663,14 @@ return;
 			float dy = waypointToUpdate.y - dragonPos.y;
 			float distanceToUpdate = std::sqrt(dx * dx + dy * dy);
 			float cameraZ = dragonPos.z + distanceToUpdate * tanPitch;
+			if (shoutActive) {
+				cameraZ = dragonPos.z + distanceToUpdate / distanceToTarget * (pathTargetPos.z - dragonPos.z);
+			}
+
 			float landZ = _ts_SKSEFunctions::GetLandHeightWithWater(waypointToUpdate, true) + minHeightAboveGround;
 
 			waypointToUpdate.x = dragonPos.x + distanceToUpdate * sinYaw;
-			waypointToUpdate.y = dragonPos.y + distanceToUpdate * cosYaw;			
+			waypointToUpdate.y = dragonPos.y + distanceToUpdate * cosYaw;
 			waypointToUpdate.z = std::max(cameraZ, landZ);
 		}
 log::info("IDRC - {}: Updated waypoints for flying dragon. CurrentIndex: {}, WaypointCount: {}", __func__, currentIndex, wayPointCount);

@@ -33,20 +33,19 @@ namespace IDRC {
         private:
             CameraLockManager() = default;
 
-//            void LockTurn(int a_lockTime);
-//            void LockHeight(int a_lockTime);
-
             bool m_initiallyEnabled = true;
             bool m_isEnabled = true;
-//            bool m_turnLocked = false;
-//            bool m_heightLocked = false;
             bool m_turnOngoing = false;
             bool m_cameraLocked = false;
             bool m_isUserTurning = false;
             float m_dragonYaw = 0.0f;
             float m_storedCameraYaw = 0.0f;
             int m_flyState = -1;
+
+            bool m_wasShoutTargetingActive = false;
+            float m_shoutTransitionStartYaw = 0.0f;
+            float m_shoutTransitionElapsed = 0.0f;
+            float m_shoutCameraTransitionDuration = 0.0f;
             float m_ignoredCameraPitch = -8.f * PI / 180.f;
-            const float m_transitionalPitchRange = -5.f * PI / 180.f;
     }; // class CameraLockManager
 }  // namespace IDRC

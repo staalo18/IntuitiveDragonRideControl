@@ -36,6 +36,10 @@ namespace IDRC {
     }
 
     void FlyingModeManager::Update() {
+        if (RE::UI::GetSingleton()->GameIsPaused()) {
+            return;
+        }
+                
         auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
         if (dragonActor) {
             if (!IsInBorderRegion()) {
@@ -72,6 +76,17 @@ log::info("IDRC - {}: FFlyingMode = {}", __func__, m_mode);
 
             if (_ts_SKSEFunctions::GetFlyingState(dragonActor) == 2) {
                 ChangeDragonHeight();
+            }
+
+            if (m_mode != kFlying && _ts_SKSEFunctions::GetFlyingState(dragonActor) == 2 &&
+                (_ts_SKSEFunctions::IsFlyingMountFastTravelling(dragonActor) ||
+                 _ts_SKSEFunctions::IsFlyingMountPatrolQueued(dragonActor))) {
+                // Can happen eg when player triggers fast travel via map.
+                // Map-based fasttravel currently not supported, because the dynamic
+                // repathing in PathingHook::UpdateFlightPathData will override any 
+                // player-triggered fasttravel request.
+                // Switching back to hover to ensure consistent flying state. 
+                DragonHoverPlayerRiding(dragonActor, false);
             }
         }
     }
