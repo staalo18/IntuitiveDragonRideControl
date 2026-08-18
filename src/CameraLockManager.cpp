@@ -159,7 +159,7 @@ namespace IDRC {
             } 
         }
 
-        if ((flyState == 2 && combatManager.IsShoutActive() && combatManager.GetShoutTarget()) || 
+        if ((combatManager.IsShoutActive() && combatManager.GetShoutTarget()) || 
             isKeyboardTurn ||
             (isDragonTurning && !m_isUserTurning && !m_turnOngoing && !isTDMLocked)) {
             // camera rotation follows dragon yaw

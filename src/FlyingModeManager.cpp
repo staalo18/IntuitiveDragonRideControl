@@ -415,6 +415,7 @@ log::info("IDRC - {}: Landing is registered and forward key pressed - cancel lan
         log::info("IDRC - {}", __func__);
 
         auto& controlsManager = ControlsManager::GetSingleton();
+        auto& combatManager = CombatManager::GetSingleton();
         auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
         if (!dragonActor) {
             log::error("IDRC - {}: Dragon actor is null", __func__);
@@ -428,6 +429,15 @@ log::info("IDRC - {}: Landing is registered and forward key pressed - cancel lan
             // set m_yawOffset  and m_targetPitch directly in case user turns via keyboard
             controlsManager.SetControlBlocked(true);
             m_yawOffset = GetTurnFactor() * m_turnSpeed;
+        }
+
+        if (combatManager.IsShoutActive() && combatManager.GetShoutTarget() 
+            && _ts_SKSEFunctions::GetFlyingState(dragonActor) != 2) {
+
+            auto shoutTargetPos = combatManager.GetShoutTarget()->GetPosition();
+            auto dragonPos = dragonActor->GetPosition();
+            float yawOffset = std::atan2f(shoutTargetPos.x - dragonPos.x, shoutTargetPos.y - dragonPos.y) - dragonActor->GetHeading(false);
+            m_yawOffset = 180.f / PI * yawOffset;
         }
 
         DragonTurnPlayerRiding(m_yawOffset);
