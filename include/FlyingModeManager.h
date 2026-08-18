@@ -37,6 +37,8 @@ namespace IDRC {
 
         void OnKeyDown(IDRCKey a_key);
 
+        void OnBackKeyUp();
+
         void ToggleAutoCombat();
 
         bool DragonTravelTo(RE::TESObjectREFR* a_directionMarker);
@@ -101,6 +103,7 @@ namespace IDRC {
         bool m_finalizeTriggerLand = false;
         bool m_landingPosSearchOngoing = false;
         bool m_waitForLanded = false;
+        bool m_backKeyPressed = false;
 
         FlyingMode m_mode = kLanded;
         RE::SpellItem* m_noFlyAbility = nullptr;

@@ -21,7 +21,7 @@ namespace IDRC {
         for (auto* event = *a_event; event; event = event->next) {
             if (event->eventType == RE::INPUT_EVENT_TYPE::kButton) {
                 auto* buttonEvent = static_cast<RE::ButtonEvent*>(event);
-                if (!buttonEvent || !buttonEvent->IsDown()) {
+                if (!buttonEvent || !(buttonEvent->IsDown() || buttonEvent->IsUp())) {
                     continue;
                 }
 
@@ -51,7 +51,8 @@ namespace IDRC {
                     // this is needed to ensure that GetIsKeyPressed() recognizes the buttonpress immediately
                     TouchMouseButton(buttonEvent);
                 }
-                std::thread([idrcKey]() {
+                bool isUp = buttonEvent->IsUp();
+                std::thread([idrcKey, isUp]() {
                     // handling the dragon control on a separate thread is required
                     // to avoid blocking Skyrim's main thread (freezing the game).
                     // In ALL functions used within the OnKeyDown() logic we need to ensure that 
@@ -59,14 +60,20 @@ namespace IDRC {
                     // This is achieved by passing the corresponding statements to the main thread
                     // via SKSE::GetTaskInterface()->AddTask()
 
-                    if (idrcKey == IDRCKey::kToggleLockReticle) {
-                        TargetReticleManager::GetSingleton().ToggleLockReticle();
-                    } else if (idrcKey == IDRCKey::kPrimaryTargetMode) {
-                        TargetReticleManager::GetSingleton().TogglePrimaryTargetMode();
-                    } else if (idrcKey == IDRCKey::kToggleCameraLock) {
-                        CameraLockManager::GetSingleton().SetEnabled(!CameraLockManager::GetSingleton().IsEnabled());
+                    if (isUp) {
+                        if(idrcKey == IDRCKey::kBack) {
+                            FlyingModeManager::GetSingleton().OnBackKeyUp();
+                        }
                     } else {
-                        FlyingModeManager::GetSingleton().OnKeyDown(idrcKey);
+                        if (idrcKey == IDRCKey::kToggleLockReticle) {
+                            TargetReticleManager::GetSingleton().ToggleLockReticle();
+                        } else if (idrcKey == IDRCKey::kPrimaryTargetMode) {
+                            TargetReticleManager::GetSingleton().TogglePrimaryTargetMode();
+                        } else if (idrcKey == IDRCKey::kToggleCameraLock) {
+                            CameraLockManager::GetSingleton().SetEnabled(!CameraLockManager::GetSingleton().IsEnabled());
+                        } else {
+                            FlyingModeManager::GetSingleton().OnKeyDown(idrcKey);
+                        }
                     }
                 }).detach();
             }

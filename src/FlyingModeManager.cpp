@@ -314,6 +314,9 @@ log::info("IDRC - {}: Landing is registered and forward key pressed - cancel lan
         _ts_SKSEFunctions::SetLookAt(dragonActor, dragonActor, false);
     }
 
+    void FlyingModeManager::OnBackKeyUp() {
+        m_backKeyPressed = false;
+    }
 
     bool FlyingModeManager::FlyingModeUp(IDRCKey a_key) {
         log::info("IDRC - {}", __func__);
@@ -394,12 +397,12 @@ log::info("IDRC - {}: Landing is registered and forward key pressed - cancel lan
                             DragonPerchPlayerRiding();
                             mode = FlyingMode::kPerching;
                         } else if (DragonLandPlayerRiding(dragonActor)) {
+                            m_backKeyPressed = true; // avoid repeated landing attempts while Back key is held down
                             mode = FlyingMode::kLanded;
                         }
-                    } else if (mode == FlyingMode::kLanded) {
-                        // fallback in case FlyingMode logic got derailed
-                        // eg if dragon is flying, but FlyingMode is kLanded and IsAllowedToFly() is false
+                    } else if (mode == FlyingMode::kLanded && !m_backKeyPressed) {
                         DragonLandPlayerRiding(dragonActor);
+                        m_backKeyPressed = true; // avoid repeated landing attempts while Back key is held down
                     }
                 }
     
