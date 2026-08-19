@@ -45,15 +45,15 @@ namespace IDRC {
 
         bool TriggerLand(RE::TESObjectREFR* a_landTarget = nullptr);
 
-        bool DragonHoverPlayerRiding(RE::TESObjectREFR* a_hoverTarget, bool a_displayMode = true);
+        bool DragonHoverPlayerRiding(RE::TESObjectREFR* a_hoverTarget);
 
         bool ForceHover();
 
-        bool DragonTakeOffPlayerRiding(RE::TESObjectREFR* a_takeOffTarget, bool a_displayMode = true);
+        bool DragonTakeOffPlayerRiding(RE::TESObjectREFR* a_takeOffTarget);
 
-        bool DragonLandPlayerRiding(RE::TESObjectREFR* a_landTarget, bool a_displayMode = true);
+        bool DragonLandPlayerRiding(RE::TESObjectREFR* a_landTarget);
 
-        bool DragonFlyTo(float a_angle, bool a_displayMode = false);
+        bool DragonFlyTo(float a_angle);
 
         bool CheckForTurn() const;
 
@@ -104,6 +104,7 @@ namespace IDRC {
         bool m_landingPosSearchOngoing = false;
         bool m_waitForLanded = false;
         bool m_backKeyPressed = false;
+        bool m_isModeTransitioning = false;
 
         FlyingMode m_mode = kLanded;
         RE::SpellItem* m_noFlyAbility = nullptr;
@@ -126,6 +127,8 @@ namespace IDRC {
             void InitializeData(const std::string& a_regionName);
         };
 
+        void CheckModeTransition();
+
         float GetRunFactor(float a_modifier = 1.0f);
 
         bool FlyingModeUp(IDRCKey a_key);
@@ -140,7 +143,7 @@ namespace IDRC {
 
         void PlaceTravelToMarker(RE::TESObjectREFR* a_ref, float a_distance = 0.0f, float a_angle = 0.0f, float a_offsetZ = 0.0f);
 
-        bool DragonNewDirection(float a_angle, bool a_displayMode = false);
+        bool DragonNewDirection(float a_angle);
 
         bool DragonPerchPlayerRiding();
         

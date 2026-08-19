@@ -13,40 +13,19 @@ namespace IDRC {
             DisplayManager(const DisplayManager&) = delete;
             DisplayManager& operator=(const DisplayManager&) = delete;
 
-            void InitializeData();
-
-            bool GetDisplayFlyingMode();
-
-            void SetDisplayFlyingMode(bool a_display);
-
-            bool GetDisplayMessages();
+            bool GetDisplayAttackMessage();
             
-            void SetDisplayMessages(bool a_display);
-
-            void SetRegisteredForDisplayUpdate(bool a_registered);
-
-            void DisplayFlyingMode(const std::string& a_addMessage = "");
+            void SetDisplayAttackMessage(bool a_display);
 
             void DisplayDragonHealth();
 
             void DisplayLeavingBorderRegion();
-
-            void UpdateDisplay();
             
-            void DisplayHoverStatus(const bool a_displayMode);
         private:
             DisplayManager() = default;
             ~DisplayManager() = default;
 
-            bool m_displayFlyingMode = true;
-            bool m_displayMessages = true;
-            bool m_registeredForDisplayUpdate = false;
-            bool m_displayHoverStatus = true;
-            int m_hoverStatusCount = 0;
-
-            bool GetRegisteredForDisplayUpdate();
-
-            std::string GetFlyingModeName(FlyingMode a_mode);
+            bool m_displayAttackMessage = true;
     }; // class DisplayManager
 } // namespace IDRC
     

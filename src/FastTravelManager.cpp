@@ -51,7 +51,7 @@ namespace IDRC {
                 } else {
                     std::thread([dragonActor]() {
                         // send to new thread so that DragonLandPlayerRiding() is not blocking Update()
-                        FlyingModeManager::GetSingleton().DragonLandPlayerRiding(dragonActor, false);
+                        FlyingModeManager::GetSingleton().DragonLandPlayerRiding(dragonActor);
                     }).detach();
                 }
             }

@@ -102,7 +102,7 @@ _ts_Debug_Trace_Message("IDRC - _ts_DR_RideControlScript - InitVariables: IsUsin
 				bAuto = true
 			endif
 			SetInitialAutoCombatMode(bAuto)
-			SetDisplayFlyingMode((MCMConfigQuest as _ts_DR_MCMConfig).bDisplayFlyingMode)
+			SetDisplayAttackMessage((MCMConfigQuest as _ts_DR_MCMConfig).bDisplayAttackMessage)
 		else
 			; fallback in case SkyUI is not in the load order
 _ts_Debug_Trace_Message("IDRC - _ts_DR_RideControlScript - InitVariables: MCMConfigQuest not available")
@@ -196,15 +196,6 @@ _ts_Debug_Trace_Message("IDRC - _ts_DR_RideControlScript - SetKeyMappings")
 endfunction
 
 
-; Display functions
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-function UpdateDisplay_SKSE() global native
-event OnUpdate()
-	UpdateDisplay_SKSE()
-endevent
-
-
 ; Interface with SKSE plugin -> Synchronization of SKSE property updates with Papyrus properties
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -230,11 +221,6 @@ endevent
 function SetInitialAutoCombatMode_SKSE(bool bValue) global native
 function SetInitialAutoCombatMode(bool bValue)
 	SetInitialAutoCombatMode_SKSE(bValue)
-endFunction
-
-function SetDisplayFlyingMode_SKSE (bool bValue) global native
-function SetDisplayFlyingMode(bool bValue)
-	SetDisplayFlyingMode_SKSE(bValue)
 endFunction
 
 
@@ -353,10 +339,10 @@ endFunction
 
 
 ; DragonTameAliasScript
-bool function DragonLandPlayerRiding_SKSE(ObjectReference LandTarget, bool bDisplayMode = true) global native
-bool function DragonLandPlayerRiding(ObjectReference LandTarget, bool bDisplayMode = true)
+bool function DragonLandPlayerRiding_SKSE(ObjectReference LandTarget) global native
+bool function DragonLandPlayerRiding(ObjectReference LandTarget)
 _ts_Debug_Trace_Message("IDRC - _ts_DR_RideControlScript - DragonLandPlayerRiding")
-return DragonLandPlayerRiding_SKSE(LandTarget, bDisplayMode)
+return DragonLandPlayerRiding_SKSE(LandTarget)
 endFunction
 
 
@@ -401,9 +387,9 @@ bool function GetInitialAutoCombatMode()
 	return GetInitialAutoCombatMode_SKSE()
 endfunction
 
-function SetDisplayMessages_SKSE(bool bDisplay) global native
-function SetDisplayMessages(bool bDisplay)
-	SetDisplayMessages_SKSE(bDisplay)
+function SetDisplayAttackMessage_SKSE(bool bDisplay) global native
+function SetDisplayAttackMessage(bool bDisplay)
+	SetDisplayAttackMessage_SKSE(bDisplay)
 endfunction
 
 bool function DragonAttack_SKSE(bool bAlternateAttack = false) global native
@@ -412,15 +398,15 @@ _ts_Debug_Trace_Message("IDRC - _ts_DR_RideControlScript - DragonAttack")
 	return DragonAttack_SKSE(bAlternateAttack)
 endfunction
 
-bool function DragonTakeOffPlayerRiding_SKSE(ObjectReference TakeOffTarget, bool bDisplayMode = true) global native
-bool function DragonTakeOffPlayerRiding(ObjectReference TakeOffTarget, bool bDisplayMode = true)
+bool function DragonTakeOffPlayerRiding_SKSE(ObjectReference TakeOffTarget) global native
+bool function DragonTakeOffPlayerRiding(ObjectReference TakeOffTarget)
 _ts_Debug_Trace_Message("IDRC - _ts_DR_RideControlScript - DragonTakeOffPlayerRiding")
-	return DragonTakeOffPlayerRiding_SKSE(TakeOffTarget, bDisplayMode)
+	return DragonTakeOffPlayerRiding_SKSE(TakeOffTarget)
 endfunction
 
-bool function DragonHoverPlayerRiding_SKSE(ObjectReference HoverTarget, bool bDisplayMode = true) global native
-bool function DragonHoverPlayerRiding(ObjectReference HoverTarget, bool bDisplayMode = true)
+bool function DragonHoverPlayerRiding_SKSE(ObjectReference HoverTarget) global native
+bool function DragonHoverPlayerRiding(ObjectReference HoverTarget)
 _ts_Debug_Trace_Message("IDRC - _ts_DR_RideControlScript - DragonHoverPlayerRiding")
-	return DragonHoverPlayerRiding_SKSE(HoverTarget, bDisplayMode)
+	return DragonHoverPlayerRiding_SKSE(HoverTarget)
 endfunction
 

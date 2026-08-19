@@ -52,7 +52,6 @@ namespace IDRC {
             log::info("IDRC - {}", __func__);
             DataManager::GetSingleton().InitializeData(a_rideQuest, a_orbitMarker, a_dragonAlias, a_dragonName, a_findPerchQuest, 
                                             a_wordWallPerch, a_towerPerch, a_rockPerch, a_perchTarget);
-            DisplayManager::GetSingleton().InitializeData();
             FlyingModeManager::GetSingleton().InitializeData(a_dragonTurnMarker, 
                                             a_dragonTravelToMarker, a_flyToTargetMarker, a_noFlyAbility);
             CombatManager::GetSingleton().InitializeData(a_breathList, a_ballList, a_unrelentingForceShout, a_attackShout);  
@@ -66,18 +65,9 @@ namespace IDRC {
             }
         }
 
-        void SetDisplayFlyingMode_SKSE(RE::StaticFunctionTag*, bool a_display) {
-            log::info("IDRC - {}: {}", __func__, a_display);
-            DisplayManager::GetSingleton().SetDisplayFlyingMode(a_display);
-        }
-
         void SetFlyingMode_SKSE(RE::StaticFunctionTag*, int a_flyingState) {
             log::info("IDRC - {}: {}", __func__, a_flyingState);
             FlyingModeManager::GetSingleton().SetFlyingModeFromPapyrus(a_flyingState);
-        }
-
-        void UpdateDisplay_SKSE(RE::StaticFunctionTag*) {
-            DisplayManager::GetSingleton().UpdateDisplay();
         }
 
         void SetKeyMapping_SKSE(RE::StaticFunctionTag*, const std::string a_key, int a_value) {
@@ -146,9 +136,9 @@ namespace IDRC {
             return ControlsManager::GetSingleton().GetInitialAutoCombatMode();
         }
 
-        void SetDisplayMessages_SKSE(RE::StaticFunctionTag*, bool a_display) {
+        void SetDisplayAttackMessage_SKSE(RE::StaticFunctionTag*, bool a_display) {
             log::info("IDRC - {}: {}", __func__, a_display);
-            DisplayManager::GetSingleton().SetDisplayMessages(a_display);
+            DisplayManager::GetSingleton().SetDisplayAttackMessage(a_display);
         }
 
         void SetTargetReticleMode_SKSE(RE::StaticFunctionTag*, int a_mode) {
@@ -204,9 +194,9 @@ namespace IDRC {
             CameraLockManager::GetSingleton().SetIgnoredCameraPitch(a_pitch);
         }
 
-        RE::BSScript::LatentStatus DragonLandPlayerRiding_SKSE_Latent(RE::BSScript::Internal::VirtualMachine* a_vm, RE::VMStackID a_stackID, RE::StaticFunctionTag*, RE::TESObjectREFR* a_landTarget, bool a_displayMode) {
-            std::thread([a_vm, a_stackID, a_landTarget, a_displayMode]() {
-                bool result = FlyingModeManager::GetSingleton().DragonLandPlayerRiding(a_landTarget, a_displayMode);
+        RE::BSScript::LatentStatus DragonLandPlayerRiding_SKSE_Latent(RE::BSScript::Internal::VirtualMachine* a_vm, RE::VMStackID a_stackID, RE::StaticFunctionTag*, RE::TESObjectREFR* a_landTarget) {
+            std::thread([a_vm, a_stackID, a_landTarget]() {
+                bool result = FlyingModeManager::GetSingleton().DragonLandPlayerRiding(a_landTarget);
                 a_vm->ReturnLatentResult(a_stackID, result);
             }).detach();
         
@@ -222,18 +212,18 @@ namespace IDRC {
             return RE::BSScript::LatentStatus::kStarted;
         }
 
-        RE::BSScript::LatentStatus DragonTakeOffPlayerRiding_SKSE_Latent(RE::BSScript::Internal::VirtualMachine* a_vm, RE::VMStackID a_stackID, RE::StaticFunctionTag*, RE::TESObjectREFR* a_takeOffTarget, bool a_displayMode = true) {
-            std::thread([a_vm, a_stackID, a_takeOffTarget, a_displayMode]() {
-                bool result = FlyingModeManager::GetSingleton().DragonTakeOffPlayerRiding(a_takeOffTarget, a_displayMode);
+        RE::BSScript::LatentStatus DragonTakeOffPlayerRiding_SKSE_Latent(RE::BSScript::Internal::VirtualMachine* a_vm, RE::VMStackID a_stackID, RE::StaticFunctionTag*, RE::TESObjectREFR* a_takeOffTarget) {
+            std::thread([a_vm, a_stackID, a_takeOffTarget]() {
+                bool result = FlyingModeManager::GetSingleton().DragonTakeOffPlayerRiding(a_takeOffTarget);
                 a_vm->ReturnLatentResult(a_stackID, result);
             }).detach();
         
             return RE::BSScript::LatentStatus::kStarted;
         }
 
-        RE::BSScript::LatentStatus DragonHoverPlayerRiding_SKSE_Latent(RE::BSScript::Internal::VirtualMachine* a_vm, RE::VMStackID a_stackID, RE::StaticFunctionTag*, RE::TESObjectREFR* a_hoverTarget, bool a_displayMode = true) {
-            std::thread([a_vm, a_stackID, a_hoverTarget, a_displayMode]() {
-                bool result = FlyingModeManager::GetSingleton().DragonHoverPlayerRiding(a_hoverTarget, a_displayMode);
+        RE::BSScript::LatentStatus DragonHoverPlayerRiding_SKSE_Latent(RE::BSScript::Internal::VirtualMachine* a_vm, RE::VMStackID a_stackID, RE::StaticFunctionTag*, RE::TESObjectREFR* a_hoverTarget) {
+            std::thread([a_vm, a_stackID, a_hoverTarget]() {
+                bool result = FlyingModeManager::GetSingleton().DragonHoverPlayerRiding(a_hoverTarget);
                 a_vm->ReturnLatentResult(a_stackID, result);
             }).detach();
         
@@ -245,12 +235,10 @@ namespace IDRC {
             a_vm->RegisterFunction("GetIDRCPluginVersion", "_ts_DR_PlayerAliasScript", GetIDRCPluginVersion);
             a_vm->RegisterFunction("SetINIVars_SKSE", "_ts_DR_RideControlScript", SetINIVars_SKSE);
             a_vm->RegisterFunction("InitializeData_SKSE", "_ts_DR_RideControlScript", InitializeData_SKSE);
-            a_vm->RegisterFunction("SetDisplayFlyingMode_SKSE", "_ts_DR_RideControlScript", SetDisplayFlyingMode_SKSE);
             a_vm->RegisterFunction("SetFlyingMode_SKSE", "_ts_DR_RideControlScript", SetFlyingMode_SKSE);
             a_vm->RegisterFunction("SetKeyMapping_SKSE", "_ts_DR_RideControlScript", SetKeyMapping_SKSE);
             a_vm->RegisterFunction("RegisterForControls_SKSE", "_ts_DR_RideControlScript", RegisterForControls_SKSE);
             a_vm->RegisterFunction("UnregisterForControls_SKSE", "_ts_DR_RideControlScript", UnregisterForControls_SKSE);
-            a_vm->RegisterFunction("UpdateDisplay_SKSE", "_ts_DR_RideControlScript", UpdateDisplay_SKSE);
             a_vm->RegisterFunction("SetInitialAutoCombatMode_SKSE", "_ts_DR_RideControlScript", SetInitialAutoCombatMode_SKSE);
             a_vm->RegisterFunction("SetDragonSpeeds_SKSE", "_ts_DR_RideControlScript", SetDragonSpeeds_SKSE);
             a_vm->RegisterFunction("SetRollAmplitude_SKSE", "_ts_DR_RideControlScript", SetRollAmplitude_SKSE);
@@ -274,7 +262,7 @@ namespace IDRC {
             a_vm->RegisterFunction("GetBreathShoutList_SKSE", "_ts_DR_RideControlScript", GetBreathShoutList_SKSE);
             a_vm->RegisterFunction("GetBallShoutList_SKSE", "_ts_DR_RideControlScript", GetBallShoutList_SKSE);
             a_vm->RegisterFunction("GetInitialAutoCombatMode_SKSE", "_ts_DR_RideControlScript", GetInitialAutoCombatMode_SKSE);
-            a_vm->RegisterFunction("SetDisplayMessages_SKSE", "_ts_DR_RideControlScript", SetDisplayMessages_SKSE);
+            a_vm->RegisterFunction("SetDisplayAttackMessage_SKSE", "_ts_DR_RideControlScript", SetDisplayAttackMessage_SKSE);
 
             // Latent native functions are used in situations where the function execution takes
             // a non-negligible amount of time.

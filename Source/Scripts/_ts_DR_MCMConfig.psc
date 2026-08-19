@@ -4,7 +4,7 @@ Quest property DragonRideQuest auto
 string property DragonName1 auto
 string property DragonName2 auto
 
-bool property bDisplayFlyingMode auto hidden conditional
+bool property bDisplayAttackMessage auto hidden conditional
 ;bool bSkipOrbit
 bool bTriggerMessage
 bool bRegenHealth
@@ -177,7 +177,7 @@ event OnConfigInit()
 	iDragonUpKey = 22 ;  "U"
 	iDragonDownKey = 35 ; "H"
 	iAutoCombatKey = 34 ; "G"
-	bDisplayFlyingMode = true
+	bDisplayAttackMessage = true
 ;	bSkipOrbit = true
 	bTriggerMessage = false
 	bDragonRoars = false
@@ -223,9 +223,9 @@ EndEvent
 
 Event OnOptionDefault(int option)
 	if option == iDisplayMode_OID
-		bDisplayFlyingMode = true
-		SetToggleOptionValue(iDisplayMode_OID, bDisplayFlyingMode, false)
-		(DragonRideQuest as _ts_DR_RideControlScript).SetDisplayFlyingMode(bDisplayFlyingMode)
+		bDisplayAttackMessage = true
+		SetToggleOptionValue(iDisplayMode_OID, bDisplayAttackMessage, false)
+		(DragonRideQuest as _ts_DR_RideControlScript).SetDisplayAttackMessage(bDisplayAttackMessage)
 ;	elseif option == iSkipOrbit_OID
 ;		bSkipOrbit = true
 ;		SetToggleOptionValue(iSkipOrbit_OID, bSkipOrbit, false)
@@ -409,7 +409,7 @@ function OnPageReset(String page)
 ;		iSkipOrbit_OID = AddToggleOption("Skip Orbit Mode", bSkipOrbit, 0)
 		iTriggerMessage_OID = AddToggleOption("Combat Comments", bTriggerMessage, 0)
 		iDragonRoars_OID = AddToggleOption("Dragon Roars", bDragonRoars, 0)
-		iDisplayMode_OID = AddToggleOption("Display Ride Mode", bDisplayFlyingMode, 0)
+		iDisplayMode_OID = AddToggleOption("Display Attack Messages", bDisplayAttackMessage, 0)
 	elseif page == "Dragon Combat Options"
 		SetCursorFillMode(LEFT_TO_RIGHT)
 		SetCursorPosition(0)
@@ -590,9 +590,9 @@ endEvent
 function OnOptionSelect(Int option)
 
 	if option == iDisplayMode_OID
-		bDisplayFlyingMode = !bDisplayFlyingMode
-		SetToggleOptionValue(iDisplayMode_OID, bDisplayFlyingMode, false)
-		(DragonRideQuest as _ts_DR_RideControlScript).SetDisplayFlyingMode(bDisplayFlyingMode)
+		bDisplayAttackMessage = !bDisplayAttackMessage
+		SetToggleOptionValue(iDisplayMode_OID, bDisplayAttackMessage, false)
+		(DragonRideQuest as _ts_DR_RideControlScript).SetDisplayAttackMessage(bDisplayAttackMessage)
 ;	elseif option == iSkipOrbit_OID
 ;		bSkipOrbit = !bSkipOrbit
 ;		SetToggleOptionValue(iSkipOrbit_OID, bSkipOrbit, false)
@@ -615,7 +615,7 @@ endFunction
 function OnOptionHighlight(Int option)
 
 	if option == iDisplayMode_OID
-		SetInfoText("Displays the new ride mode whenever the player uses a ride control.")
+		SetInfoText("Displays messages when commanding attacks.")
 ;	elseif option == iSkipOrbit_OID
 ;		SetInfoText("If activated, Orbit mode is skipped when accelerating or decelerating the dragon.")
 	elseif option == iTriggerMessage_OID

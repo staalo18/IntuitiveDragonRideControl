@@ -14,7 +14,7 @@ namespace IDRC {
         
         void SetINIVars();
 
-        bool RegisterForSingleUpdate(float a_seconds);
+//        bool RegisterForSingleUpdate(float a_seconds);
 
         float GetHorizontalDistance(RE::TESObjectREFR* a_from, RE::TESObjectREFR* a_to);
 

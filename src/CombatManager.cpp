@@ -334,7 +334,7 @@ log::info("IDRC - {}: Shout target is different from current combat target, star
             return false;
         }
 
-        if (displayManager.GetDisplayFlyingMode() && displayManager.GetDisplayMessages()) {
+        if (displayManager.GetDisplayAttackMessage()) {
             RE::SendHUDMessage::ShowHUDMessage(displayMessage.c_str());
         }
 

@@ -29,7 +29,7 @@ namespace IDRC {
             });
         }
 
-
+/* No longer used
         bool RegisterForSingleUpdate(float a_seconds) {
             auto* quest = DataManager::GetSingleton().GetRideQuest();
             if (!quest) {
@@ -47,7 +47,7 @@ namespace IDRC {
             });
             return true;
         }
-
+*/
 
         /* loads worldspace data from ini file. ini file format:
                 [Worldspace]

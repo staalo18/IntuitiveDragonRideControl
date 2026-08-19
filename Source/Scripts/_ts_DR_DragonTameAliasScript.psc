@@ -41,14 +41,14 @@ Event OnHit(ObjectReference akAggressor, Form akSource, Projectile akProjectile,
 		debug.Notification("Your dragon is dying...")
 _ts_Debug_Trace_Message("IDRC - _ts_DR_DragonTameAliasScript - OnHit: Your dragon is dying...")
 		bDragonDeadMessage = false
-		(GetOwningQuest() as _ts_DR_RideControlScript).DragonLandPlayerRiding(selfActor, bDisplayMode = false)
+		(GetOwningQuest() as _ts_DR_RideControlScript).DragonLandPlayerRiding(selfActor)
 	else
 		if fHealth <= 0.35
 			if bLowHealthMessage
 				bLowHealthMessage = false
 				debug.Notification("Your dragon's health gets low...")
 _ts_Debug_Trace_Message("IDRC - _ts_DR_DragonTameAliasScript - OnHit: Your dragon's health gets low...")
-				(GetOwningQuest() as _ts_DR_RideControlScript).DragonLandPlayerRiding(selfActor, bDisplayMode = false)
+				(GetOwningQuest() as _ts_DR_RideControlScript).DragonLandPlayerRiding(selfActor)
 			endif
 		else
 			bLowHealthMessage = true
