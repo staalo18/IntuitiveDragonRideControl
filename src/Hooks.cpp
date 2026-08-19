@@ -143,6 +143,9 @@ dragonActor->AsActorValueOwner()->GetActorValue(RE::ActorValue::kVariable03), is
 log::info("IDRC - {}: DragonActor current package: {:0x}, packType: {}, procedureType: {}", __func__, currentPackage->GetFormID(), static_cast<uint8_t>(packageType.underlying()), static_cast<uint32_t>(procedureType.underlying()));
 			}
 
+			auto storedCombatTarget = IDRC::CombatManager::GetSingleton().GetStoredCombatTarget();
+log::info("IDRC - {}: DragonActor storedCombatTarget: {:0x}", __func__, storedCombatTarget ? storedCombatTarget->GetFormID() : 0);
+
 			RE::NiPoint3 testPos = dragonActor->GetPosition();
 			int flyingState = _ts_SKSEFunctions::GetFlyingState(dragonActor);
 //			testPos.z = _ts_SKSEFunctions::GetLandHeightWithWater(testPos, false);

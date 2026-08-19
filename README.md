@@ -10,4 +10,4 @@
 [GPL-3.0-or-later](COPYING).
 
 > [!IMPORTANT]
-> This is a breaking change from the previous MIT license. Originally based on code under [MIT](licenses/LICENSE-MIT).
+> This is a breaking change from the previous MIT license. Originally based on code under [MIT](Licenses/LICENSE-MIT).

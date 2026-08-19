@@ -42,6 +42,8 @@ namespace IDRC {
                 
         auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
         if (dragonActor) {
+
+            // Border region check
             if (!IsInBorderRegion()) {
                 DisplayManager::GetSingleton().DisplayLeavingBorderRegion();
                 ForceHover();
@@ -54,6 +56,7 @@ log::warn("IDRC - {}: NoFlyAbility is null", __func__);
 }
 log::info("IDRC - {}: FFlyingMode = {}", __func__, m_mode);
 
+            // process ongoing landing
             if (GetRegisteredForLanding()) {
                 if (!m_finalizeTriggerLand && !m_landingPosSearchOngoing) {
                     auto* currentPackage = dragonActor->GetCurrentPackage();
@@ -72,12 +75,14 @@ log::info("IDRC - {}: FFlyingMode = {}", __func__, m_mode);
                 FinalizeLand();
             }
 
+            // process direction and height changes
             TriggerTurn();
 
             if (_ts_SKSEFunctions::GetFlyingState(dragonActor) == 2) {
                 ChangeDragonHeight();
             }
 
+            // handle map-triggered fasttravel
             if (m_mode != kFlying && _ts_SKSEFunctions::GetFlyingState(dragonActor) == 2 &&
                 (_ts_SKSEFunctions::IsFlyingMountFastTravelling(dragonActor) ||
                  _ts_SKSEFunctions::IsFlyingMountPatrolQueued(dragonActor))) {
@@ -89,7 +94,22 @@ log::info("IDRC - {}: FFlyingMode = {}", __func__, m_mode);
                 DragonHoverPlayerRiding(dragonActor);
             }
 
+            // process flying mode transitions
             CheckModeTransition();
+
+            // handle auto-combat during flying
+            auto& combatManager = CombatManager::GetSingleton();
+            auto* storedCombatTarget = combatManager.GetStoredCombatTarget();
+            if ( DataManager::GetSingleton().GetAutoCombat() && 
+                 storedCombatTarget &&
+                 (_ts_SKSEFunctions::IsFlyingMountFastTravelling(dragonActor) ||
+                  _ts_SKSEFunctions::IsFlyingMountPatrolQueued(dragonActor)) &&
+                 combatManager.IsFastTravelAttack()
+                ) {
+log::info("IDRC - {}: In kFlying - AutoCombat is enabled and combat target is stored - switch to hover", __func__);
+                DragonHoverPlayerRiding(storedCombatTarget);
+                combatManager.SetFastTravelAttack(false);
+            }
         }
     }
 

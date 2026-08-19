@@ -106,9 +106,7 @@ namespace IDRC {
         }
 
         // restart combat with stored target when dragon leaves flying state.
-        if (FlyingModeManager::GetSingleton().GetFlyingMode() != FlyingMode::kFlying &&
-            _ts_SKSEFunctions::GetFlyingState(dragonActor) != 2 &&
-            !_ts_SKSEFunctions::IsFlyingMountPatrolQueued(dragonActor) && 
+        if (!_ts_SKSEFunctions::IsFlyingMountPatrolQueued(dragonActor) && 
             !_ts_SKSEFunctions::IsFlyingMountFastTravelling(dragonActor)) 
         {
             if (m_restartCombatPending)
@@ -131,6 +129,19 @@ log::info("IDRC - {}: ------------------->>>>>>> Restarting combat with stored t
 
             if (m_shoutTarget) {
                 m_storedCombatTarget = m_shoutTarget;
+            }
+
+            if (m_storedCombatTarget) {
+                auto* storedTarget = m_storedCombatTarget.get().get();
+                if (storedTarget && 
+                    (
+                        Utils::GetHorizontalDistance(dragonActor, storedTarget) > m_maxCombatDistance ||
+                        !storedTarget->GetParentCell() || !storedTarget->GetParentCell()->IsAttached()  
+                    )) {
+
+                    // clear stored combat target if it is too far away
+                    m_storedCombatTarget = RE::ActorHandle{};
+                }
             }
         }
 
@@ -159,7 +170,7 @@ log::info("IDRC - {}: ------------------->>>>>>> Cleared CombatTargets due to di
             }
         }
     }
-
+/* unused
     constexpr float CELL_SIZE = 4096.0f;
 
     void CombatManager::UpdatePlayerCell() { 
@@ -210,7 +221,7 @@ log::info("{}: Updated player cell to {}, {}", __FUNCTION__, targetCellX, target
             log::error("{}: No cell!", __FUNCTION__);
         }
     }
-
+*/
     void CombatManager::UpdateAttack() {
         bool attackStopped = false;
         if (m_shoutTimer > 3.0f) {
@@ -297,7 +308,18 @@ log::info("IDRC - {}: Shout target is different from current combat target, star
         if (_ts_SKSEFunctions::GetRandomFloat(0.0f, 1.0f) < 0.5f) {
             m_shoutDirection = -1.f; // pass target on the right for this attack
         }
+        
+        if (_ts_SKSEFunctions::IsFlyingMountFastTravelling(dragonActor) ||
+            _ts_SKSEFunctions::IsFlyingMountPatrolQueued(dragonActor)){
+            // use stored combat target during flying (fastTraveling)
+            // (in FastTravel mode, dragon's combat state is always 0)
+            m_isFastTravelAttack = true;
 
+            if (!resolvedShoutTarget) {
+                resolvedShoutTarget = m_storedCombatTarget ? m_storedCombatTarget.get().get() : nullptr;
+                m_shoutTarget = m_storedCombatTarget;
+            }
+        }
 
         while (controlsManager.GetIsKeyPressed(IDRCKey::kSneak)) {
             _ts_SKSEFunctions::WaitWhileGameIsPaused();

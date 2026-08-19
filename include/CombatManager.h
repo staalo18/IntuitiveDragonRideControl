@@ -36,6 +36,11 @@ namespace IDRC {
 
         RE::Actor* GetShoutTarget() { return m_shoutTarget ? m_shoutTarget.get().get() : nullptr; }
 
+        RE::Actor* GetStoredCombatTarget() { return m_storedCombatTarget ? m_storedCombatTarget.get().get() : nullptr; }
+
+        bool IsFastTravelAttack() { return m_isFastTravelAttack; }
+
+        void SetFastTravelAttack(bool a_value) { m_isFastTravelAttack = a_value; }
     private:
         CombatManager() = default;
         ~CombatManager() = default;
@@ -52,6 +57,7 @@ namespace IDRC {
         float m_shoutDirection = 1.0f;
         bool m_shoutActive = false;
         bool m_restartCombatPending = false;
+        bool m_isFastTravelAttack = false;
         RE::ActorHandle m_shoutTarget{};
         RE::ActorHandle m_storedCombatTarget{};
 
@@ -63,7 +69,7 @@ namespace IDRC {
 
         void UpdateCombat();
 
-        void UpdatePlayerCell();
+//        void UpdatePlayerCell();
 
         void UpdateAttack();
 
