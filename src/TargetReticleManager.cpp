@@ -4,6 +4,7 @@
 #include "_ts_SKSEFunctions.h"
 #include "DataManager.h"
 #include "ControlsManager.h"
+#include "CombatManager.h"
 #include "IDRCUtils.h"
 
 namespace IDRC {
@@ -171,8 +172,14 @@ namespace IDRC {
             log::warn("IDRC - {}: No dragon actor found", __func__);
             return combatState;
         }
-        if (m_reticleTarget == GetCombatTarget()) {
-            combatState = _ts_SKSEFunctions::GetCombatState(dragonActor);
+        
+        if (m_reticleTarget == GetCombatTarget()) {    
+            if (_ts_SKSEFunctions::IsFlyingMountFastTravelling(dragonActor) ||
+                _ts_SKSEFunctions::IsFlyingMountPatrolQueued(dragonActor)) {
+                combatState = CombatManager::GetSingleton().GetStoredCombatTargetState();
+            } else {
+                combatState = _ts_SKSEFunctions::GetCombatState(dragonActor);
+            }
         }
 
         return combatState;
@@ -310,7 +317,15 @@ namespace IDRC {
         if (!dragonActor) {
             return RE::ActorHandle{};
         }
-        return dragonActor->GetActorRuntimeData().currentCombatTarget;
+        auto handle = dragonActor->GetActorRuntimeData().currentCombatTarget;
+
+        if (!(handle && handle.get().get()) &&
+            (_ts_SKSEFunctions::IsFlyingMountFastTravelling(dragonActor) ||
+            _ts_SKSEFunctions::IsFlyingMountPatrolQueued(dragonActor))) {
+           handle = CombatManager::GetSingleton().GetStoredCombatTargetHandle();
+        }
+        
+        return handle;
     }
 
     TargetReticleManager::TargetMode TargetReticleManager::GetTargetMode(bool a_hasSelectedActor, bool a_hasCombatTarget) const {

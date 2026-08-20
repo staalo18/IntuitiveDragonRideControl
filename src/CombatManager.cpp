@@ -53,6 +53,25 @@ namespace IDRC {
         m_ballShoutList = a_ballShoutList;
     }
 
+    bool CombatManager::IsValidTarget(RE::Actor* a_target) {
+        if (!a_target) {
+            return false;
+        }
+
+        auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
+        if (!dragonActor) {
+            return false;
+        }
+
+        if (Utils::GetHorizontalDistance(dragonActor, a_target) < m_maxCombatDistance &&
+            a_target->GetParentCell() && a_target->GetParentCell()->IsAttached() &&
+            !a_target->IsDead()) {
+            return true;
+        }
+
+        return false;
+    }
+
     void CombatManager::DragonStartCombat(RE::Actor* a_target) {
         if (!a_target) {
             log::error("IDRC - {}: target is null", __func__);
@@ -65,9 +84,8 @@ namespace IDRC {
             return;
         }
 
-        if (Utils::GetHorizontalDistance(dragonActor, a_target) > m_maxCombatDistance ||
-            !a_target->GetParentCell() || !a_target->GetParentCell()->IsAttached()) {
-            log::info("IDRC - {}: Target is too far away, cancel DragonStartCombat", __func__);
+        if (!IsValidTarget(a_target)) {
+            log::info("IDRC - {}: Target is too far away or dead, cancel DragonStartCombat", __func__);
             return;
         }
         
@@ -122,6 +140,12 @@ log::info("IDRC - {}: ------------------->>>>>>> Restarting combat with stored t
 
             auto* combatTarget = _ts_SKSEFunctions::GetCombatTarget(dragonActor);
             m_storedCombatTarget = combatTarget ? combatTarget->GetHandle() : RE::ActorHandle{};
+
+            if (combatTarget) {
+                m_storedCombatTargetState = _ts_SKSEFunctions::GetCombatState(dragonActor);
+            } else {
+                m_storedCombatTargetState = 0;
+            }
         } else {
             m_restartCombatPending = true;
 
@@ -129,18 +153,15 @@ log::info("IDRC - {}: ------------------->>>>>>> Restarting combat with stored t
 
             if (m_shoutTarget) {
                 m_storedCombatTarget = m_shoutTarget;
+                m_storedCombatTargetState = 1;
             }
 
             if (m_storedCombatTarget) {
                 auto* storedTarget = m_storedCombatTarget.get().get();
-                if (storedTarget && 
-                    (
-                        Utils::GetHorizontalDistance(dragonActor, storedTarget) > m_maxCombatDistance ||
-                        !storedTarget->GetParentCell() || !storedTarget->GetParentCell()->IsAttached()  
-                    )) {
-
-                    // clear stored combat target if it is too far away
+                if (!IsValidTarget(storedTarget)) {
+                    // clear stored combat target
                     m_storedCombatTarget = RE::ActorHandle{};
+                    m_storedCombatTargetState = 0;
                 }
             }
         }
@@ -149,11 +170,7 @@ log::info("IDRC - {}: ------------------->>>>>>> Restarting combat with stored t
         if (dragonActor->IsInCombat()) {
             auto* combatTarget = _ts_SKSEFunctions::GetCombatTarget(dragonActor);
     
-            if (combatTarget && 
-                (
-                    Utils::GetHorizontalDistance(dragonActor, combatTarget) > m_maxCombatDistance ||
-                    !combatTarget->GetParentCell() || !combatTarget->GetParentCell()->IsAttached()
-                )) {
+            if (combatTarget && !IsValidTarget(combatTarget)){
 log::info("IDRC - {}: distance: {}, ParentCell: {}, attached: {}", __func__, Utils::GetHorizontalDistance(dragonActor, combatTarget), combatTarget->GetParentCell() ? "Yes" : "null", combatTarget->GetParentCell() ? (combatTarget->GetParentCell()->IsAttached() ? "Yes" : "No") : "null");                
                 // In case the dragon is in combat, the game's 3D data  is centered around the dragon's combat target (ie the combat target's cell and its 8 adjacent cells).
                 // If the mounted dragon is in a different cell in the landscape, 

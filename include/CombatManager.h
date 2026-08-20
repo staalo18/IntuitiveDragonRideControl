@@ -38,6 +38,10 @@ namespace IDRC {
 
         RE::Actor* GetStoredCombatTarget() { return m_storedCombatTarget ? m_storedCombatTarget.get().get() : nullptr; }
 
+        RE::ActorHandle GetStoredCombatTargetHandle() { return m_storedCombatTarget; }
+
+        int GetStoredCombatTargetState() { return m_storedCombatTargetState; }
+
         bool IsFastTravelAttack() { return m_isFastTravelAttack; }
 
         void SetFastTravelAttack(bool a_value) { m_isFastTravelAttack = a_value; }
@@ -60,10 +64,13 @@ namespace IDRC {
         bool m_isFastTravelAttack = false;
         RE::ActorHandle m_shoutTarget{};
         RE::ActorHandle m_storedCombatTarget{};
+        int m_storedCombatTargetState = 0;
 
         RE::TESShout* GetShout(const RE::BGSListForm* a_shoutList);
 
         bool SetShoutMode(int a_shoutMode);
+
+        bool IsValidTarget(RE::Actor* a_target);
 
         void DragonStartCombat(RE::Actor* a_target);
 
