@@ -5,6 +5,7 @@
 #include "ThumbstickTracer.h"
 #include "TargetReticleManager.h"
 #include "CameraLockManager.h"
+#include "FlapThrustHandler.h"
 //#include "CombatTargetTracer.h"
 //#include "CrosshairTracer.h"
 //#include "MagicEffectTracer.h"
@@ -103,6 +104,7 @@ namespace IDRC {
             // start gamepad thumbstick tracing
             ThumbstickTracerHook::Install();
             CameraLockManager::GetSingleton().Initialize();
+            FlapThrustHandler::GetSingleton().Register();
 //            CombatTargetTracer::GetSingleton().Register();
 //            CrosshairTracer::GetSingleton().Register();
 //            MagicEffectTracer::GetSingleton().Register();
@@ -140,6 +142,7 @@ namespace IDRC {
             // stop keyboard tracing
             inputManager->RemoveEventSink(this);
             TargetReticleManager::GetSingleton().DisposeReticle();
+            FlapThrustHandler::GetSingleton().Unregister();
 //            CombatTargetTracer::GetSingleton().Unregister();
  //           CrosshairTracer::GetSingleton().Unregister();
  //            MagicEffectTracer::GetSingleton().Unregister();

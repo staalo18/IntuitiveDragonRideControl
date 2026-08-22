@@ -18,6 +18,8 @@ namespace IDRC {
 
         float GetHorizontalDistance(RE::TESObjectREFR* a_from, RE::TESObjectREFR* a_to);
 
+        float GetDragonRoll();
+        
         std::vector<WorldspaceIniData> LoadWorldspaceIniData(const std::string& a_iniFilename);
 
         // Version-aware accessor for PlayerCharacter::queuedTargetLoc.

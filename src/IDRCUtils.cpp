@@ -140,5 +140,37 @@ namespace IDRC {
 
             return std::sqrt(deltaX * deltaX + deltaY * deltaY);
         }
+
+        float GetDragonRoll() {
+            auto* dragonActor = IDRC::DataManager::GetSingleton().GetDragonActor();
+            if (!dragonActor) {
+                return 0.0f;
+            }
+
+            float targetRoll = 0.f;
+            RE::NiAVObject* reference3D = nullptr;
+
+            if (_ts_SKSEFunctions::GetFlyingState(dragonActor) == 0) {
+                // use dragon roll while grounded (player roll is too shaky while grounded)
+                reference3D = dragonActor->Get3D();
+            } else {
+                // when not grounded, dragon3D coordinates are always horizontal (no roll)
+                // use player roll instead
+                auto* player = RE::PlayerCharacter::GetSingleton();
+                if (!player) {
+                    log::error("IDRC - {}: PlayerCharacter is null", __func__);
+                    return 0.0f;
+                }
+
+                reference3D = player->Get3D();
+            }
+
+            if (reference3D) {
+                targetRoll = -asinf(reference3D->world.rotate.GetVectorX().z);
+            } else {
+                log::warn("IDRC - {}: reference 3D is null", __func__);
+            }            
+            return targetRoll;
+        }
     } // namespace Utils
 } // namespace IDRC
