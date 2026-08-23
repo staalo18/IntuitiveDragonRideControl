@@ -231,100 +231,39 @@ namespace Hooks
 	};
 
 
-	// Patches BGSSaveLoadGame::FlushQueuedFormLoads (REL: 34645, 35567)
+// BEGIN - patches for vanilla crashes which have amplified frequency due to rapid cell traversal during dragon flight.
+//         Patches have been implemented with Claude Sonnet 5, and have been reviewed.
 
-// TODO - VALIDATE: AND FUN_14057b120 / FUN_1405ae2d0 (REL: est.34648, 35570) — the respawn/unload save helper —
-
-	// to guard virtual dispatches against use-after-free and partially-initialized-form crashes.
-	// Dragon flight causes rapid exterior cell loads/unloads; forms can be freed or only partially
+	// FlushQueuedFormLoadsHook patches BGSSaveLoadGame::FlushQueuedFormLoads (REL: 34645, 35567) to guard virtual
+	// dispatches against use-after-free and partially-initialized-form crashes. Dragon flight
+	// causes rapid exterior cell loads/unloads; forms can be freed or only partially
 	// initialized when these functions try to dispatch through their vtables.
 	//
 	// Guarded call sites (SE offset, AE offset):
-	// In FlushQueuedFormLoads (34645 / 35567):
 	//   SE+0x111 / AE+0x111: 'call [rdx+0x160]' — TESForm::AsReference2   1st pass, on TESForm
 	//   SE+0x1DF / AE+0x1C1: 'call [rax+0x80]'  — TESForm::InitLoadGame   1st pass, on TESForm
 	//   SE+0x304 / AE+0x2E4: 'call [rax+0x88]'  — TESForm::FinishLoadGame 2nd pass, on TESForm
 	//   SE+0x356 / AE+0x336: 'call [rax+0x160]' — TESForm::AsReference2   2nd pass, on TESObjectREFR
-
-// TODO: Validate below patch	
-	// In FUN_14057b120 / FUN_1405ae2d0 (est.34648 / 35570) — also called from cell activation (19799):
-	//   SE+0x153 / AE+0x1A8: 'call [rax+0x68]'  — TESObjectREFR::CheckSaveGame
-	//   Both SE and AE compile as 'ff 50 68' (3-byte disp8): JMP thunk required for both.
-	//   Crash 35570+0x219 was inside SaveGame (CALL [R8+0x70] at AE+0x215, 4-byte 41ff5070);
-	//   guarding CheckSaveGame prevents reaching SaveGame for invalid/partial forms.
-	//   Also noted: 'call [rax+0x790]' at SE+0x10D / AE+0x166 on Character actors — TODO guard.
-	//   AE-only additional vtable dispatches before CheckSaveGame (no SE equivalent):
-	//     AE+0x0A0: vtable+0x160, AE+0x0BA: vtable+0x478, AE+0x0CB: vtable+0x5a0, AE+0x0DF: vtable+0x470
+	//
+	// The related respawn/unload save helper (FUN_14057b120 / FUN_1405ae2d0) is guarded
+	// separately by CheckSaveGameHook below — see that class for details.
 	class FlushQueuedFormLoadsHook
 	{
 	public:
-		static void Hook()
-		{
-			// All patched instructions are 6-byte indirect calls.
-			// write_call<5> replaces bytes 0-4 with a 5-byte relative call stub.
-			// Byte 5 (the trailing 0x00) must be explicitly NOP'd to prevent it from
-			// executing as 'ADD [rax],al' after hook returns.
-
-			m_imageBase = REL::Module::get().base();
-			const auto* dos = reinterpret_cast<const IMAGE_DOS_HEADER*>(m_imageBase);
-			const auto* nt  = reinterpret_cast<const IMAGE_NT_HEADERS*>(m_imageBase + dos->e_lfanew);
-			m_imageEnd = m_imageBase + static_cast<std::uintptr_t>(nt->OptionalHeader.SizeOfImage);
-
-			REL::Relocation<std::uintptr_t> func{ RELOCATION_ID(34645, 35567) };
-			auto& trampoline = SKSE::GetTrampoline();
-
-			// SE+0x111 / AE+0x111: 'call [rdx+0x160]' — TESForm::AsReference2 (1st pass)
-			const auto patchAddr = func.address() + RELOCATION_OFFSET(0x111, 0x111);
-			trampoline.write_call<5>(patchAddr, TESForm_AsReference2_Guard);
-			REL::safe_write(patchAddr + 5, std::uint8_t{ 0x90 });
-
-			// SE+0x1DF / AE+0x1C1: 'call [rax+0x80]' — TESForm::InitLoadGame (1st pass)
-			const auto patchAddr2 = func.address() + RELOCATION_OFFSET(0x1DF, 0x1C1);
-			trampoline.write_call<5>(patchAddr2, TESForm_InitLoadGame_Guard);
-			REL::safe_write(patchAddr2 + 5, std::uint8_t{ 0x90 });
-
-			// SE+0x304 / AE+0x2E4: 'call [rax+0x88]' — TESForm::FinishLoadGame (2nd pass)
-			const auto patchAddr3 = func.address() + RELOCATION_OFFSET(0x304, 0x2E4);
-			trampoline.write_call<5>(patchAddr3, TESForm_FinishLoadGame_Guard);
-			REL::safe_write(patchAddr3 + 5, std::uint8_t{ 0x90 });
-
-			// SE+0x356 / AE+0x336: 'call [rax+0x160]' — TESForm::AsReference2 (2nd pass, on TESObjectREFR from GetReference)
-			const auto patchAddr4 = func.address() + RELOCATION_OFFSET(0x356, 0x336);
-			trampoline.write_call<5>(patchAddr4, TESForm_AsReference2_Guard);
-			REL::safe_write(patchAddr4 + 5, std::uint8_t{ 0x90 });
-
-// TODO: Validate below patch
-/*			// FUN_14057b120 (SE RELOC 34648) / FUN_1405ae2d0 (AE RELOC 35570)
-			// SE+0x153 / AE+0x1A8: 'mov rcx,rsi; call [rax+0x68]' — CheckSaveGame, 6 bytes.
-			// Both SE and AE compile 'call [rax+0x68]' as 'ff 50 68' (3-byte disp8).
-			// Patch covers MOV RCX,RSI + CALL; JMP thunk restores RCX=RSI before calling guard.
-			{
-				REL::Relocation<std::uintptr_t> respawnFunc{ RELOCATION_ID(34648, 35570) };
-				const auto patchAddr  = respawnFunc.address() + RELOCATION_OFFSET(0x153, 0x1A8);
-				const auto resumeAddr = patchAddr + 6;  // TEST AL,AL
-				std::uint8_t th[13] = {
-					0x48, 0x89, 0xF1,               // MOV RCX, RSI
-					0xE8, 0x00, 0x00, 0x00, 0x00,   // CALL CheckSaveGame_Guard (rel32)
-					0xE9, 0x00, 0x00, 0x00, 0x00    // JMP resumeAddr (rel32)
-				};
-				auto* thunkMem = static_cast<std::uint8_t*>(trampoline.allocate(sizeof(th)));
-				const auto thunkBase = reinterpret_cast<std::uintptr_t>(thunkMem);
-				const auto guardFn   = reinterpret_cast<std::uintptr_t>(&CheckSaveGame_Guard);
-				*reinterpret_cast<std::int32_t*>(th + 4) =
-					static_cast<std::int32_t>(guardFn   - (thunkBase + 3 + 5));
-				*reinterpret_cast<std::int32_t*>(th + 9) =
-					static_cast<std::int32_t>(resumeAddr - (thunkBase + 8 + 5));
-				std::memcpy(thunkMem, th, sizeof(th));
-				trampoline.write_branch<5>(patchAddr, thunkBase);
-				REL::safe_write(patchAddr + 5, std::uint8_t{ 0x90 });
-			} */
-		}
+		static void Hook();
 
 	private:
 		// Replaces 'call [rdx+0x160]' — TESForm::AsReference2 virtual dispatch.
 		// a_form (rcx) = TESForm* from BGSLoadFormData::GetForm (non-null).
 		// rdx = *a_form = vtable pointer — null or garbage when form has been freed.
 		// Returns nullptr (safe: caller skips the form) when vtable is outside the image.
+		// Also sanity-checks the *returned* TESObjectREFR* before handing it back: both call
+		// sites use the result as a raw `this` with no further vtable dispatch — 1st pass does
+		// an inline 'lock inc [ref+0x28]' refcount bump (SE/AE+0x195/0x195 relative to
+		// FlushQueuedFormLoads — crash site 35567+0x195), 2nd pass calls
+		// TESObjectREFR::sub_14028a930(ref) directly. An implausible ref (too small, or
+		// pointing inside our own module image instead of the heap) is treated as stale and
+		// nulled out here.
 		static RE::TESObjectREFR* TESForm_AsReference2_Guard(RE::TESForm* a_form);
 
 		// Replaces 'call [rax+0x80]' — TESForm::InitLoadGame virtual dispatch.
@@ -339,7 +278,31 @@ namespace Hooks
 		// Skips the call silently when vtable is outside the image.
 		static void TESForm_FinishLoadGame_Guard(RE::TESForm* a_form, void* a_loadBuffer);
 
-// TODO: Validate below patch
+		static inline std::uintptr_t m_imageBase{ 0 };
+		static inline std::uintptr_t m_imageEnd{ 0 };
+	};
+
+	// CheckSaveGameHook patches FUN_14057b120 (SE RELOC 34648) / FUN_1405ae2d0 (AE RELOC 35570) — the
+	// respawn/unload save helper, invoked both from BGSSaveLoadGame::FlushQueuedFormLoads
+	// and from cell activation (QueuedPromoteLargeReferencesTask path: 19799 -> 35570).
+	// Per the decompiled pseudocode, this builds a BGSSaveFormBuffer for a reference that's
+	// about to be unloaded/respawned and dispatches through its vtable to
+	// TESObjectREFR::CheckSaveGame (+0x68) to decide whether/how to persist it before the
+	// reference and its process data are torn down.
+	//
+	// SE+0x153 / AE+0x1A8: 'mov rcx,rsi; call [rax+0x68]' — CheckSaveGame, 6 bytes.
+	// Both SE and AE compile 'call [rax+0x68]' as 'ff 50 68' (3-byte disp8).
+	// Crash 35570+0x219 was inside SaveGame (CALL [R8+0x70] at AE+0x215, 4-byte 41ff5070);
+	// guarding CheckSaveGame prevents reaching SaveGame for invalid/partial forms.
+	// Also noted: 'call [rax+0x790]' at SE+0x10D / AE+0x166 on Character actors — TODO guard.
+	// AE-only additional vtable dispatches before CheckSaveGame (no SE equivalent):
+	//   AE+0x0A0: vtable+0x160, AE+0x0BA: vtable+0x478, AE+0x0CB: vtable+0x5a0, AE+0x0DF: vtable+0x470
+		class CheckSaveGameHook
+	{
+	public:
+		static void Hook();
+
+	private:
 		// Replaces 'call [rax+0x68]' — TESObjectREFR::CheckSaveGame virtual dispatch
 		// in FUN_14057b120 / FUN_1405ae2d0 (the respawn/unload save helper).
 		// a_ref (rcx) = TESObjectREFR*, a_saveFormBuffer (rdx) = BGSSaveFormBuffer*.
@@ -350,11 +313,44 @@ namespace Hooks
 		//   (2) null parentCell (partially-initialized actor, e.g. loaded but cell already
 		//       unloaded): a_ref->parentCell == nullptr → return 0, avoids null sub-pointer
 		//       crash inside CheckSaveGame implementation (33243+0x56: mov ecx,[rax+0x04])
-//		static std::int8_t CheckSaveGame_Guard(RE::TESObjectREFR* a_ref, void* a_saveFormBuffer);
+		static std::int8_t CheckSaveGame_Guard(RE::TESObjectREFR* a_ref, void* a_saveFormBuffer);
 
 		static inline std::uintptr_t m_imageBase{ 0 };
 		static inline std::uintptr_t m_imageEnd{ 0 };
 	};
+
+	// CreateSourceTextureResultHook patches a background-thread texture/resource creation wrapper (REL: 75509, 77301).
+	//
+	// FUN_140d6dd70 (SE 75509) / FUN_140dbc380 (AE 77301) zero-initializes a result-pointer
+	// local, calls the actual creation routine (FUN_140d7dc50 / FUN_140dccc30) which only
+	// populates that local on success, then UNCONDITIONALLY writes 'result->field_0x20 = 1'
+	// through it — with no null check. When creation fails (corrupt/missing .dds, device
+	// lost, OOM, etc. — matches crash dumps showing NiSourceTexture / BSResource::
+	// CompressedArchiveStream / .dds paths on the stack) the pointer is still null and this
+	// write is a guaranteed null-pointer access violation.
+	//
+	// Crash site (confirmed from 10 crash dumps, RAX == 0 / write address 0x20 in every one):
+	//   SE+0x6A / AE+0x6C: 'mov dword ptr [rax+0x20], 0x1'  (7-byte instruction: c7 40 20 01 00 00 00)
+	//
+	// The faulting instruction operates on RAX implicitly (it's not a call), so it can't be
+	// patched with write_call<5> directly like the FlushQueuedFormLoads guards above. Instead
+	// a small thunk moves RAX into RCX, calls the guard (which performs the write only if
+	// non-null) via an absolute (imm64) call, then jumps back past the original 7-byte
+	// instruction via an absolute (imm64) jump.
+	class CreateSourceTextureResultHook
+	{
+	public:
+		static void Hook();
+
+	private:
+		// Replaces 'mov dword ptr [rax+0x20], 0x1'.
+		// a_result (rcx, moved from rax by the thunk) = the result pointer populated by
+		// FUN_140d7dc50/FUN_140dccc30 — null when resource/texture creation failed.
+		// Performs the write only when a_result is non-null; otherwise it's a no-op.
+		static void SetResultLoadedFlag_Guard(void* a_result);
+	};
+
+// END - patches for vanilla crashes
 
 
 /*  UNUSED HOOKS:

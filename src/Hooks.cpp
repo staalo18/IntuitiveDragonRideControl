@@ -25,7 +25,15 @@ namespace Hooks
 //		GetMountHook::Hook();
 //		FlightGoalHook::Hook();
 		PathingHook::Hook();
+
+		// Patches below have been implemented with Claude Sonnet 5 to fix vanilla crashes
+		// IDRC amplifies the occurance of these crashes, as the dragon traverses quickly over 
+		// many cells can cause stale pointers to be used in the hooked functions
+		// (in particular on slower systems). The hooks below guard against stale vtable pointers
+		// and nullify the corresponding parentCell pointers.
 		FlushQueuedFormLoadsHook::Hook();
+		CheckSaveGameHook::Hook();
+		CreateSourceTextureResultHook::Hook();
 /* UNUSED HOOKS:
 		TestHook::Hook();
 		DragonFlyLandHook::Hook();
@@ -110,6 +118,8 @@ namespace Hooks
 		}
 		log::info("IDRC - {}: Finished parsing AnimationGraph", __func__);		
 	}
+
+/*****************************************************************************************/
 
 	void MainUpdateHook::Nullsub()
 	{
@@ -226,6 +236,7 @@ log::info("IDRC - {}: PlayerCharacter current package: {:0x}, packType: {}, proc
         }
     }
 
+/*****************************************************************************************/
 
 	static bool bTraceGetType = false;
 
@@ -285,6 +296,8 @@ log::info("IDRC - {}: ReadyWeaponHook-ProcessButton called with event IDCode = {
             return _IsNotEqual(a_this, a_rhs);
         }
 
+/*****************************************************************************************/
+
 	void LookHook::ProcessThumbstick(RE::LookHandler* a_this, RE::ThumbstickEvent* a_event, RE::PlayerControlsData* a_data)
 	{
 		auto& cameraLockManager = IDRC::CameraLockManager::GetSingleton();
@@ -312,6 +325,8 @@ log::info("IDRC - {}: ReadyWeaponHook-ProcessButton called with event IDCode = {
 			_ProcessMouseMove(a_this, a_event, a_data);
 		}
 	}
+
+/*****************************************************************************************/
 
 	void DragonCameraStateHook::OnEnterState(RE::DragonCameraState* a_this)
 	{
@@ -413,6 +428,8 @@ log::info("IDRC - {}: Before UpdateRotation: freeRotationY: {}", __func__, 180.f
 		a_out.y =  q.w * s + q.y * c;
 		a_out.z =  q.x * s + q.z * c;
 	}
+
+/*****************************************************************************************/
 
 /*
 	bool FlightGoalHook::SetGoal(std::uintptr_t* a_this, RE::BSPathingRequest** a_request)
@@ -956,6 +973,44 @@ log::info("IDRC - {}: BuildFlyLandPath called, result={}", __func__, result ? "t
 	}
 */
 
+/*****************************************************************************************/
+
+	void FlushQueuedFormLoadsHook::Hook()
+	{
+		// All patched instructions are 6-byte indirect calls.
+		// write_call<5> replaces bytes 0-4 with a 5-byte relative call stub.
+		// Byte 5 (the trailing 0x00) must be explicitly NOP'd to prevent it from
+		// executing as 'ADD [rax],al' after hook returns.
+
+		m_imageBase = REL::Module::get().base();
+		const auto* dos = reinterpret_cast<const IMAGE_DOS_HEADER*>(m_imageBase);
+		const auto* nt  = reinterpret_cast<const IMAGE_NT_HEADERS*>(m_imageBase + dos->e_lfanew);
+		m_imageEnd = m_imageBase + static_cast<std::uintptr_t>(nt->OptionalHeader.SizeOfImage);
+
+		REL::Relocation<std::uintptr_t> func{ RELOCATION_ID(34645, 35567) };
+		auto& trampoline = SKSE::GetTrampoline();
+
+		// SE+0x111 / AE+0x111: 'call [rdx+0x160]' — TESForm::AsReference2 (1st pass)
+		const auto patchAddr1 = func.address() + RELOCATION_OFFSET(0x111, 0x111);
+		trampoline.write_call<5>(patchAddr1, TESForm_AsReference2_Guard);
+		REL::safe_write(patchAddr1 + 5, std::uint8_t{ 0x90 });
+
+		// SE+0x1DF / AE+0x1C1: 'call [rax+0x80]' — TESForm::InitLoadGame (1st pass)
+		const auto patchAddr2 = func.address() + RELOCATION_OFFSET(0x1DF, 0x1C1);
+		trampoline.write_call<5>(patchAddr2, TESForm_InitLoadGame_Guard);
+		REL::safe_write(patchAddr2 + 5, std::uint8_t{ 0x90 });
+
+		// SE+0x304 / AE+0x2E4: 'call [rax+0x88]' — TESForm::FinishLoadGame (2nd pass)
+		const auto patchAddr3 = func.address() + RELOCATION_OFFSET(0x304, 0x2E4);
+		trampoline.write_call<5>(patchAddr3, TESForm_FinishLoadGame_Guard);
+		REL::safe_write(patchAddr3 + 5, std::uint8_t{ 0x90 });
+
+		// SE+0x356 / AE+0x336: 'call [rax+0x160]' — TESForm::AsReference2 (2nd pass, on TESObjectREFR from GetReference)
+		const auto patchAddr4 = func.address() + RELOCATION_OFFSET(0x356, 0x336);
+		trampoline.write_call<5>(patchAddr4, TESForm_AsReference2_Guard);
+		REL::safe_write(patchAddr4 + 5, std::uint8_t{ 0x90 });
+	}
+	
 	RE::TESObjectREFR* FlushQueuedFormLoadsHook::TESForm_AsReference2_Guard(RE::TESForm* a_form)
 	{
 		// a_form (rcx) = TESForm* from BGSLoadFormData::GetForm — guaranteed non-null by caller.
@@ -971,7 +1026,29 @@ log::warn("IDRC - {}: FlushQueuedFormLoads: stale TESForm at {:#018x} "
 
 		// Vtable is valid — execute the original TESForm::AsReference2 virtual dispatch.
 		using AsReference2_t = RE::TESObjectREFR* (*)(RE::TESForm*);
-		return (*reinterpret_cast<AsReference2_t*>(vtable + 0x160))(a_form);
+		auto* ref = (*reinterpret_cast<AsReference2_t*>(vtable + 0x160))(a_form);
+
+		// Both patched call sites use the returned pointer as a raw object `this` with NO
+		// further vtable dispatch, so a valid-looking a_form vtable is not enough:
+		//   1st pass (SE+0x111/AE+0x111): immediately after this call the function does an
+		//   inline 'lock inc [ref+0x28]' refcount bump directly on the returned pointer.
+		//   2nd pass (SE+0x356/AE+0x336): the returned pointer is passed straight into
+		//   TESObjectREFR::sub_14028a930(ref) as `this`.
+		// Neither of those is a virtual call we can guard, so if AsReference2 itself hands
+		// back a corrupted/implausible pointer (observed in crash dumps as e.g. ref == 0x4,
+		// or ref pointing directly into SkyrimSE.exe's own image instead of the heap) we must
+		// catch it here before returning, otherwise the caller crashes on the very next
+		// instruction with no guard in between.
+		if (ref) {
+			const auto refAddr = reinterpret_cast<std::uintptr_t>(ref);
+			if (refAddr < 0x10000 || (refAddr >= m_imageBase && refAddr < m_imageEnd)) {
+log::warn("IDRC - {}: FlushQueuedFormLoads: AsReference2 on TESForm at {:#018x} returned "
+"implausible pointer {:#018x} — treating as stale, returning nullptr", __func__, reinterpret_cast<std::uintptr_t>(a_form), refAddr);
+				return nullptr;
+			}
+		}
+
+		return ref;
 	}
 
 	void FlushQueuedFormLoadsHook::TESForm_InitLoadGame_Guard(RE::TESForm* a_form, void* a_loadBuffer)
@@ -1004,9 +1081,46 @@ log::warn("IDRC - {}: FlushQueuedFormLoads: stale TESForm at {:#018x} "
 		(*reinterpret_cast<FinishLoadGame_t*>(vtable + 0x88))(a_form, a_loadBuffer);
 	}
 
-// TODO: Validate below patch
-/*
-	std::int8_t FlushQueuedFormLoadsHook::CheckSaveGame_Guard(RE::TESObjectREFR* a_ref, void* a_saveFormBuffer)
+/*****************************************************************************************/
+
+	void CheckSaveGameHook::Hook()
+	{
+		m_imageBase = REL::Module::get().base();
+		const auto* dos = reinterpret_cast<const IMAGE_DOS_HEADER*>(m_imageBase);
+		const auto* nt  = reinterpret_cast<const IMAGE_NT_HEADERS*>(m_imageBase + dos->e_lfanew);
+		m_imageEnd = m_imageBase + static_cast<std::uintptr_t>(nt->OptionalHeader.SizeOfImage);
+
+		REL::Relocation<std::uintptr_t> respawnFunc{ RELOCATION_ID(34648, 35570) };
+		auto& trampoline = SKSE::GetTrampoline();
+
+		// SE+0x153 / AE+0x1A8: 'mov rcx,rsi; call [rax+0x68]' — CheckSaveGame, 6 bytes.
+		// Patch covers MOV RCX,RSI + CALL; JMP thunk restores RCX=RSI before calling guard.
+		// Uses absolute (imm64) addressing for the CALL/JMP back out to our own DLL —
+		// see CreateSourceTextureResultHook below for why rel32 is unsafe here (ASLR can
+		// place the DLL >2GB from the trampoline pool, truncating a rel32 into garbage).
+		const auto patchAddr  = respawnFunc.address() + RELOCATION_OFFSET(0x153, 0x1A8);
+		const auto resumeAddr = patchAddr + 6;  // TEST AL,AL
+
+		std::uint8_t th[27] = {
+			0x48, 0x89, 0xF1,                                     // MOV RCX, RSI
+			0x48, 0xB8, 0,0,0,0,0,0,0,0,                          // MOV RAX, <guardFn imm64>
+			0xFF, 0xD0,                                           // CALL RAX
+			0x48, 0xB8, 0,0,0,0,0,0,0,0,                          // MOV RAX, <resumeAddr imm64>
+			0xFF, 0xE0                                            // JMP RAX
+		};
+		const auto guardFn64    = reinterpret_cast<std::uint64_t>(&CheckSaveGame_Guard);
+		const auto resumeAddr64 = static_cast<std::uint64_t>(resumeAddr);
+		std::memcpy(th + 5, &guardFn64, sizeof(guardFn64));
+		std::memcpy(th + 17, &resumeAddr64, sizeof(resumeAddr64));
+
+		auto* thunkMem = static_cast<std::uint8_t*>(trampoline.allocate(sizeof(th)));
+		std::memcpy(thunkMem, th, sizeof(th));
+
+		trampoline.write_branch<5>(patchAddr, reinterpret_cast<std::uintptr_t>(thunkMem));
+		REL::safe_write(patchAddr + 5, std::uint8_t{ 0x90 });
+	}
+	
+	std::int8_t CheckSaveGameHook::CheckSaveGame_Guard(RE::TESObjectREFR* a_ref, void* a_saveFormBuffer)
 	{
 		// a_ref (rcx) = TESObjectREFR*, a_saveFormBuffer (rdx) = BGSSaveFormBuffer*.
 		// Called from FUN_14057b120 / FUN_1405ae2d0 (the respawn/unload save helper),
@@ -1035,8 +1149,71 @@ log::warn("IDRC - {}: respawn helper: TESObjectREFR at {:#018x} (FormID={:#010x}
 		using CheckSaveGame_t = std::int8_t (*)(RE::TESObjectREFR*, void*);
 		return (*reinterpret_cast<CheckSaveGame_t*>(vtable + 0x68))(a_ref, a_saveFormBuffer);
 	}
-*/	
 
+/*****************************************************************************************/
+	
+	void CreateSourceTextureResultHook::Hook()
+	{
+		REL::Relocation<std::uintptr_t> func{ RELOCATION_ID(75509, 77301) };
+		auto& trampoline = SKSE::GetTrampoline();
+
+		const auto patchAddr  = func.address() + RELOCATION_OFFSET(0x6A, 0x6C);
+		const auto resumeAddr = patchAddr + 7;  // 'c7 40 20 01 00 00 00' is 7 bytes
+
+		// Defensive signature check: verify the expected 'mov dword ptr [rax+0x20], 0x1'
+		// bytes are still present before patching. Guards against silently corrupting
+		// another plugin's patch at this exact address (or a game version mismatch) —
+		// if the bytes don't match, skip installing instead of overwriting blindly.
+		static constexpr std::uint8_t kExpected[7] = { 0xC7, 0x40, 0x20, 0x01, 0x00, 0x00, 0x00 };
+		if (std::memcmp(reinterpret_cast<const void*>(patchAddr), kExpected, sizeof(kExpected)) != 0) {
+log::error("IDRC - CreateSourceTextureResultHook: unexpected bytes at {:#018x} — skipping patch "
+"(already patched by another plugin, or game version mismatch)", patchAddr);
+			return;
+		}
+
+		std::uint8_t th[27] = {
+			0x48, 0x89, 0xC1,                                     // MOV RCX, RAX
+			0x48, 0xB8, 0,0,0,0,0,0,0,0,                          // MOV RAX, <guardFn imm64>
+			0xFF, 0xD0,                                           // CALL RAX
+			0x48, 0xB8, 0,0,0,0,0,0,0,0,                          // MOV RAX, <resumeAddr imm64>
+			0xFF, 0xE0                                            // JMP RAX
+		};
+		// Absolute (imm64) addressing is used here instead of rel32, because a hand-rolled
+		// rel32 CALL/JMP is only valid if the target is within +/-2GB of this thunk (which
+		// lives in SKSE's trampoline pool, allocated near SkyrimSE.exe). That's guaranteed
+		// for jumps INTO the trampoline pool (handled internally by write_branch<5> below),
+		// but NOT for a call from the thunk back OUT to a function inside our own DLL —
+		// the OS loader/ASLR can place our DLL arbitrarily far away, silently truncating a
+		// rel32 offset into a garbage address (this was the actual cause of the AV-on-launch
+		// crash from the original rel32-based version of this thunk).
+		const auto guardFn64   = reinterpret_cast<std::uint64_t>(&SetResultLoadedFlag_Guard);
+		const auto resumeAddr64 = static_cast<std::uint64_t>(resumeAddr);
+		std::memcpy(th + 5, &guardFn64, sizeof(guardFn64));
+		std::memcpy(th + 17, &resumeAddr64, sizeof(resumeAddr64));
+
+		auto* thunkMem = static_cast<std::uint8_t*>(trampoline.allocate(sizeof(th)));
+		std::memcpy(thunkMem, th, sizeof(th));
+
+		trampoline.write_branch<5>(patchAddr, reinterpret_cast<std::uintptr_t>(thunkMem));
+		REL::safe_write(patchAddr + 5, std::uint8_t{ 0x90 });
+		REL::safe_write(patchAddr + 6, std::uint8_t{ 0x90 });
+	}
+
+	void CreateSourceTextureResultHook::SetResultLoadedFlag_Guard(void* a_result)
+	{
+		// a_result (rcx, moved from rax by the thunk) = result pointer from
+		// FUN_140d7dc50/FUN_140dccc30 — null when texture/resource creation failed.
+		// Every one of the 10 observed crash dumps had RAX == 0 (write address 0x20), so a
+		// plain null check is sufficient here (unlike FlushQueuedFormLoads, this is not a
+		// vtable dispatch and there's no "stale but non-null" case to guard against).
+		if (!a_result) {
+log::warn("IDRC - {}: texture/resource creation returned null — skipping unconditional "
+"'result->field_0x20 = 1' write to avoid null-pointer crash (SE 75509+0x6A / AE 77301+0x6C)", __func__);
+			return;
+		}
+
+		*reinterpret_cast<std::uint32_t*>(reinterpret_cast<std::uintptr_t>(a_result) + 0x20) = 1;
+	}
 
 /* UNUSED HOOKS:	
 
