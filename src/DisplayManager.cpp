@@ -18,7 +18,7 @@ namespace IDRC {
     void DisplayManager::DisplayDragonHealth() {
         auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
         if (!dragonActor) {
-            log::error("IDRC - {}: Dragon actor is null", __func__);
+            log::error("IDRC - {}: Dragon actor is null", __FUNCTION__);
             return;
         }
 
@@ -31,7 +31,7 @@ namespace IDRC {
     void DisplayManager::DisplayLeavingBorderRegion() {
         auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
         if (!dragonActor) {
-            log::error("IDRC - {}: Dragon actor is null", __func__);
+            log::error("IDRC - {}: Dragon actor is null", __FUNCTION__);
             return;
         }
     

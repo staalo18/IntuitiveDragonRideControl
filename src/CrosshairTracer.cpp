@@ -10,10 +10,10 @@ namespace IDRC {
         auto* crosshairEvent = a_event;
         if (crosshairEvent && crosshairEvent->crosshairRef) {
             m_crosshairTarget = crosshairEvent->crosshairRef.get();
-log::info("IDRC - {}: CrosshairTarget = {}", __func__, m_crosshairTarget->GetBaseObject()->GetName());
+log::info("IDRC - {}: CrosshairTarget = {}", __FUNCTION__, m_crosshairTarget->GetBaseObject()->GetName());
         } else {
             m_crosshairTarget = nullptr;
-log::info("IDRC - {}: CrosshairTarget = nullptr", __func__);
+log::info("IDRC - {}: CrosshairTarget = nullptr", __FUNCTION__);
         }
 
         return RE::BSEventNotifyControl::kContinue;
@@ -23,7 +23,7 @@ log::info("IDRC - {}: CrosshairTarget = nullptr", __func__);
         if (!m_isRegistered) {
             auto* crosshairRefEventSource = SKSE::GetCrosshairRefEventSource();
             if (!crosshairRefEventSource) {
-                log::error("IDRC - {}: crosshairRefEventSource is null", __func__);
+                log::error("IDRC - {}: crosshairRefEventSource is null", __FUNCTION__);
                 return false;
             }
             crosshairRefEventSource->AddEventSink(this);
@@ -31,9 +31,9 @@ log::info("IDRC - {}: CrosshairTarget = nullptr", __func__);
             ForceDisplayCrosshair();
             
             m_isRegistered = true;
-            log::info("IDRC - {}: Registered CrosshairTracer", __func__);
+            log::info("IDRC - {}: Registered CrosshairTracer", __FUNCTION__);
         } else {
-            log::warn("IDRC - {}: CrosshairTracer already registered", __func__);
+            log::warn("IDRC - {}: CrosshairTracer already registered", __FUNCTION__);
         }
         return true;
     }
@@ -42,15 +42,15 @@ log::info("IDRC - {}: CrosshairTarget = nullptr", __func__);
         if (m_isRegistered) {
             auto* crosshairRefEventSource = SKSE::GetCrosshairRefEventSource();
             if (!crosshairRefEventSource) {
-                log::error("IDRC - {}: crosshairRefEventSource is null", __func__);
+                log::error("IDRC - {}: crosshairRefEventSource is null", __FUNCTION__);
                 return false;
             }
             crosshairRefEventSource->RemoveEventSink(this);
             
             m_isRegistered = false;
-            log::info("IDRC - {}: Unregistered CrosshairTracer", __func__);
+            log::info("IDRC - {}: Unregistered CrosshairTracer", __FUNCTION__);
         } else {
-            log::warn("IDRC - {}: CrosshairTracer was not registered", __func__);
+            log::warn("IDRC - {}: CrosshairTracer was not registered", __FUNCTION__);
         }
         return true;
     }
@@ -82,10 +82,10 @@ log::info("IDRC - {}: CrosshairTarget = nullptr", __func__);
     void CrosshairTracer::ForceDisplayCrosshair()
     // This is not working as expected yet...
     {
-        log::info("IDRC - {}: Forcing display of crosshair", __func__);
+        log::info("IDRC - {}: Forcing display of crosshair", __FUNCTION__);
         auto crosshairInstance = GetGFxValue("_root.HUDMovieBaseInstance.CrosshairInstance");
         if (crosshairInstance != nullptr) {
-            log::info("IDRC - {}: CrosshairInstance found", __func__);
+            log::info("IDRC - {}: CrosshairInstance found", __FUNCTION__);
             RE::GFxValue::DisplayInfo displayInfo;
             crosshairInstance.GetDisplayInfo(std::addressof(displayInfo));
             displayInfo.SetAlpha(0.0);

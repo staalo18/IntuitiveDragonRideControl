@@ -26,7 +26,7 @@ namespace IDRC {
 	}
 
 	void ThumbstickTracer::ProcessThumbstickKey(IDRCKey a_key) {
-        log::info("IDRC - {}: {}", __func__, a_key);
+        log::info("IDRC - {}: {}", __FUNCTION__, a_key);
 
         auto& controlsManager = ControlsManager::GetSingleton();
 		auto& flyingModeManager = FlyingModeManager::GetSingleton();
@@ -66,12 +66,12 @@ namespace IDRC {
 					// reason for separate thread: see comment in definition of ControlsManager::ProcessEvent()
 					this->ProcessThumbstickKey(kForward);
 				}).detach();
-log::info("IDRC - {}: Forward pressed", __func__);
+log::info("IDRC - {}: Forward pressed", __FUNCTION__);
 			}
 		}
 		else {
 			m_forwardPressed = false;
-log::info("IDRC - {}: Forward released", __func__);
+log::info("IDRC - {}: Forward released", __FUNCTION__);
 		}
 	}
 
@@ -84,12 +84,12 @@ log::info("IDRC - {}: Forward released", __func__);
 					// reason for separate thread: see comment in definition of ControlsManager::ProcessEvent()
 					this->ProcessThumbstickKey(kBack);
 				}).detach();
-log::info("IDRC - {}: Back pressed", __func__);
+log::info("IDRC - {}: Back pressed", __FUNCTION__);
 			}
 		}
 		else {
 			m_backPressed = false;
-log::info("IDRC - {}: Back released", __func__);
+log::info("IDRC - {}: Back released", __FUNCTION__);
 		}
 	}
 
@@ -102,12 +102,12 @@ log::info("IDRC - {}: Back released", __func__);
 					// reason for separate thread: see comment in definition of ControlsManager::ProcessEvent()
 					this->ProcessThumbstickKey(kStrafeLeft);
 				}).detach();
-log::info("IDRC - {}: Left pressed", __func__);
+log::info("IDRC - {}: Left pressed", __FUNCTION__);
 			}
 		}
 		else {
 			m_leftPressed = false;
-log::info("IDRC - {}: Left released", __func__);
+log::info("IDRC - {}: Left released", __FUNCTION__);
 		}
 	}
 
@@ -120,12 +120,12 @@ log::info("IDRC - {}: Left released", __func__);
 					// reason for separate thread: see comment in definition of ControlsManager::ProcessEvent()
 					this->ProcessThumbstickKey(kStrafeRight);
 				}).detach();
-log::info("IDRC - {}: Right pressed", __func__);
+log::info("IDRC - {}: Right pressed", __FUNCTION__);
 			}
 		}
 		else {
 			m_rightPressed = false;
-log::info("IDRC - {}: Right released", __func__);
+log::info("IDRC - {}: Right released", __FUNCTION__);
 		}
 	}
 	inline bool inRange(float num, double low, double high) {

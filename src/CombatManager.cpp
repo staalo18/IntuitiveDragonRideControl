@@ -18,7 +18,7 @@ namespace IDRC {
                                 RE::BGSListForm* a_ballShoutList,
                                 RE::TESShout* a_unrelentingForceShout,
                                 RE::TESShout* a_attackShout) {
-        log::info("IDRC - {}", __func__);
+        log::info("IDRC - {}", __FUNCTION__);
         SetBreathShoutList(a_breathShoutList);
         SetBallShoutList(a_ballShoutList);
         m_unrelentingForceShout = a_unrelentingForceShout;
@@ -35,7 +35,7 @@ namespace IDRC {
 
     void CombatManager::SetBreathShoutList(RE::BGSListForm* a_breathShoutList) {
         if (!a_breathShoutList) {
-            log::error("IDRC - {}: breathShoutList is null", __func__);
+            log::error("IDRC - {}: breathShoutList is null", __FUNCTION__);
         }
 
         m_breathShoutList = a_breathShoutList;
@@ -47,7 +47,7 @@ namespace IDRC {
 
     void CombatManager::SetBallShoutList(RE::BGSListForm* a_ballShoutList) {
         if (!a_ballShoutList) {
-            log::error("IDRC - {}: ballShoutList is null", __func__);
+            log::error("IDRC - {}: ballShoutList is null", __FUNCTION__);
         }
         
         m_ballShoutList = a_ballShoutList;
@@ -76,18 +76,18 @@ namespace IDRC {
 
     void CombatManager::DragonStartCombat(RE::Actor* a_target) {
         if (!a_target) {
-            log::error("IDRC - {}: target is null", __func__);
+            log::error("IDRC - {}: target is null", __FUNCTION__);
             return;
         }
 
         auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
         if (!dragonActor) {
-            log::error("IDRC - {}: dragonActor is null", __func__);
+            log::error("IDRC - {}: dragonActor is null", __FUNCTION__);
             return;
         }
 
         if (!IsValidTarget(a_target)) {
-            log::info("IDRC - {}: Target is too far away or dead, cancel DragonStartCombat", __func__);
+            log::info("IDRC - {}: Target is too far away or dead, cancel DragonStartCombat", __FUNCTION__);
             return;
         }
         
@@ -135,7 +135,7 @@ namespace IDRC {
 
                 auto* storedTarget = m_storedCombatTarget ? m_storedCombatTarget.get().get() : nullptr;
                 if (storedTarget && !dragonActor->IsInCombat()) {
-log::info("IDRC - {}: ------------------->>>>>>> Restarting combat with stored target {}", __func__, storedTarget->GetName());
+                    log::info("IDRC - {}: Restarting combat with stored target {}", __FUNCTION__, storedTarget->GetName());
                     DragonStartCombat(storedTarget);
                 }
             }
@@ -173,7 +173,6 @@ log::info("IDRC - {}: ------------------->>>>>>> Restarting combat with stored t
             auto* combatTarget = _ts_SKSEFunctions::GetCombatTarget(dragonActor);
     
             if (combatTarget && !IsValidTarget(combatTarget)){
-log::info("IDRC - {}: distance: {}, ParentCell: {}, attached: {}", __func__, Utils::GetHorizontalDistance(dragonActor, combatTarget), combatTarget->GetParentCell() ? "Yes" : "null", combatTarget->GetParentCell() ? (combatTarget->GetParentCell()->IsAttached() ? "Yes" : "No") : "null");                
                 // In case the dragon is in combat, the game's 3D data  is centered around the dragon's combat target (ie the combat target's cell and its 8 adjacent cells).
                 // If the mounted dragon is in a different cell in the landscape, 
                 // the 3D area of the player's/dragon's location can get unloaded (player gets "detached" from cell).
@@ -184,7 +183,6 @@ log::info("IDRC - {}: distance: {}, ParentCell: {}, attached: {}", __func__, Uti
                 SKSE::GetTaskInterface()->AddTask([dragonActor]() {
                     // When modifying Game objects, send task to TaskInterface to ensure thread safety
                 _ts_SKSEFunctions::ClearCombatTargets(dragonActor);
-log::info("IDRC - {}: ------------------->>>>>>> Cleared CombatTargets due to distance or target not loaded", __func__);
                 });
             }
         }
@@ -267,7 +265,7 @@ log::info("{}: Updated player cell to {}, {}", __FUNCTION__, targetCellX, target
     
     bool CombatManager::DragonAttack(bool a_alternateAttack)
     {
-        log::info("IDRC - {}", __func__);
+        log::info("IDRC - {}", __FUNCTION__);
         auto& dataManager = DataManager::GetSingleton();
         auto* dragonActor = dataManager.GetDragonActor();
         auto& controlsManager = ControlsManager::GetSingleton();
@@ -275,18 +273,18 @@ log::info("{}: Updated player cell to {}, {}", __FUNCTION__, targetCellX, target
         auto& displayManager = DisplayManager::GetSingleton();
 
         if (!dragonActor) {
-            log::error("IDRC - {}: dragonActor is null", __func__);
+            log::error("IDRC - {}: dragonActor is null", __FUNCTION__);
             return false;
         }
 
         //  no attack while perch is triggered
         if (flyingModeManager.GetRegisteredForPerch()) {
-            log::info("IDRC - {}: Dragon is perching, attack canceled", __func__);
+            log::info("IDRC - {}: Dragon is perching, attack canceled", __FUNCTION__);
             return false;
         }
 
         if (m_shoutActive) {
-            log::info("IDRC - {}: Shout is ongoing, canceling new attack", __func__);
+            log::info("IDRC - {}: Shout is ongoing, canceling new attack", __FUNCTION__);
             return false;
         }
 
@@ -305,13 +303,11 @@ log::info("{}: Updated player cell to {}, {}", __FUNCTION__, targetCellX, target
 
         if (!m_shoutTarget) {
             // No TDM target, get the combat target from the reticle (if active)
-log::info("IDRC - {}: No TDM target, checking Target Reticle Manager for target", __func__);
             if (auto handle = TargetReticleManager::GetSingleton().GetCurrentTarget()) {
                 m_shoutTarget = handle;
             }
         }
         auto* resolvedShoutTarget = m_shoutTarget ? m_shoutTarget.get().get() : nullptr;
-log::info("IDRC - {}: shout target is {}", __func__, resolvedShoutTarget ? resolvedShoutTarget->GetName() : "null");
         RE::Actor* currentCombatTarget = _ts_SKSEFunctions::GetCombatTarget(dragonActor);
 
         if (!m_shoutTarget) {
@@ -319,7 +315,6 @@ log::info("IDRC - {}: shout target is {}", __func__, resolvedShoutTarget ? resol
             m_shoutTarget = currentCombatTarget ? currentCombatTarget->GetHandle() : RE::ActorHandle{};
             resolvedShoutTarget = currentCombatTarget;
         } else if (resolvedShoutTarget != currentCombatTarget) {
-log::info("IDRC - {}: Shout target is different from current combat target, starting combat with shout target", __func__);
             DragonStartCombat(resolvedShoutTarget);
         }
 
@@ -371,7 +366,7 @@ log::info("IDRC - {}: Shout target is different from current combat target, star
         }
 
         if (m_attackShout == nullptr) {
-            log::error("IDRC - {}: Error: No Shout Found", __func__);            
+            log::error("IDRC - {}: Error: No Shout Found", __FUNCTION__);            
             return false;
         }
 
@@ -387,7 +382,7 @@ log::info("IDRC - {}: Shout target is different from current combat target, star
     void CombatManager::ExecuteAttack() {
         auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
         if (!dragonActor) {
-            log::error("IDRC - {}: dragonActor is null", __func__);
+            log::error("IDRC - {}: dragonActor is null", __FUNCTION__);
             return;
         }
 
@@ -398,20 +393,19 @@ log::info("IDRC - {}: Shout target is different from current combat target, star
                 _ts_SKSEFunctions::SetLookAt(dragonActor, taskShoutTarget, true);
             }
             StartVoiceShoutCast(static_cast<RE::Character*>(dragonActor), this->m_attackShout, 2, taskShoutTarget);
-log::info("IDRC - {}: Started Attack with target {}", __func__, taskShoutTarget ? taskShoutTarget->GetName() : "null");
         });
     }
 
     RE::TESShout* CombatManager::GetShout(const RE::BGSListForm* a_shoutList) {
         if (!a_shoutList) {
-            log::error("IDRC - {}: ShoutList is null", __func__);
+            log::error("IDRC - {}: ShoutList is null", __FUNCTION__);
             return nullptr;
         }
     
         auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
     
         if (!dragonActor) {
-            log::error("IDRC - {}: dragonActor is null", __func__);
+            log::error("IDRC - {}: dragonActor is null", __FUNCTION__);
             return nullptr;
         }
     
@@ -428,12 +422,12 @@ log::info("IDRC - {}: Started Attack with target {}", __func__, taskShoutTarget 
             }
         }
     
-        log::info("IDRC - {}: No valid shout found in ShoutList", __func__);
+        log::info("IDRC - {}: No valid shout found in ShoutList", __FUNCTION__);
         return nullptr;
     }
 
     bool CombatManager::SetShoutMode(int a_shoutMode) {
-        log::info("IDRC - {}: {}", __func__, a_shoutMode);
+        log::info("IDRC - {}: {}", __FUNCTION__, a_shoutMode);
     
         RE::TESShout* usedShout = nullptr;
     
@@ -446,13 +440,13 @@ log::info("IDRC - {}: Started Attack with target {}", __func__, taskShoutTarget 
         }
     
         if (!usedShout) {
-            log::error("IDRC - {}: No Shout found!", __func__);
+            log::error("IDRC - {}: No Shout found!", __FUNCTION__);
             return false;
         }
         if (m_attackShout->variations && m_attackShout->variations[0].spell) {
-            log::info("IDRC - {}: Old AttackShout-spell0: {}", __func__, m_attackShout->variations[0].spell->GetFormID());
+            log::info("IDRC - {}: Old AttackShout-spell0: {}", __FUNCTION__, m_attackShout->variations[0].spell->GetFormID());
         } else {
-            log::info("IDRC - {}: Old AttackShout-spell0 is null", __func__);
+            log::info("IDRC - {}: Old AttackShout-spell0 is null", __FUNCTION__);
         }
 
         for (int i = 0; i < 3; ++i) {
@@ -479,14 +473,14 @@ log::info("IDRC - {}: Started Attack with target {}", __func__, taskShoutTarget 
             count++;
         }
         if (count >= 100) { // waited > 1sec
-            log::error("IDRC - {}: ERROR - Timed out while waiting for AttackShout to sync!", __func__);
+            log::error("IDRC - {}: ERROR - Timed out while waiting for AttackShout to sync!", __FUNCTION__);
             return false;
         }
 
         if (m_attackShout->variations && m_attackShout->variations[0].spell) {
-            log::info("IDRC - {}: New AttackShout-spell0: {}", __func__, m_attackShout->variations[0].spell->GetFormID());
+            log::info("IDRC - {}: New AttackShout-spell0: {}", __FUNCTION__, m_attackShout->variations[0].spell->GetFormID());
         } else {
-            log::info("IDRC - {}: New AttackShout-spell0 is null", __func__);
+            log::info("IDRC - {}: New AttackShout-spell0 is null", __FUNCTION__);
         }
     
         return true;

@@ -23,7 +23,7 @@ namespace IDRC {
         if (patrolQueuedState || fastTravelState) {
             // in dragon-FastTravel mode - check if dragon is allowed to fly
             if (!dragonActor->AsActorState()->actorState2.allowFlying) {
-                log::info("IDRC - {}: in FastTravel mode, but not allowed to fly - stopping fast travel...", __func__);
+                log::info("IDRC - {}: in FastTravel mode, but not allowed to fly - stopping fast travel...", __FUNCTION__);
 
                 auto* orbitMarker = DataManager::GetSingleton().GetOrbitMarker();                
                 SKSE::GetTaskInterface()->AddTask([dragonActor, orbitMarker]() {
@@ -31,7 +31,7 @@ namespace IDRC {
                     if (orbitMarker) {
                         _ts_SKSEFunctions::MoveTo(orbitMarker, dragonActor, 0.0f, 0.0f,  0.0f);
                     } else {
-                        log::warn("IDRC - {}: Orbit marker is null", __func__);
+                        log::warn("IDRC - {}: Orbit marker is null", __FUNCTION__);
                     }
 
                     // force stop fasttravel via StopFastTravel Package
@@ -43,7 +43,7 @@ namespace IDRC {
             // leaving FastTravel mode
             auto& flyingModeManager = FlyingModeManager::GetSingleton();
             if (!dragonActor->AsActorState()->actorState2.allowFlying) {
-                log::info("IDRC - {}: Leaving FastTravel and not allowed to fly - trigger land", __func__);
+                log::info("IDRC - {}: Leaving FastTravel and not allowed to fly - trigger land", __FUNCTION__);
                 if (flyingModeManager.GetRegisteredForLanding()) {
                     if (!flyingModeManager.GetLandingPosSearchOngoing()) {
                         flyingModeManager.TriggerLand();
@@ -63,15 +63,15 @@ namespace IDRC {
 
 
     void FastTravelManager::FastTravel(const RE::TESObjectREFR* a_fastTravelTarget) {
-        log::info("IDRC - {}", __func__);
+        log::info("IDRC - {}", __FUNCTION__);
         if (!a_fastTravelTarget) {
-            log::error("IDRC - {}: error - FastTravelTarget is none", __func__);
+            log::error("IDRC - {}: error - FastTravelTarget is none", __FUNCTION__);
             return;
         } 
         
         auto dragonActor = DataManager::GetSingleton().GetDragonActor();
         if (!dragonActor) {
-            log::error("IDRC - {}: error - dragonActor is none", __func__);
+            log::error("IDRC - {}: error - dragonActor is none", __FUNCTION__);
             return;
         }
 
@@ -82,12 +82,12 @@ namespace IDRC {
             // This can take a few frames (in particular if many pathing requests occur in parallel, eg during combat).
             // Skipping FastTravel in this case avoids continuous nullifying of pathData.
 
-            log::info("IDRC - {}: FastTravel is skipped", __func__);
+            log::info("IDRC - {}: FastTravel is skipped", __FUNCTION__);
             return;
         }
 
         if (!dragonActor->AsActorState()->actorState2.allowFlying) {
-            log::info("IDRC - {}: not allowed to fly - cancelling fast travel request", __func__);
+            log::info("IDRC - {}: not allowed to fly - cancelling fast travel request", __FUNCTION__);
 
             if (dragonActor->AsActorValueOwner()->GetActorValue(RE::ActorValue::kVariable03) == 2) {
                 // fast travel active - force stop fasttravel via StopFastTravel Package
@@ -109,7 +109,7 @@ namespace IDRC {
             // When modifying Game objects, send task to TaskInterface to ensure thread safety
             auto* player = RE::PlayerCharacter::GetSingleton();
             if (!player) {
-                log::warn("IDRC - {}: Could not get player", __func__);
+                log::warn("IDRC - {}: Could not get player", __FUNCTION__);
                 return;
             }
 

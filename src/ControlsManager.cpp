@@ -29,7 +29,7 @@ namespace IDRC {
                 /*
                 auto playerControls = RE::PlayerControls::GetSingleton();
                 if (!playerControls) {
-                    log::error("IDRC - {}: PlayerControls is null", __func__);
+                    log::error("IDRC - {}: PlayerControls is null", __FUNCTION__);
                     return;
                 }
 
@@ -95,7 +95,7 @@ namespace IDRC {
         if (!m_isRegistered) {
             auto* inputManager = RE::BSInputDeviceManager::GetSingleton();
             if (!inputManager) {
-                log::error("IDRC - {}: BSInputDeviceManager is null", __func__);
+                log::error("IDRC - {}: BSInputDeviceManager is null", __FUNCTION__);
                 return false;
             }
             // start keyboard tracing (via ProcessEvent())
@@ -111,9 +111,9 @@ namespace IDRC {
   
 
             m_isRegistered = true;
-            log::info("IDRC - {}: Registered for controls", __func__);
+            log::info("IDRC - {}: Registered for controls", __FUNCTION__);
         } else {
-            log::warn("IDRC - {}: Already registered for controls", __func__);
+            log::warn("IDRC - {}: Already registered for controls", __FUNCTION__);
         }
 
         CameraLockManager::GetSingleton().ResetEnabled();
@@ -135,7 +135,7 @@ namespace IDRC {
 
             auto* inputManager = RE::BSInputDeviceManager::GetSingleton();
             if (!inputManager) {
-                log::error("IDRC - {}: BSInputDeviceManager is null", __func__);
+                log::error("IDRC - {}: BSInputDeviceManager is null", __FUNCTION__);
                 return false;
             }
 
@@ -149,9 +149,9 @@ namespace IDRC {
 
 
             m_isRegistered = false;
-            log::info("IDRC - {}: Unregistered for controls", __func__);
+            log::info("IDRC - {}: Unregistered for controls", __FUNCTION__);
         } else {
-            log::warn("IDRC - {}: Not registered for controls", __func__);
+            log::warn("IDRC - {}: Not registered for controls", __FUNCTION__);
         }
         return m_isRegistered;
     }
@@ -168,13 +168,13 @@ namespace IDRC {
 
         DXScanCode scanCode = GetMappedDXScanCode(a_key);
         if (scanCode == InputMap::kMaxMacros) {
-            log::error("IDRC - {}: DXScanCode not found", __func__);
+            log::error("IDRC - {}: DXScanCode not found", __FUNCTION__);
             return false;
         }
 
         auto* deviceManager = RE::BSInputDeviceManager::GetSingleton();
         if (!deviceManager) {
-            log::error("IDRC - {}: BSInputDeviceManager is null", __func__);
+            log::error("IDRC - {}: BSInputDeviceManager is null", __FUNCTION__);
             return false;
         }
 
@@ -197,7 +197,7 @@ namespace IDRC {
             // Check if a keyboard key is pressed
             auto* keyboard = deviceManager->GetKeyboard();
             if (!keyboard) {
-                log::error("IDRC - {}: Keyboard is null", __func__);
+                log::error("IDRC - {}: Keyboard is null", __FUNCTION__);
                 return false;
             }
             
@@ -228,7 +228,7 @@ namespace IDRC {
     bool ControlsManager::IsThumbstickPressed() const {
         auto* deviceManager = RE::BSInputDeviceManager::GetSingleton();
         if (!deviceManager) {
-            log::error("IDRC - {}: BSInputDeviceManager is null", __func__);
+            log::error("IDRC - {}: BSInputDeviceManager is null", __FUNCTION__);
             return false;
         }
 
@@ -261,7 +261,7 @@ namespace IDRC {
         };
     
         if (a_mappedScanCode == InputMap::kMaxMacros) {
-            log::error("IDRC - {}: Invalid DXScanCode", __func__);
+            log::error("IDRC - {}: Invalid DXScanCode", __FUNCTION__);
             return;
         }
     
@@ -270,7 +270,7 @@ namespace IDRC {
             m_keyMap[it->second] = a_mappedScanCode;
             log::info("Key mapping updated: IDRCKey = {} ({}), MappedValue = {}", a_key, static_cast<int>(it->second), a_mappedScanCode.key);
         } else {
-            log::warn("IDRC - {}: Unsupported key string '{}'", __func__, a_key);
+            log::warn("IDRC - {}: Unsupported key string '{}'", __FUNCTION__, a_key);
         }
     }
 
@@ -286,13 +286,13 @@ namespace IDRC {
 
     DXScanCode ControlsManager::GetMappedDXScanCode(const RE::ButtonEvent* a_buttonEvent) const {
         if (!a_buttonEvent) {
-            log::error("IDRC - {}: ButtonEvent is null", __func__);
+            log::error("IDRC - {}: ButtonEvent is null", __FUNCTION__);
             return DXScanCode(InputMap::kMaxMacros);
         }
 
         auto* deviceManager = RE::BSInputDeviceManager::GetSingleton();
         if (!deviceManager) {
-            log::error("IDRC - {}: BSInputDeviceManager is null", __func__);
+            log::error("IDRC - {}: BSInputDeviceManager is null", __FUNCTION__);
             return DXScanCode(InputMap::kMaxMacros);
         }
 
@@ -302,7 +302,7 @@ namespace IDRC {
             // the buttonEvent is triggered by a gamepad button - convert IDCode to DXScanCode
             uint32_t buttonID = InputMap::GamepadMaskToKeycode(a_buttonEvent->GetIDCode());
             if (buttonID == InputMap::kMaxMacros) {
-                log::warn("IDRC - {}: Gamepad button ID {} not found by GamepadMaskToKeycode", __func__, a_buttonEvent->GetIDCode());
+                log::warn("IDRC - {}: Gamepad button ID {} not found by GamepadMaskToKeycode", __FUNCTION__, a_buttonEvent->GetIDCode());
                 return DXScanCode(InputMap::kMaxMacros);
             }
 
@@ -311,7 +311,7 @@ namespace IDRC {
             // the buttonEvent is triggered by a mouse button - convert IDCode to DXScanCode
             uint32_t buttonID = InputMap::kMacro_MouseButtonOffset + a_buttonEvent->GetIDCode();
             if (buttonID == InputMap::kMaxMacros) {
-                log::warn("IDRC - {}: Mouse button ID {} not found", __func__, a_buttonEvent->GetIDCode());
+                log::warn("IDRC - {}: Mouse button ID {} not found", __FUNCTION__, a_buttonEvent->GetIDCode());
                 return DXScanCode(InputMap::kMaxMacros);
             }
 
@@ -324,19 +324,19 @@ namespace IDRC {
     IDRCKey ControlsManager::GetMappedIDRCKey(const RE::ButtonEvent* a_buttonEvent) {
 
         if (!a_buttonEvent) {
-            log::error("IDRC - {}: ButtonEvent is null", __func__);
+            log::error("IDRC - {}: ButtonEvent is null", __FUNCTION__);
             return IDRCKey::kInvalid;
         }
 
         auto* deviceManager = RE::BSInputDeviceManager::GetSingleton();
         if (!deviceManager) {
-            log::error("IDRC - {}: BSInputDeviceManager is null", __func__);
+            log::error("IDRC - {}: BSInputDeviceManager is null", __FUNCTION__);
             return IDRCKey::kInvalid;
         }
 
         DXScanCode scanCode = GetMappedDXScanCode(a_buttonEvent);
         if (scanCode == InputMap::kMaxMacros) {
-            log::warn("IDRC - {}: DXScanCode not found", __func__);
+            log::warn("IDRC - {}: DXScanCode not found", __FUNCTION__);
             return IDRCKey::kInvalid;
         }
 
@@ -382,12 +382,12 @@ namespace IDRC {
     bool ControlsManager::IsGamepadButtonPressed(const GamepadButton& a_gamepadButton) const {
         auto* deviceManager = RE::BSInputDeviceManager::GetSingleton();
         if (!deviceManager) {
-            log::error("IDRC - {}: BSInputDeviceManager is null", __func__);
+            log::error("IDRC - {}: BSInputDeviceManager is null", __FUNCTION__);
             return false;
         }
         auto* gamepad = deviceManager->GetGamepad();
         if (!gamepad) {
-            log::warn("IDRC - {}: gamepad is null", __func__);
+            log::warn("IDRC - {}: gamepad is null", __FUNCTION__);
             return false;
         }
 
@@ -403,7 +403,7 @@ namespace IDRC {
 
     void ControlsManager::TouchGamepadButton(const RE::ButtonEvent* a_buttonEvent) {
         if (!a_buttonEvent) {
-            log::error("IDRC - {}: ButtonEvent is null", __func__);
+            log::error("IDRC - {}: ButtonEvent is null", __FUNCTION__);
             return;
         }
 
@@ -413,13 +413,13 @@ namespace IDRC {
 
         auto* deviceManager = RE::BSInputDeviceManager::GetSingleton();
         if (!deviceManager) {
-            log::error("IDRC - {}: BSInputDeviceManager is null", __func__);
+            log::error("IDRC - {}: BSInputDeviceManager is null", __FUNCTION__);
             return;
         }
 
         auto* gamepad = deviceManager->GetGamepad();
         if (!gamepad) {
-            log::warn("IDRC - {}: gamepad is null", __func__);
+            log::warn("IDRC - {}: gamepad is null", __FUNCTION__);
             return;
         }
         if (!deviceManager->IsGamepadConnected()) {
@@ -436,7 +436,7 @@ namespace IDRC {
 
     void ControlsManager::TouchMouseButton(const RE::ButtonEvent* a_buttonEvent) {
         if (!a_buttonEvent) {
-            log::error("IDRC - {}: ButtonEvent is null", __func__);
+            log::error("IDRC - {}: ButtonEvent is null", __FUNCTION__);
             return;
         }
 
@@ -446,13 +446,13 @@ namespace IDRC {
 
         auto* deviceManager = RE::BSInputDeviceManager::GetSingleton();
         if (!deviceManager) {
-            log::error("IDRC - {}: BSInputDeviceManager is null", __func__);
+            log::error("IDRC - {}: BSInputDeviceManager is null", __FUNCTION__);
             return;
         }
 
         auto* mouse = deviceManager->GetMouse();
         if (!mouse) {
-            log::warn("IDRC - {}: mouse is null", __func__);
+            log::warn("IDRC - {}: mouse is null", __FUNCTION__);
             return;
         }
 
@@ -466,28 +466,28 @@ namespace IDRC {
 
     void ControlsManager::PrintAllDeviceMappings(RE::BSInputDevice* a_device, uint32_t a_maxKeyCode) {
         if (!a_device) {
-            log::error("IDRC - {}: Input device is null", __func__);
+            log::error("IDRC - {}: Input device is null", __FUNCTION__);
             return;
         }
     
         auto* deviceManager = RE::BSInputDeviceManager::GetSingleton();
         if (!deviceManager) {
-            log::error("IDRC - {}: BSInputDeviceManager is null", __func__);
+            log::error("IDRC - {}: BSInputDeviceManager is null", __FUNCTION__);
             return;
         }
     
         RE::BSFixedString mapping;
     
-        log::info("IDRC - {}: Scanning all mappings for device: {}", __func__, static_cast<int>(a_device->device));
+        log::info("IDRC - {}: Scanning all mappings for device: {}", __FUNCTION__, static_cast<int>(a_device->device));
     
         // Iterate over a range of possible keyCodes
         for (uint32_t keyCode = 0; keyCode <= a_maxKeyCode; ++keyCode) {
             if (deviceManager->GetDeviceButtonNameFromID(a_device->device, keyCode, mapping)) {
-                log::info("IDRC - {}: keyCode: {}, Mapping: {}", __func__, keyCode, mapping.c_str());
+                log::info("IDRC - {}: keyCode: {}, Mapping: {}", __FUNCTION__, keyCode, mapping.c_str());
             }
         }
     
-        log::info("IDRC - {}: Finished scanning mappings for device: {}", __func__, static_cast<int>(a_device->device));
+        log::info("IDRC - {}: Finished scanning mappings for device: {}", __FUNCTION__, static_cast<int>(a_device->device));
     }
 
     void ControlsManager::SetInitialAutoCombatMode(bool a_auto) {

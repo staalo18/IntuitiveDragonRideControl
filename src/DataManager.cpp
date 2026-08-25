@@ -114,7 +114,7 @@ namespace IDRC {
     }
 
     void DataManager::SetRollAmplitude(float a_rollAmplitude) {
-        log::info("IDRC - {}: {}", __func__, a_rollAmplitude);
+        log::info("IDRC - {}: {}", __FUNCTION__, a_rollAmplitude);
         m_rollAmplitude = a_rollAmplitude;
     }
 
@@ -123,16 +123,16 @@ namespace IDRC {
     }
 
     void DataManager::SetRollSmoothTime(float a_rollSmoothTime) {
-        log::info("IDRC - {}: {}", __func__, a_rollSmoothTime);
+        log::info("IDRC - {}: {}", __FUNCTION__, a_rollSmoothTime);
         m_rollSmoothTime = a_rollSmoothTime;
     }
 
     void DataManager::SetDragonSpeeds(float a_speedMult) {
-        log::info("IDRC - {}: Multiplier = {}", __func__, a_speedMult);
+        log::info("IDRC - {}: Multiplier = {}", __FUNCTION__, a_speedMult);
 
         float mult = a_speedMult;
         if (mult < 0.5f || mult > 2.0f) {
-            log::warn("IDRC - {}: Speed multiplier out of range. Resetting to default (1.0)", __func__);
+            log::warn("IDRC - {}: Speed multiplier out of range. Resetting to default (1.0)", __FUNCTION__);
             mult = 1.0f;
         }
         SKSE::GetTaskInterface()->AddTask([this, mult]() {

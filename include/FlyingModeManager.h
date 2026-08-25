@@ -159,9 +159,6 @@ namespace IDRC {
 
         float GetWorldSpaceCenterY();
 
-//        float GetDistanceToRegionBoundingBox(const WorldSpaceData& a_worldspaceData, 
-//                                             float a_posX, float a_posY, float a_angle);
-        
         bool IsInBorderRegion() const;
 
         void SetFlyingMode(FlyingMode a_mode);

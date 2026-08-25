@@ -12,7 +12,7 @@ namespace IDRC {
         RE::Actor* dragonActor = DataManager::GetSingleton().GetDragonActor();
 
         if (!dragonActor) {
-            log::warn("IDRC - {}: Dragon actor is nullptr", __func__);
+            log::warn("IDRC - {}: Dragon actor is nullptr", __FUNCTION__);
             return RE::BSEventNotifyControl::kContinue;
         }
 
@@ -21,20 +21,20 @@ namespace IDRC {
 
         if (currentCombatTarget != m_combatTarget) {
             if (m_combatTarget) {
-                log::info("IDRC - {}: Previous CombatTarget: {} ({} - {})", __func__, m_combatTarget->GetName(),  m_combatTarget->GetFormID(),  m_combatTarget->GetHandle().native_handle());
+                log::info("IDRC - {}: Previous CombatTarget: {} ({} - {})", __FUNCTION__, m_combatTarget->GetName(),  m_combatTarget->GetFormID(),  m_combatTarget->GetHandle().native_handle());
             } else {
-                log::info("IDRC - {}: No previous CombatTarget", __func__);
+                log::info("IDRC - {}: No previous CombatTarget", __FUNCTION__);
             }
             m_combatTarget = currentCombatTarget;
         }
  
         if (combatState != m_combatState) {
             m_combatState = combatState;
-            log::info("IDRC - {}: Combat state changed to: {}", __func__, m_combatState);
+            log::info("IDRC - {}: Combat state changed to: {}", __FUNCTION__, m_combatState);
         }
 
         if (m_combatTarget) {
-            log::info("IDRC - {}: Current CombatTarget: {} ({})", __func__, m_combatTarget->GetName(),  m_combatTarget->GetFormID());
+            log::info("IDRC - {}: Current CombatTarget: {} ({})", __FUNCTION__, m_combatTarget->GetName(),  m_combatTarget->GetFormID());
         }
  
         return RE::BSEventNotifyControl::kContinue;
@@ -48,13 +48,13 @@ namespace IDRC {
 
             RE::Actor* dragonActor = DataManager::GetSingleton().GetDragonActor();
             if (!dragonActor) {
-                log::warn("IDRC - {}: Dragon actor is nullptr", __func__);
+                log::warn("IDRC - {}: Dragon actor is nullptr", __FUNCTION__);
                 m_combatState = 0;
                 m_combatTarget = nullptr;
                 return true;
             }
             if (!m_breathHitShader) {
-                log::warn("IDRC - {}: m_breathHitShader is nullptr", __func__);
+                log::warn("IDRC - {}: m_breathHitShader is nullptr", __FUNCTION__);
                 m_combatState = 0;
                 m_combatTarget = nullptr;
                 return true;
@@ -68,11 +68,11 @@ namespace IDRC {
                 // When modifying Game objects, send task to TaskInterface to ensure thread safety
                     this->m_combatTarget->ApplyEffectShader(this->m_breathHitShader);
                 });
-                log::info("IDRC - {}: Applied shader to target {} ({})", __func__, m_combatTarget->GetName(),  m_combatTarget->GetFormID());
+                log::info("IDRC - {}: Applied shader to target {} ({})", __FUNCTION__, m_combatTarget->GetName(),  m_combatTarget->GetFormID());
             }
-            log::info("IDRC - {}: registered CombatTargetTracer", __func__);
+            log::info("IDRC - {}: registered CombatTargetTracer", __FUNCTION__);
         } else {
-            log::warn("IDRC - {}: CombatTargetTracer already registered", __func__);
+            log::warn("IDRC - {}: CombatTargetTracer already registered", __FUNCTION__);
         }
         return true;
     }
@@ -86,23 +86,23 @@ namespace IDRC {
                     // When modifying Game objects, send task to TaskInterface to ensure thread safety
                     this->m_combatTarget->ApplyEffectShader(nullptr);
                 });
-                log::info("IDRC - {}: Removed shader from target {} ({})", __func__, m_combatTarget->GetName(),  m_combatTarget->GetFormID());
+                log::info("IDRC - {}: Removed shader from target {} ({})", __FUNCTION__, m_combatTarget->GetName(),  m_combatTarget->GetFormID());
                 m_combatTarget = nullptr;
             }
 
             m_combatState = 0;
 
             m_isRegistered = false;
-            log::info("IDRC - {}: Unregistered CombatTargetTracer", __func__);
+            log::info("IDRC - {}: Unregistered CombatTargetTracer", __FUNCTION__);
 
         } else {
-            log::warn("IDRC - {}: CombatTargetTracer was not registered", __func__);
+            log::warn("IDRC - {}: CombatTargetTracer was not registered", __FUNCTION__);
         }
         return true;
     }
 
     void CombatTargetTracer::InitializeData(RE::TESEffectShader* a_breathHitShader) {
-        log::info("IDRC - {}", __func__);
+        log::info("IDRC - {}", __FUNCTION__);
         m_breathHitShader = a_breathHitShader;
     }
 

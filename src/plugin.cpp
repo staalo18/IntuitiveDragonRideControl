@@ -49,7 +49,7 @@ namespace IDRC {
                                 RE::SpellItem* a_noFlyAbility,
                                 std::string a_dragonName,
                                 bool cameraLockInitiallyEnabled) {
-            log::info("IDRC - {}", __func__);
+            log::info("IDRC - {}", __FUNCTION__);
             DataManager::GetSingleton().InitializeData(a_rideQuest, a_orbitMarker, a_dragonAlias, a_dragonName, a_findPerchQuest, 
                                             a_wordWallPerch, a_towerPerch, a_rockPerch, a_perchTarget);
             FlyingModeManager::GetSingleton().InitializeData(a_dragonTurnMarker, 
@@ -66,83 +66,83 @@ namespace IDRC {
         }
 
         void SetFlyingMode_SKSE(RE::StaticFunctionTag*, int a_flyingState) {
-            log::info("IDRC - {}: {}", __func__, a_flyingState);
+            log::info("IDRC - {}: {}", __FUNCTION__, a_flyingState);
             FlyingModeManager::GetSingleton().SetFlyingModeFromPapyrus(a_flyingState);
         }
 
         void SetKeyMapping_SKSE(RE::StaticFunctionTag*, const std::string a_key, int a_value) {
-            log::info("IDRC - {}: {} - {}", __func__, a_key, a_value);
+            log::info("IDRC - {}: {} - {}", __FUNCTION__, a_key, a_value);
             DXScanCode scanCode(static_cast<uint32_t>(a_value));
             ControlsManager::GetSingleton().SetKeyMapping(a_key, scanCode);
         }
 
         bool RegisterForControls_SKSE(RE::StaticFunctionTag*, bool a_reRegisterOnLoad = false, bool a_registerFromGoTDragonCompanions = false) {
-            log::info("IDRC - {}", __func__);
+            log::info("IDRC - {}", __FUNCTION__);
             return ControlsManager::GetSingleton().RegisterForControls(a_reRegisterOnLoad, a_registerFromGoTDragonCompanions);
         }
 
         bool UnregisterForControls_SKSE(RE::StaticFunctionTag*) {
-            log::info("IDRC - {}", __func__);
+            log::info("IDRC - {}", __FUNCTION__);
             return ControlsManager::GetSingleton().UnregisterForControls();
         }
 
         void SetInitialAutoCombatMode_SKSE(RE::StaticFunctionTag*, bool a_auto) {
-            log::info("IDRC - {}: {}", __func__, a_auto);
+            log::info("IDRC - {}: {}", __FUNCTION__, a_auto);
             ControlsManager::GetSingleton().SetInitialAutoCombatMode(a_auto);
         }
 
         void SetDragonSpeeds_SKSE(RE::StaticFunctionTag*, float a_speedMult) {
-            log::info("IDRC - {}: {}", __func__, a_speedMult);
+            log::info("IDRC - {}: {}", __FUNCTION__, a_speedMult);
             DataManager::GetSingleton().SetDragonSpeeds(a_speedMult);
         }
 
         void SetRollAmplitude_SKSE(RE::StaticFunctionTag*, float a_rollAmplitude) {
-            log::info("IDRC - {}: {}", __func__, a_rollAmplitude);
+            log::info("IDRC - {}: {}", __FUNCTION__, a_rollAmplitude);
             DataManager::GetSingleton().SetRollAmplitude(a_rollAmplitude);
         }
 
         void SetRollSmoothTime_SKSE(RE::StaticFunctionTag*, float a_rollSmoothTime) {
-            log::info("IDRC - {}: {}", __func__, a_rollSmoothTime);
+            log::info("IDRC - {}: {}", __FUNCTION__, a_rollSmoothTime);
             DataManager::GetSingleton().SetRollSmoothTime(a_rollSmoothTime);
         }
 
         void SetAutoCombat_SKSE(RE::StaticFunctionTag*, bool a_auto) {
-            log::info("IDRC - {}: {}", __func__, a_auto);
+            log::info("IDRC - {}: {}", __FUNCTION__, a_auto);
             DataManager::GetSingleton().SetAutoCombat(a_auto);
         }
 
         void SetBreathShoutList_SKSE(RE::StaticFunctionTag*, RE::BGSListForm* a_breathShoutList) {
-            log::info("IDRC - {}", __func__);
+            log::info("IDRC - {}", __FUNCTION__);
             CombatManager::GetSingleton().SetBreathShoutList(a_breathShoutList);
         }
 
         RE::BGSListForm* GetBreathShoutList_SKSE(RE::StaticFunctionTag*) {
-            log::info("IDRC - {}", __func__);
+            log::info("IDRC - {}", __FUNCTION__);
             return CombatManager::GetSingleton().GetBreathShoutList();
         }
 
         void SetBallShoutList_SKSE(RE::StaticFunctionTag*, RE::BGSListForm* a_ballShoutList) {
-            log::info("IDRC - {}", __func__);
+            log::info("IDRC - {}", __FUNCTION__);
             CombatManager::GetSingleton().SetBallShoutList(a_ballShoutList);
         }
 
         RE::BGSListForm* GetBallShoutList_SKSE(RE::StaticFunctionTag*) {
-            log::info("IDRC - {}", __func__);
+            log::info("IDRC - {}", __FUNCTION__);
             return CombatManager::GetSingleton().GetBallShoutList();
         }
 
         bool GetInitialAutoCombatMode_SKSE(RE::StaticFunctionTag*) {
-            log::info("IDRC - {}", __func__);
+            log::info("IDRC - {}", __FUNCTION__);
             return ControlsManager::GetSingleton().GetInitialAutoCombatMode();
         }
 
         void SetDisplayAttackMessage_SKSE(RE::StaticFunctionTag*, bool a_display) {
-            log::info("IDRC - {}: {}", __func__, a_display);
+            log::info("IDRC - {}: {}", __FUNCTION__, a_display);
             DisplayManager::GetSingleton().SetDisplayAttackMessage(a_display);
         }
 
         void SetTargetReticleMode_SKSE(RE::StaticFunctionTag*, int a_mode) {
-            log::info("IDRC - {}: {}", __func__, a_mode);
+            log::info("IDRC - {}: {}", __FUNCTION__, a_mode);
             TargetReticleManager::ReticleMode mode = TargetReticleManager::ReticleMode::kOff;
             if (a_mode == 1) {
                 mode = TargetReticleManager::ReticleMode::kOn;
@@ -152,45 +152,45 @@ namespace IDRC {
             TargetReticleManager::GetSingleton().SetReticleMode(mode);
         }
         void SetReticleLockAnimationStyle_SKSE(RE::StaticFunctionTag*, int a_style) {
-            log::info("IDRC - {}: {}", __func__, a_style);
+            log::info("IDRC - {}: {}", __FUNCTION__, a_style);
             TargetReticleManager::GetSingleton().SetReticleLockAnimationStyle(a_style);
         }
         void SetTDMLock_SKSE(RE::StaticFunctionTag*, int a_lock) {
-            log::info("IDRC - {}: {}", __func__, a_lock);
+            log::info("IDRC - {}: {}", __FUNCTION__, a_lock);
             bool useTarget = (a_lock != 0);
             TargetReticleManager::GetSingleton().SetUseTarget(useTarget);
         }
         void SetPrimaryTargetMode_SKSE(RE::StaticFunctionTag*, int a_primaryTargetMode) {
-            log::info("IDRC - {}: {}", __func__, a_primaryTargetMode);
+            log::info("IDRC - {}: {}", __FUNCTION__, a_primaryTargetMode);
             TargetReticleManager::GetSingleton().SetPrimaryTargetMode(static_cast<TargetReticleManager::TargetMode>(a_primaryTargetMode+1));
         }
         void SetMaxTargetDistance_SKSE(RE::StaticFunctionTag*, float a_distance) {
-            log::info("IDRC - {}: {}", __func__, a_distance);
+            log::info("IDRC - {}: {}", __FUNCTION__, a_distance);
             TargetReticleManager::GetSingleton().SetMaxTargetDistance(a_distance);
         }
         void SetDistanceMultiplierSmall_SKSE(RE::StaticFunctionTag*, float a_multiplier) {
-            log::info("IDRC - {}: {}", __func__, a_multiplier);
+            log::info("IDRC - {}: {}", __FUNCTION__, a_multiplier);
             TargetReticleManager::GetSingleton().SetDistanceMultiplierSmall(a_multiplier);
         }
         void SetDistanceMultiplierLarge_SKSE(RE::StaticFunctionTag*, float a_multiplier) {  
-            log::info("IDRC - {}: {}", __func__, a_multiplier);
+            log::info("IDRC - {}: {}", __FUNCTION__, a_multiplier);
             TargetReticleManager::GetSingleton().SetDistanceMultiplierLarge(a_multiplier);
         }
         void SetDistanceMultiplierExtraLarge_SKSE(RE::StaticFunctionTag*, float a_multiplier) {
-            log::info("IDRC - {}: {}", __func__, a_multiplier);
+            log::info("IDRC - {}: {}", __FUNCTION__, a_multiplier);
             TargetReticleManager::GetSingleton().SetDistanceMultiplierExtraLarge(a_multiplier);
         }
         void SetMaxTargetScanAngle_SKSE(RE::StaticFunctionTag*, float a_angle) {
-            log::info("IDRC - {}: {}", __func__, a_angle);
+            log::info("IDRC - {}: {}", __FUNCTION__, a_angle);
             TargetReticleManager::GetSingleton().SetMaxTargetScanAngle(a_angle);
         }
 
         void SetCameraLockInitiallyEnabled_SKSE(RE::StaticFunctionTag*, bool a_enabled) {
-            log::info("IDRC - {}: {}", __func__, a_enabled);
+            log::info("IDRC - {}: {}", __FUNCTION__, a_enabled);
             CameraLockManager::GetSingleton().SetInitiallyEnabled(a_enabled);
         }        
         void SetIgnoredCameraPitch_SKSE(RE::StaticFunctionTag*, float a_pitch) {
-            log::info("IDRC - {}: {}", __func__, a_pitch);
+            log::info("IDRC - {}: {}", __FUNCTION__, a_pitch);
             CameraLockManager::GetSingleton().SetIgnoredCameraPitch(a_pitch);
         }
 
@@ -328,17 +328,17 @@ extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* sks
 
 	_ts_SKSEFunctions::InitializeLogging(static_cast<spdlog::level::level_enum>(logLevel));
     if (!isLogLevelValid) {
-        log::warn("IDRC - {}: LogLevel in INI file is invalid. Defaulting to info level.", __func__);
+        log::warn("IDRC - {}: LogLevel in INI file is invalid. Defaulting to info level.", __FUNCTION__);
     }
-    log::info("IDRC - {}: IDRC Plugin version: {}", __func__, IDRC::Interface::GetIDRCPluginVersion(nullptr));
+    log::info("IDRC - {}: IDRC Plugin version: {}", __FUNCTION__, IDRC::Interface::GetIDRCPluginVersion(nullptr));
 
 /* currently not used
-    log::info("IDRC - {}: Loading worldspaces...", __func__);
+    log::info("IDRC - {}: Loading worldspaces...", __FUNCTION__);
     auto worldspaces = IDRC::Utils::LoadWorldspaceIniData("SKSE/Plugins/IntuitiveDragonRideControl.ini");
 
     for (const auto& ws : worldspaces) {
         log::info("IDRC - {}: Worldspace Name = {}, Center = ({}, {}), Size = {}", 
-            __func__, ws.name, ws.center_x, ws.center_y, ws.size);
+            __FUNCTION__, ws.name, ws.center_x, ws.center_y, ws.size);
     }
 */
     Init(skse);
@@ -349,13 +349,13 @@ extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* sks
 	}
 
     if (!SKSE::GetPapyrusInterface()->Register(IDRC::Interface::IDRCFunctions)) {
-        log::error("IDRC - {}: Failed to register Papyrus functions.", __func__);
+        log::error("IDRC - {}: Failed to register Papyrus functions.", __FUNCTION__);
         return false;
     } else {
-        log::info("IDRC - {}: Registered Papyrus functions", __func__);
+        log::info("IDRC - {}: Registered Papyrus functions", __FUNCTION__);
     }
 
-    log::info("IDRC - {}: Calling Install Hooks", __func__);
+    log::info("IDRC - {}: Calling Install Hooks", __FUNCTION__);
 
     SKSE::AllocTrampoline(35 * 14);
 

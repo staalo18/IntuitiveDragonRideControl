@@ -56,10 +56,10 @@ namespace Hooks
 	void ParseAnimationGraph() {
 		auto player = RE::PlayerCharacter::GetSingleton();
 		if (!player) {
-			log::error("IDRC - {}: PlayerCharacter is null", __func__);
+			log::error("IDRC - {}: PlayerCharacter is null", __FUNCTION__);
 			return;
 		}
-		log::info("IDRC - {}: start parsing AnimationGraph", __func__);
+		log::info("IDRC - {}: start parsing AnimationGraph", __FUNCTION__);
 
 		RE::BSAnimationGraphManagerPtr animGraph;
 		if (player->GetAnimationGraphManager(animGraph)) {
@@ -99,24 +99,24 @@ namespace Hooks
 										log::info("AnimVar: {} = {}", varInfo.variableName.c_str(), value ? "true" : "false");
 									} 
 								} else {
-									log::error("IDRC - {}: Variable name or pointer is null", __func__);
+									log::error("IDRC - {}: Variable name or pointer is null", __FUNCTION__);
 								}
 							}
 						}
 						else {
-							log::error("IDRC - {}: GraphPtr is null", __func__);
+							log::error("IDRC - {}: GraphPtr is null", __FUNCTION__);
 						}
 					}
 				} else {
-					log::error("IDRC - {}: BSAnimationGraphManagerPtr is null", __func__);
+					log::error("IDRC - {}: BSAnimationGraphManagerPtr is null", __FUNCTION__);
 				}
 			} else {
-				log::error("IDRC - {}: AnimationGraphManagerPtr is null", __func__);
+				log::error("IDRC - {}: AnimationGraphManagerPtr is null", __FUNCTION__);
 			}
 		} else {
-			log::error("IDRC - {}: GetAnimationGraphManager failed", __func__);
+			log::error("IDRC - {}: GetAnimationGraphManager failed", __FUNCTION__);
 		}
-		log::info("IDRC - {}: Finished parsing AnimationGraph", __func__);		
+		log::info("IDRC - {}: Finished parsing AnimationGraph", __FUNCTION__);		
 	}
 
 /*****************************************************************************************/
@@ -145,24 +145,24 @@ namespace Hooks
 			bool fastTravelFlag = GetFlyingMountFastTravelStateFlag();
 			bool patrolQueuedFlag = GetFlyingMountPatrolQueuedStateFlag();
 			bool isAllowedToFly = dragonActor->AsActorState()->actorState2.allowFlying;
-log::info("IDRC - {}: FastTravelFlag={}, PatrolQueuedFlag={}, combatState={}, AV1 = {}, AV3= {}, isAllowedToFly= {}", __func__, 
+log::info("IDRC - {}: FastTravelFlag={}, PatrolQueuedFlag={}, combatState={}, AV1 = {}, AV3= {}, isAllowedToFly= {}", __FUNCTION__, 
 fastTravelFlag, patrolQueuedFlag, combatState, dragonActor->AsActorValueOwner()->GetActorValue(RE::ActorValue::kVariable01),
 dragonActor->AsActorValueOwner()->GetActorValue(RE::ActorValue::kVariable03), isAllowedToFly);
 			auto currentPackage = dragonActor->GetCurrentPackage();
 			if (currentPackage) {
 				auto packageType = currentPackage->packData.packType;
 				auto procedureType = currentPackage->procedureType;
-log::info("IDRC - {}: DragonActor current package: {:0x}, packType: {}, procedureType: {}", __func__, currentPackage->GetFormID(), static_cast<uint8_t>(packageType.underlying()), static_cast<uint32_t>(procedureType.underlying()));
+log::info("IDRC - {}: DragonActor current package: {:0x}, packType: {}, procedureType: {}", __FUNCTION__, currentPackage->GetFormID(), static_cast<uint8_t>(packageType.underlying()), static_cast<uint32_t>(procedureType.underlying()));
 			}
 
 			auto storedCombatTarget = IDRC::CombatManager::GetSingleton().GetStoredCombatTarget();
-log::info("IDRC - {}: DragonActor storedCombatTarget: {:0x}", __func__, storedCombatTarget ? storedCombatTarget->GetFormID() : 0);
+log::info("IDRC - {}: DragonActor storedCombatTarget: {:0x}", __FUNCTION__, storedCombatTarget ? storedCombatTarget->GetFormID() : 0);
 
 			RE::NiPoint3 testPos = dragonActor->GetPosition();
 			int flyingState = _ts_SKSEFunctions::GetFlyingState(dragonActor);
 //			testPos.z = _ts_SKSEFunctions::GetLandHeightWithWater(testPos, false);
 //			bool isValidForLanding = PathingHook::IsPositionValidForLanding(testPos);
-log::info("IDRC - {}: DragonActor position: {}, flyingState={}", __func__, dragonActor->GetPosition(), flyingState);
+log::info("IDRC - {}: DragonActor position: {}, flyingState={}", __FUNCTION__, dragonActor->GetPosition(), flyingState);
 		}
 
 auto* playerCamera = RE::PlayerCamera::GetSingleton();
@@ -171,7 +171,7 @@ RE::ThirdPersonState* dragonCameraState = nullptr;
 if (playerCamera && playerCamera->currentState && (playerCamera->currentState->id == RE::CameraState::kDragon)) {
 dragonCameraState = static_cast<RE::ThirdPersonState*>(playerCamera->currentState.get());
 if (dragonCameraState) {
-log::info("IDRC - {}: AfterMainUpdate: freeRotationY: {}", __func__, 180.f/PI * dragonCameraState->freeRotation.y);
+log::info("IDRC - {}: AfterMainUpdate: freeRotationY: {}", __FUNCTION__, 180.f/PI * dragonCameraState->freeRotation.y);
 }
 }
 
@@ -183,7 +183,7 @@ log::info("IDRC - {}: AfterMainUpdate: freeRotationY: {}", __func__, 180.f/PI * 
 			if (playerPackage) {
 				auto playerPackageType = playerPackage->packData.packType;
 				auto playerProcedureType = playerPackage->procedureType;
-log::info("IDRC - {}: PlayerCharacter current package: {:0x}, packType: {}, procedureType: {}", __func__, playerPackage->GetFormID(), static_cast<uint8_t>(playerPackageType.underlying()), static_cast<uint32_t>(playerProcedureType.underlying()));
+log::info("IDRC - {}: PlayerCharacter current package: {:0x}, packType: {}, procedureType: {}", __FUNCTION__, playerPackage->GetFormID(), static_cast<uint8_t>(playerPackageType.underlying()), static_cast<uint32_t>(playerProcedureType.underlying()));
 			}
 		}
 
@@ -250,7 +250,7 @@ log::info("IDRC - {}: PlayerCharacter current package: {:0x}, packType: {}, proc
 
 		auto player = RE::PlayerCharacter::GetSingleton();
 		if (!player) {
-			log::error("IDRC - {}: PlayerCharacter is null", __func__);
+			log::error("IDRC - {}: PlayerCharacter is null", __FUNCTION__);
 			return;
 		}
 /*
@@ -268,31 +268,31 @@ log::info("IDRC - {}: PlayerCharacter current package: {:0x}, packType: {}, proc
 		player->GetGraphVariableBool("IsOnMount", wasOnMount);
 */
 //		auto has_kInteraction = player->extraList.HasType(RE::ExtraDataType::kInteraction);
-//		log::info("IDRC - {}: before: has kInteraction: {}", __func__, has_kInteraction ? "true" : "false");
+//		log::info("IDRC - {}: before: has kInteraction: {}", __FUNCTION__, has_kInteraction ? "true" : "false");
 //		player->extraList.RemoveByType(RE::ExtraDataType::kInteraction);
 //		has_kInteraction = player->extraList.HasType(RE::ExtraDataType::kInteraction);
-//		log::info("IDRC - {}: after: has kInteraction: {}", __func__, has_kInteraction ? "true" : "false");
-//		log::info("IDRC - {}: Player is on Dragon: {}, on Mount: {}", __func__, wasOnDragon ? "true" : "false", wasOnMount ? "true" : "false");	
+//		log::info("IDRC - {}: after: has kInteraction: {}", __FUNCTION__, has_kInteraction ? "true" : "false");
+//		log::info("IDRC - {}: Player is on Dragon: {}, on Mount: {}", __FUNCTION__, wasOnDragon ? "true" : "false", wasOnMount ? "true" : "false");	
 //		player->NotifyAnimationGraph("BeginWeaponDraw");
 //ParseAnimationGraph();
-log::info("IDRC - {}: ReadyWeaponHook-ProcessButton called with event IDCode = {}", __func__, a_event->GetIDCode());
+log::info("IDRC - {}: ReadyWeaponHook-ProcessButton called with event IDCode = {}", __FUNCTION__, a_event->GetIDCode());
 //		player->DrawWeaponMagicHands(true);
-//log::info("IDRC - {}: DrawWeaponMagicHands called", __func__);
+//log::info("IDRC - {}: DrawWeaponMagicHands called", __FUNCTION__);
 //ParseAnimationGraph();
 
-//		log::info("IDRC - {}: ProcessButton called with event IDCode = {}", __func__, a_event->GetIDCode());
+//		log::info("IDRC - {}: ProcessButton called with event IDCode = {}", __FUNCTION__, a_event->GetIDCode());
 	}
 
 		RE::ExtraDataType ExtraInteractionHook::GetType(const RE::ExtraInteraction* a_this)
         {
 			if (bTraceGetType) {
-				log::info("IDRC - {}: GetType called, will return {}", __func__, static_cast<uint32_t>(_GetType(a_this)));
+				log::info("IDRC - {}: GetType called, will return {}", __FUNCTION__, static_cast<uint32_t>(_GetType(a_this)));
 			}
             return _GetType(a_this);
         }
         bool ExtraInteractionHook::IsNotEqual(const RE::ExtraInteraction* a_this, const RE::BSExtraData* a_rhs)
         {
-			log::info("IDRC - {}: IsNotEqual called, will return {}", __func__, _IsNotEqual(a_this, a_rhs) ? "true" : "false");
+			log::info("IDRC - {}: IsNotEqual called, will return {}", __FUNCTION__, _IsNotEqual(a_this, a_rhs) ? "true" : "false");
             return _IsNotEqual(a_this, a_rhs);
         }
 
@@ -344,43 +344,28 @@ log::info("IDRC - {}: ReadyWeaponHook-ProcessButton called with event IDCode = {
 
 	void DragonCameraStateHook::UpdateRotation(RE::DragonCameraState* a_this)
 	{
-auto* playerCamera = RE::PlayerCamera::GetSingleton();
-RE::ThirdPersonState* dragonCameraState = nullptr;
+		float dragonCurrentDirection = reinterpret_cast<float&>(a_this->unkEC);
+		float freeRotationX = a_this->freeRotation.x;
 
-if (playerCamera && playerCamera->currentState && (playerCamera->currentState->id == RE::CameraState::kDragon)) {
-dragonCameraState = static_cast<RE::ThirdPersonState*>(playerCamera->currentState.get());
-if (dragonCameraState) {
-log::info("IDRC - {}: Before UpdateRotation: freeRotationY: {}", __FUNCTION__, 180.f/PI * dragonCameraState->freeRotation.y);
-}
-}
+		a_this->freeRotationEnabled = true;
 
-		// This is copied from True Directional Movement. All credits go to the original author Ersh!
+		_UpdateRotation(a_this);
 
-			float dragonCurrentDirection = reinterpret_cast<float&>(a_this->unkEC);
-			float freeRotationX = a_this->freeRotation.x;
+		reinterpret_cast<float&>(a_this->unkEC) = dragonCurrentDirection;
+		a_this->freeRotation.x = freeRotationX;
 
-			a_this->freeRotationEnabled = true;
+		if (a_this->dragonHandle) {
+			RE::Actor* dragon = nullptr;
+			dragon = static_cast<RE::Actor*>(a_this->dragonHandle.get().get());
+			if (dragon) {
+				float heading = dragon->GetHeading(false);
 
-			_UpdateRotation(a_this);
+				a_this->freeRotation.x += reinterpret_cast<float&>(a_this->unkEC) - heading;
 
-			reinterpret_cast<float&>(a_this->unkEC) = dragonCurrentDirection;
-			a_this->freeRotation.x = freeRotationX;
-
-			if (a_this->dragonHandle) {
-				RE::Actor* dragon = nullptr;
-				dragon = static_cast<RE::Actor*>(a_this->dragonHandle.get().get());
-				if (dragon) {
-					float heading = dragon->GetHeading(false);
-
-					a_this->freeRotation.x += reinterpret_cast<float&>(a_this->unkEC) - heading;
-
-					NiQuaternion_SomeRotationManipulation(a_this->rotation, -a_this->freeRotation.y, 0.f, heading + a_this->freeRotation.x);
-					reinterpret_cast<float&>(a_this->unkEC) = heading;
-				}
+				NiQuaternion_SomeRotationManipulation(a_this->rotation, -a_this->freeRotation.y, 0.f, heading + a_this->freeRotation.x);
+				reinterpret_cast<float&>(a_this->unkEC) = heading;
 			}
-//		} else {
-//			_UpdateRotation(a_this);
-//		}
+		}
 	}
 
     void DragonCameraStateHook::GetCurrentRotation(RE::DragonCameraState* a_this, RE::NiQuaternion& a_out)
@@ -452,13 +437,13 @@ log::info("IDRC - {}: Before UpdateRotation: freeRotationY: {}", __FUNCTION__, 1
 						auto& startPos = (*a_request)->start.location.location;
 						float distanceToDragon = (dragonActor->GetPosition()).GetDistance(startPos);
 						if (distanceToDragon == 0.f) {
-							log::info("IDRC - {}: Start position: ({}, {}, {}), distance to Dragon: {}", __func__, startPos.x, startPos.y, startPos.z, (dragonActor->GetPosition()).GetDistance(startPos));
+							log::info("IDRC - {}: Start position: ({}, {}, {}), distance to Dragon: {}", __FUNCTION__, startPos.x, startPos.y, startPos.z, (dragonActor->GetPosition()).GetDistance(startPos));
 							auto& goalPos = (*a_request)->goal.targetPoint;
-							log::info("IDRC - {}: Goal position: ({}, {}, {})", __func__, goalPos.x, goalPos.y, goalPos.z);
-							log::info("IDRC - {}: Result: {}", __func__, result ? "true" : "false");
+							log::info("IDRC - {}: Goal position: ({}, {}, {})", __FUNCTION__, goalPos.x, goalPos.y, goalPos.z);
+							log::info("IDRC - {}: Result: {}", __FUNCTION__, result ? "true" : "false");
 						}
 					} else {
-						log::warn("IDRC - {}: Pathing request pointer is null", __func__);
+						log::warn("IDRC - {}: Pathing request pointer is null", __FUNCTION__);
 					}
 				}
 			}
@@ -470,12 +455,12 @@ log::info("IDRC - {}: Before UpdateRotation: freeRotationY: {}", __FUNCTION__, 1
 
 	bool PathingHook::IsDragonPathingRequest(std::byte* a_agent) {
 		if (!a_agent) {
-			log::warn("IDRC - {}: Agent pointer is null", __func__);
+			log::warn("IDRC - {}: Agent pointer is null", __FUNCTION__);
 			return false;
 		}
 		auto* actorState = *reinterpret_cast<RE::ActorState**>(a_agent + 0x10);
 		if (!actorState) {
-			log::warn("IDRC - {}: ActorState pointer is null", __func__);
+			log::warn("IDRC - {}: ActorState pointer is null", __FUNCTION__);
 			return false;
 		}
 
@@ -498,7 +483,7 @@ log::info("IDRC - {}: Before UpdateRotation: freeRotationY: {}", __FUNCTION__, 1
 		// call the original function
 		using FuncType = decltype(&SetFlightPath);
 		reinterpret_cast<FuncType>(_SetFlightPath)(a_subPtr, a_newNode, a_newData);
-log::info("IDRC - {}: SetFlightPath called", __func__);
+log::info("IDRC - {}: SetFlightPath called", __FUNCTION__);
 	}
 
 	void PathingHook::FlightPlannerUpdate(std::uintptr_t a_plannerSubPtr,
@@ -542,7 +527,7 @@ skipRePathing = true;
 		} else if (flyingModeManager.GetFlyingMode() == IDRC::FlyingMode::kLanded) {
 skipRePathing = true;
 		} else {
-log::info("IDRC - {}: Skipping path update.", __func__);
+log::info("IDRC - {}: Skipping path update.", __FUNCTION__);
 			return;
 		}
 
@@ -569,7 +554,7 @@ log::info("IDRC - {}: Skipping path update.", __func__);
 		auto  wayPointCount = *reinterpret_cast<std::uint32_t*>(pathData + 0xA0);
 
 		if (!wayPointBase || wayPointCount < 2) {
-log::warn("IDRC - {}: wayPointBase null=? wayPointCount: {}", __func__, wayPointCount);
+log::warn("IDRC - {}: wayPointBase null=? wayPointCount: {}", __FUNCTION__, wayPointCount);
 			return;
 		}
 
@@ -579,11 +564,11 @@ log::warn("IDRC - {}: wayPointBase null=? wayPointCount: {}", __func__, wayPoint
 		if (playerCamera && playerCamera->currentState && (playerCamera->currentState->id == RE::CameraState::kDragon)) {
 			dragonCameraState = static_cast<RE::ThirdPersonState*>(playerCamera->currentState.get());
 			if (!dragonCameraState) {
-				log::warn("IDRC - {}: Dragon camera state is null", __func__);
+				log::warn("IDRC - {}: Dragon camera state is null", __FUNCTION__);
 				return;
 			}
 		} else {
-			log::warn("IDRC - {}: Player camera state is not DragonCameraState", __func__);
+			log::warn("IDRC - {}: Player camera state is not DragonCameraState", __FUNCTION__);
 			return;
 		}
 
@@ -672,7 +657,7 @@ return;
 			waypointToUpdate.y = dragonPos.y + distanceToUpdate * cosYaw;
 			waypointToUpdate.z = std::max(cameraZ, landZ);
 		}
-log::info("IDRC - {}: Updated waypoints for flying dragon. CurrentIndex: {}, WaypointCount: {}", __func__, currentIndex, wayPointCount);
+log::info("IDRC - {}: Updated waypoints for flying dragon. CurrentIndex: {}, WaypointCount: {}", __FUNCTION__, currentIndex, wayPointCount);
 for (std::uint32_t i = 0; i < std::min(wayPointCount - 2, currentIndex + 8u); ++i) {
 auto& waypointToUpdate = *reinterpret_cast<RE::NiPoint3*>(&wayPointBase[i * kStride]);
 if (APIs::TrueHUD) {
@@ -704,11 +689,11 @@ APIs::TrueHUD->DrawPoint(waypointToUpdate, 5.0f, 0.0f, 0xFF0000FF);
 		auto  wayPointCount = *reinterpret_cast<std::uint32_t*>(pathData + 0xA0);
 
 		if (a_startIndex >= wayPointCount) {
-			log::warn("IDRC - {}: Invalid start index: {}, waypoint count: {}", __func__, a_startIndex, wayPointCount);
+			log::warn("IDRC - {}: Invalid start index: {}, waypoint count: {}", __FUNCTION__, a_startIndex, wayPointCount);
 			return;
 		}
 
-log::info("IDRC - {}: LinearPathToTarget called. StartIndex: {}, WaypointCount: {}, TargetPos: ({}, {}, {})", __func__, a_startIndex, wayPointCount, a_targetPos.x, a_targetPos.y, a_targetPos.z);
+log::info("IDRC - {}: LinearPathToTarget called. StartIndex: {}, WaypointCount: {}, TargetPos: ({}, {}, {})", __FUNCTION__, a_startIndex, wayPointCount, a_targetPos.x, a_targetPos.y, a_targetPos.z);
 		RE::NiPoint3 dragonPos = dragonActor->GetPosition();
 		constexpr std::size_t kStride = 0x48 / sizeof(float);  // = 0x12 floats
 		for (std::uint32_t i = a_startIndex; i < wayPointCount; ++i) {
@@ -817,7 +802,7 @@ log::info("IDRC - {}: LinearPathToTarget called. StartIndex: {}, WaypointCount: 
 
 		auto dragonActor = IDRC::DataManager::GetSingleton().GetDragonActor();
 		if (dragonActor && dragonActor == _ts_a_actor) {
-log::info("IDRC - {}: SetupPathingRequest called for dragon", __func__);
+log::info("IDRC - {}: SetupPathingRequest called for dragon", __FUNCTION__);
 	
 			if (IDRC::FlyingModeManager::GetSingleton().GetRegisteredForLanding()) {
 				// avoid targetpos for landing to be in the air
@@ -850,9 +835,9 @@ APIs::TrueHUD->DrawPoint(*_ts_a_targetPos, 10.0f, 20.0f, 0x99FFFFFF);
 if (APIs::TrueHUD) {
 APIs::TrueHUD->DrawPoint(resultPos, 5.0f, 20.0f, 0xFF99FFFF);
 }
-log::info("IDRC - {}: GetCurrentMountCellOrWorldspaceForm called for actor {}, returned {:0x} ({}) at position ({}, {}, {})", __func__, _ts_a_actor ? _ts_a_actor->GetName() : "null", result ? result->GetFormID() : 0, baseForm ? baseForm->GetFormEditorID() : "NONE", resultPos.x, resultPos.y, resultPos.z);
+log::info("IDRC - {}: GetCurrentMountCellOrWorldspaceForm called for actor {}, returned {:0x} ({}) at position ({}, {}, {})", __FUNCTION__, _ts_a_actor ? _ts_a_actor->GetName() : "null", result ? result->GetFormID() : 0, baseForm ? baseForm->GetFormEditorID() : "NONE", resultPos.x, resultPos.y, resultPos.z);
 		}  else {
-log::info("IDRC - {}: GetCurrentMountCellOrWorldspaceForm called for actor {}, returned nullptr", __func__, _ts_a_actor ? _ts_a_actor->GetName() : "null");
+log::info("IDRC - {}: GetCurrentMountCellOrWorldspaceForm called for actor {}, returned nullptr", __FUNCTION__, _ts_a_actor ? _ts_a_actor->GetName() : "null");
 		}
 		return result;
 	}
@@ -866,7 +851,7 @@ log::info("IDRC - {}: GetCurrentMountCellOrWorldspaceForm called for actor {}, r
 
 		if (m_pathingSingleton != a_pathing) {
 			if (m_pathingSingleton != nullptr) {
-				log::warn("IDRC - {}: Pathing singleton changed!", __func__);
+				log::warn("IDRC - {}: Pathing singleton changed!", __FUNCTION__);
 			}
 
 			// initialize the pathing singleton pointer with the first vanilla GetCurrentPathingLocation call
@@ -881,13 +866,13 @@ log::info("IDRC - {}: GetCurrentMountCellOrWorldspaceForm called for actor {}, r
 			float z = *reinterpret_cast<float*>(reinterpret_cast<std::uintptr_t>(result) + 0x8);
 			RE::NiPoint3 resultPos(x, y, z);
 APIs::TrueHUD->DrawPoint(resultPos, 12.0f, 2.0f, 0xFF99FFFF);
-log::info("IDRC - {}: GetCurrentPathingLocation  returned  ({}, {}, {}), dragonPos=({},{},{}), distance: {}", __func__, x, y, z,
+log::info("IDRC - {}: GetCurrentPathingLocation  returned  ({}, {}, {}), dragonPos=({},{},{}), distance: {}", __FUNCTION__, x, y, z,
     dragonActor->GetPosition().x,
     dragonActor->GetPosition().y,
     dragonActor->GetPosition().z,
     std::sqrt(std::pow(x - dragonActor->GetPosition().x, 2) + std::pow(y - dragonActor->GetPosition().y, 2)));
 		} else {
-log::info("IDRC - {}: GetCurrentPathingLocation  returned nullptr", __func__);
+log::info("IDRC - {}: GetCurrentPathingLocation  returned nullptr", __FUNCTION__);
 		}*/
 		return result;
 	}
@@ -907,7 +892,7 @@ log::info("IDRC - {}: GetCurrentPathingLocation  returned nullptr", __func__);
 if (APIs::TrueHUD) {
 APIs::TrueHUD->DrawPoint(resultPos, 12.0f, 0.1f, 0xFF99FFFF);
 }
-log::info("IDRC - {}: TESPackage_sub_140437ac0 returned  ({}, {}, {})", __func__, x, y, z);
+log::info("IDRC - {}: TESPackage_sub_140437ac0 returned  ({}, {}, {})", __FUNCTION__, x, y, z);
 		return result;
 	}
 
@@ -925,14 +910,14 @@ log::info("IDRC - {}: TESPackage_sub_140437ac0 returned  ({}, {}, {})", __func__
 		bool headingFlag = *reinterpret_cast<bool*>(reinterpret_cast<std::uintptr_t>(*a_request) + 0x140);
 		int packageLocationType = *reinterpret_cast<int*>(reinterpret_cast<std::uintptr_t>(*a_request) + 0x138);
 
-log::info("IDRC - {}: BuildFlyLandPath called with goal=({},{},{}), targetLocationPos=({},{},{})", __func__,
+log::info("IDRC - {}: BuildFlyLandPath called with goal=({},{},{}), targetLocationPos=({},{},{})", __FUNCTION__,
 	goal.x, goal.y, goal.z,
 	targetLocationPos.x, targetLocationPos.y, targetLocationPos.z);
-log::info("IDRC - {}: BuildFlyLandPath called - searchRadius={}, headingFlag={}, packageLocationType={}", __func__,
+log::info("IDRC - {}: BuildFlyLandPath called - searchRadius={}, headingFlag={}, packageLocationType={}", __FUNCTION__,
 	searchRadius, headingFlag ? "true" : "false", packageLocationType);
 	
 		bool result = reinterpret_cast<decltype(&BuildFlyLandPath )>(_BuildFlyLandPath )(a_request, a_result);
-log::info("IDRC - {}: BuildFlyLandPath called, result={}", __func__, result ? "true" : "---------------->>>>>>>>>>> false");
+log::info("IDRC - {}: BuildFlyLandPath called, result={}", __FUNCTION__, result ? "true" : "---------------->>>>>>>>>>> false");
 		return result;
 	}
 
@@ -944,7 +929,7 @@ log::info("IDRC - {}: BuildFlyLandPath called, result={}", __func__, result ? "t
 			log::error("{}: trampoline not initialized!", __FUNCTION__);
 			return;
 		}
-//log::info("IDRC - {}: SetPathingLocFromPos called for position ({}, {}, {})", __func__, a_pos.x, a_pos.y, a_pos.z);
+//log::info("IDRC - {}: SetPathingLocFromPos called for position ({}, {}, {})", __FUNCTION__, a_pos.x, a_pos.y, a_pos.z);
 		reinterpret_cast<decltype(&SetPathingLocFromPos)>(_SetPathingLocFromPos)(a_loc, a_pos);
 	}
 
@@ -958,9 +943,9 @@ log::info("IDRC - {}: BuildFlyLandPath called, result={}", __func__, result ? "t
 			log::error("{}: trampoline not initialized!", __FUNCTION__);
 			return false;
 		}
-//log::info("IDRC - {}: Calling FindNavmeshTriangleForLocation with location ({}, {}, {}), filter:  maxDistAbove={}, maxDistBelow={}", __func__, a_loc->location.x, a_loc->location.y, a_loc->location.z, a_filter ? a_filter->maxDistAbove : 0, a_filter ? a_filter->maxDistBelow : 0);
+//log::info("IDRC - {}: Calling FindNavmeshTriangleForLocation with location ({}, {}, {}), filter:  maxDistAbove={}, maxDistBelow={}", __FUNCTION__, a_loc->location.x, a_loc->location.y, a_loc->location.z, a_filter ? a_filter->maxDistAbove : 0, a_filter ? a_filter->maxDistBelow : 0);
 		bool result = reinterpret_cast<decltype(&FindNavmeshTriangleForLocation)>(_FindNavmeshTriangleForLocation)(a_loc, a_filter);
-//log::info("IDRC - {}: FindNavmeshTriangleForLocation called for location ({}, {}, {}), result: {}", __func__, a_loc->location.x, a_loc->location.y, a_loc->location.z, result ? "true" : "false");
+//log::info("IDRC - {}: FindNavmeshTriangleForLocation called for location ({}, {}, {}), result: {}", __FUNCTION__, a_loc->location.x, a_loc->location.y, a_loc->location.z, result ? "true" : "false");
 		return result;
 	}
 
@@ -973,9 +958,9 @@ log::info("IDRC - {}: BuildFlyLandPath called, result={}", __func__, result ? "t
 			log::error("{}: trampoline not initialized!", __FUNCTION__);
 			return false;
 		}
-//log::info("IDRC - {}: Calling FindNavmeshTriangleForLocation with location ({}, {}, {}), filter:  maxDistAbove={}, maxDistBelow={}", __func__, a_loc->location.x, a_loc->location.y, a_loc->location.z, a_filter ? a_filter->maxDistAbove : 0, a_filter ? a_filter->maxDistBelow : 0);
+//log::info("IDRC - {}: Calling FindNavmeshTriangleForLocation with location ({}, {}, {}), filter:  maxDistAbove={}, maxDistBelow={}", __FUNCTION__, a_loc->location.x, a_loc->location.y, a_loc->location.z, a_filter ? a_filter->maxDistAbove : 0, a_filter ? a_filter->maxDistBelow : 0);
 		bool result = reinterpret_cast<decltype(&FindNavmeshTriangleForLocation2)>(_FindNavmeshTriangleForLocation2)(a_loc, a_filter);
-//log::info("IDRC - {}: FindNavmeshTriangleForLocation called for location ({}, {}, {}), result: {}", __func__, a_loc->location.x, a_loc->location.y, a_loc->location.z, result ? "true" : "false");
+//log::info("IDRC - {}: FindNavmeshTriangleForLocation called for location ({}, {}, {}), result: {}", __FUNCTION__, a_loc->location.x, a_loc->location.y, a_loc->location.z, result ? "true" : "false");
 		return result;
 	}
 */
@@ -1026,8 +1011,8 @@ log::info("IDRC - {}: BuildFlyLandPath called, result={}", __func__, result ? "t
 		if (vtable < m_imageBase || vtable >= m_imageEnd) {
 			// Vtable is outside SkyrimSE.exe image: the form was freed and the memory
 			// has been reused (or zeroed). Returning nullptr is safe — the caller checks for nullptr.
-log::warn("IDRC - {}: FlushQueuedFormLoads: stale TESForm at {:#018x} "
-"(vtable={:#018x}) — use-after-free detected, skipping AsReference2", __func__, reinterpret_cast<std::uintptr_t>(a_form), vtable);
+			log::info("IDRC - {}: FlushQueuedFormLoads: stale TESForm at {:#018x} "
+			"(vtable={:#018x}) — use-after-free detected, skipping AsReference2", __FUNCTION__, reinterpret_cast<std::uintptr_t>(a_form), vtable);
 			return nullptr;
 		}
 
@@ -1049,8 +1034,8 @@ log::warn("IDRC - {}: FlushQueuedFormLoads: stale TESForm at {:#018x} "
 		if (ref) {
 			const auto refAddr = reinterpret_cast<std::uintptr_t>(ref);
 			if (refAddr < 0x10000 || (refAddr >= m_imageBase && refAddr < m_imageEnd)) {
-log::warn("IDRC - {}: FlushQueuedFormLoads: AsReference2 on TESForm at {:#018x} returned "
-"implausible pointer {:#018x} — treating as stale, returning nullptr", __func__, reinterpret_cast<std::uintptr_t>(a_form), refAddr);
+				log::info("IDRC - {}: FlushQueuedFormLoads: AsReference2 on TESForm at {:#018x} returned "
+				"implausible pointer {:#018x} — treating as stale, returning nullptr", __FUNCTION__, reinterpret_cast<std::uintptr_t>(a_form), refAddr);
 				return nullptr;
 			}
 		}
@@ -1064,8 +1049,8 @@ log::warn("IDRC - {}: FlushQueuedFormLoads: AsReference2 on TESForm at {:#018x} 
 		// rax = *a_form = vtable pointer — garbage when the form has been freed.
 		const auto vtable = *reinterpret_cast<const std::uintptr_t*>(a_form);
 		if (vtable < m_imageBase || vtable >= m_imageEnd) {
-log::warn("IDRC - {}: FlushQueuedFormLoads: stale TESForm at {:#018x} "
-"(vtable={:#018x}) — use-after-free detected, skipping InitLoadGame", __func__, reinterpret_cast<std::uintptr_t>(a_form), vtable);
+			log::info("IDRC - {}: FlushQueuedFormLoads: stale TESForm at {:#018x} "
+			"(vtable={:#018x}) — use-after-free detected, skipping InitLoadGame", __FUNCTION__, reinterpret_cast<std::uintptr_t>(a_form), vtable);
 			return;
 		}
 
@@ -1079,8 +1064,8 @@ log::warn("IDRC - {}: FlushQueuedFormLoads: stale TESForm at {:#018x} "
 		// rax = *a_form = vtable pointer — garbage when the form has been freed.
 		const auto vtable = *reinterpret_cast<const std::uintptr_t*>(a_form);
 		if (vtable < m_imageBase || vtable >= m_imageEnd) {
-log::warn("IDRC - {}: FlushQueuedFormLoads: stale TESForm at {:#018x} "
-"(vtable={:#018x}) — use-after-free detected, skipping FinishLoadGame", __func__, reinterpret_cast<std::uintptr_t>(a_form), vtable);
+			log::info("IDRC - {}: FlushQueuedFormLoads: stale TESForm at {:#018x} "
+			"(vtable={:#018x}) — use-after-free detected, skipping FinishLoadGame", __FUNCTION__, reinterpret_cast<std::uintptr_t>(a_form), vtable);
 			return;
 		}
 
@@ -1137,8 +1122,8 @@ log::warn("IDRC - {}: FlushQueuedFormLoads: stale TESForm at {:#018x} "
 		// Guard 1: vtable range check (use-after-free — form was freed, vtable is garbage).
 		const auto vtable = *reinterpret_cast<const std::uintptr_t*>(a_ref);
 		if (vtable < m_imageBase || vtable >= m_imageEnd) {
-log::warn("IDRC - {}: respawn helper: stale TESObjectREFR at {:#018x} "
-"(vtable={:#018x}) — use-after-free detected, skipping CheckSaveGame", __func__, reinterpret_cast<std::uintptr_t>(a_ref), vtable);
+			log::info("IDRC - {}: respawn helper: stale TESObjectREFR at {:#018x} "
+			"(vtable={:#018x}) — use-after-free detected, skipping CheckSaveGame", __FUNCTION__, reinterpret_cast<std::uintptr_t>(a_ref), vtable);
 			return 0;
 		}
 
@@ -1171,8 +1156,8 @@ log::warn("IDRC - {}: respawn helper: stale TESObjectREFR at {:#018x} "
 		// if the bytes don't match, skip installing instead of overwriting blindly.
 		static constexpr std::uint8_t kExpected[7] = { 0xC7, 0x40, 0x20, 0x01, 0x00, 0x00, 0x00 };
 		if (std::memcmp(reinterpret_cast<const void*>(patchAddr), kExpected, sizeof(kExpected)) != 0) {
-log::error("IDRC - CreateSourceTextureResultHook: unexpected bytes at {:#018x} — skipping patch "
-"(already patched by another plugin, or game version mismatch)", patchAddr);
+			log::info("IDRC - CreateSourceTextureResultHook: unexpected bytes at {:#018x} — skipping patch "
+			"(already patched by another plugin, or game version mismatch)", patchAddr);
 			return;
 		}
 
@@ -1212,8 +1197,8 @@ log::error("IDRC - CreateSourceTextureResultHook: unexpected bytes at {:#018x} �
 		// plain null check is sufficient here (unlike FlushQueuedFormLoads, this is not a
 		// vtable dispatch and there's no "stale but non-null" case to guard against).
 		if (!a_result) {
-log::warn("IDRC - {}: texture/resource creation returned null — skipping unconditional "
-"'result->field_0x20 = 1' write to avoid null-pointer crash (SE 75509+0x6A / AE 77301+0x6C)", __func__);
+			log::info("IDRC - {}: texture/resource creation returned null — skipping unconditional "
+			"'result->field_0x20 = 1' write to avoid null-pointer crash (SE 75509+0x6A / AE 77301+0x6C)", __FUNCTION__);
 			return;
 		}
 
@@ -1228,7 +1213,7 @@ log::warn("IDRC - {}: texture/resource creation returned null — skipping uncon
 			return;
 		}
 
-//log::info("IDRC - {}: StartCombat called for actor {} on target {}", __func__, a_this ? a_this->GetName() : "null", a_target ? a_target->GetName() : "null");
+//log::info("IDRC - {}: StartCombat called for actor {} on target {}", __FUNCTION__, a_this ? a_this->GetName() : "null", a_target ? a_target->GetName() : "null");
 		reinterpret_cast<decltype(&StartCombat)>(_StartCombat)(a_this, a_target, a_combatGroup);
 	}
 
@@ -1239,7 +1224,7 @@ log::warn("IDRC - {}: texture/resource creation returned null — skipping uncon
 		}
 
 		reinterpret_cast<decltype(&StopCombat)>(_StopCombat)(a_actor);
-//log::info("IDRC - {}: StopCombat original function returned", __func__);
+//log::info("IDRC - {}: StopCombat original function returned", __FUNCTION__);
 	}
 
 	
@@ -1258,7 +1243,7 @@ log::warn("IDRC - {}: texture/resource creation returned null — skipping uncon
 			log::error("{}: trampoline not initialized!", __FUNCTION__);
 			return false;
 		}
-log::info("IDRC - {}: SetAllowFlying called for actor {}", __func__, param_3 ? param_3->GetName() : "null", param_4 ? "true" : "false");
+log::info("IDRC - {}: SetAllowFlying called for actor {}", __FUNCTION__, param_3 ? param_3->GetName() : "null", param_4 ? "true" : "false");
 		return reinterpret_cast<decltype(&SetAllowFlying)>(_SetAllowFlying)(param_1, param_2, param_3, param_4, param_5, param_6, param_7, param_8);
 	}
 
@@ -1274,7 +1259,7 @@ log::info("IDRC - {}: SetAllowFlying called for actor {}", __func__, param_3 ? p
 			log::error("{}: trampoline not initialized!", __FUNCTION__);
 			return;
 		}
-log::info("IDRC - {}: SetAllowFlyingEx_papyrus called for actor {}", __func__, a_actor ? a_actor->GetName() : "null");
+log::info("IDRC - {}: SetAllowFlyingEx_papyrus called for actor {}", __FUNCTION__, a_actor ? a_actor->GetName() : "null");
 		reinterpret_cast<decltype(&SetAllowFlyingEx_papyrus)>(_SetAllowFlyingEx_papyrus)(a_vm, a_stackID, a_actor, a_bAllow, a_searchFlag, a_pkgFlag);
 	}
 
@@ -1285,7 +1270,7 @@ log::info("IDRC - {}: SetAllowFlyingEx_papyrus called for actor {}", __func__, a
 			log::error("{}: trampoline not initialized!", __FUNCTION__);
 			return;
 		}
-log::info("IDRC - {}: InitiateForcedLanding called for actor {}, targetFormID = {:0x}, flag3 = {}, flag4 = {}", __func__, 
+log::info("IDRC - {}: InitiateForcedLanding called for actor {}, targetFormID = {:0x}, flag3 = {}, flag4 = {}", __FUNCTION__, 
 a_actor ? a_actor->GetName() : "null", a_targetForm ? a_targetForm->GetFormID() : 0, a_packageFlag3 ? "true" : "false", a_packageFlag4 ? "true" : "false");
 		reinterpret_cast<decltype(&InitiateForcedLanding)>(_InitiateForcedLanding)(a_actor, a_targetForm, a_packageFlag3, a_packageFlag4);
 	}
@@ -1311,23 +1296,23 @@ a_actor ? a_actor->GetName() : "null", a_targetForm ? a_targetForm->GetFormID() 
 				if (currentPackage) {
 				
 					auto packageSpecificFlags = currentPackage->packData.packageSpecificFlags;
-log::info("IDRC - {}: Dragon actor is in a package with packageSpecificFlags: {:0x}", __func__, packageSpecificFlags);
+log::info("IDRC - {}: Dragon actor is in a package with packageSpecificFlags: {:0x}", __FUNCTION__, packageSpecificFlags);
 					// bit 11 set?
 					if ((packageSpecificFlags >> 0xB & 1) != 0) {
-						log::info("IDRC - {}: Dragon actor is in a package with bit 11 set", __func__);
+						log::info("IDRC - {}: Dragon actor is in a package with bit 11 set", __FUNCTION__);
 					}
 					// bit 12 set?
 					if ((packageSpecificFlags >> 0xC & 1) != 0) {
-						log::info("IDRC - {}: Dragon actor is in a package with bit 12 set", __func__);
+						log::info("IDRC - {}: Dragon actor is in a package with bit 12 set", __FUNCTION__);
 					}
 
 					// set bit 11:
 //					packageSpecificFlags |= (1 << 0xB);
 //					currentPackage->packData.packageSpecificFlags = packageSpecificFlags;
-//log::info("IDRC - {}: Dragon actor packageSpecificFlags updated to: {:0x}", __func__, packageSpecificFlags);
+//log::info("IDRC - {}: Dragon actor packageSpecificFlags updated to: {:0x}", __FUNCTION__, packageSpecificFlags);
 				}
 			}
-log::info("IDRC - {}: RunFlyLandPackageProcedure called for dragon actor {}", __func__, a_actor ? a_actor->GetName() : "null");
+log::info("IDRC - {}: RunFlyLandPackageProcedure called for dragon actor {}", __FUNCTION__, a_actor ? a_actor->GetName() : "null");
 		}
 //		float maxDist = *g_maxLandTargetSearchRadius;
 //		*g_maxLandTargetSearchRadius = 50000.0f;
@@ -1347,7 +1332,7 @@ log::info("IDRC - {}: RunFlyLandPackageProcedure called for dragon actor {}", __
 			log::error("{}: trampoline not initialized!", __FUNCTION__);
 			return;
 		}
-log::info("IDRC - {}: RunFlyLandProcedure called for actor {}", __func__, a_actor ? a_actor->GetName() : "null");
+log::info("IDRC - {}: RunFlyLandProcedure called for actor {}", __FUNCTION__, a_actor ? a_actor->GetName() : "null");
 		reinterpret_cast<decltype(&RunFlyLandProcedure)>(_RunFlyLandProcedure)(a_this, a_actor);
 	}
 
@@ -1361,7 +1346,7 @@ log::info("IDRC - {}: RunFlyLandProcedure called for actor {}", __func__, a_acto
 
 		reinterpret_cast<decltype(&HighProcessUpdate)>(_HighProcessUpdate)(a_this, a_actor);
 		if (a_actor && a_actor == static_cast<RE::Actor*>(RE::PlayerCharacter::GetSingleton())) {
-log::info("IDRC - {}: HighProcessUpdate called for actor {}", __func__, a_actor ? a_actor->GetName() : "null");
+log::info("IDRC - {}: HighProcessUpdate called for actor {}", __FUNCTION__, a_actor ? a_actor->GetName() : "null");
 		}
 	}
 
@@ -1375,11 +1360,11 @@ log::info("IDRC - {}: HighProcessUpdate called for actor {}", __func__, a_actor 
 
 		auto dragonActor = IDRC::DataManager::GetSingleton().GetDragonActor();
 		if (dragonActor && dragonActor->GetActorRuntimeData().currentProcess == a_this) {
-//log::info("IDRC - {}: DragonActor index: {:0x}", __func__, result);
+//log::info("IDRC - {}: DragonActor index: {:0x}", __FUNCTION__, result);
 		}
 		auto player = RE::PlayerCharacter::GetSingleton();
 		if (player && player->GetActorRuntimeData().currentProcess == a_this) {
-log::info("IDRC - {}: PlayerCharacter index: {:0x}", __func__, result);
+log::info("IDRC - {}: PlayerCharacter index: {:0x}", __FUNCTION__, result);
 		}
 		return result;
 	}
@@ -1390,7 +1375,7 @@ log::info("IDRC - {}: PlayerCharacter index: {:0x}", __func__, result);
 			log::error("{}: trampoline not initialized!", __FUNCTION__);
 			return;
 		}
-log::info("IDRC - {}: PlayerCharacter_Update called for actor {} with param2: {}", __func__, a_this ? a_this->GetName() : "null", a_param2);
+log::info("IDRC - {}: PlayerCharacter_Update called for actor {} with param2: {}", __FUNCTION__, a_this ? a_this->GetName() : "null", a_param2);
 		reinterpret_cast<decltype(&PlayerCharacter_Update)>(_PlayerCharacter_Update)(a_this, a_param2);
 	}
 
@@ -1401,7 +1386,7 @@ log::info("IDRC - {}: PlayerCharacter_Update called for actor {} with param2: {}
 			log::error("{}: trampoline not initialized!", __FUNCTION__);
 			return false;
 		}
-log::info("IDRC - {}: --------------->>>>>>>>>>>>>> ObjectRefActivate called", __func__);
+log::info("IDRC - {}: --------------->>>>>>>>>>>>>> ObjectRefActivate called", __FUNCTION__);
 		return reinterpret_cast<decltype(&ObjectRefActivate)>(_ObjectRefActivate)(a_this, a_activator, a_arg2, a_object, a_count, a_defaultProcessingOnly);
 	}
 
@@ -1411,7 +1396,7 @@ log::info("IDRC - {}: --------------->>>>>>>>>>>>>> ObjectRefActivate called", _
 			log::error("{}: trampoline not initialized!", __FUNCTION__);
 			return;
 		}
-log::info("IDRC - {}: --------------->>>>>>>>>>>>>> FlyingMountTriggerLand called", __func__);
+log::info("IDRC - {}: --------------->>>>>>>>>>>>>> FlyingMountTriggerLand called", __FUNCTION__);
 		reinterpret_cast<decltype(&FlyingMountTriggerLand)>(_FlyingMountTriggerLand)(a_this, a_param2, a_param3, a_param4);
 	}
 
@@ -1421,7 +1406,7 @@ log::info("IDRC - {}: --------------->>>>>>>>>>>>>> FlyingMountTriggerLand calle
 			log::error("{}: trampoline not initialized!", __FUNCTION__);
 			return;
 		}
-log::info("IDRC - {}: --------------->>>>>>>>>>>>>> FlyingMountActivate called", __func__);
+log::info("IDRC - {}: --------------->>>>>>>>>>>>>> FlyingMountActivate called", __FUNCTION__);
 		reinterpret_cast<decltype(&FlyingMountActivate)>(_FlyingMountActivate)(a_this, a_param2);
 	}
 
@@ -1512,7 +1497,7 @@ log::info("IDRC - {}: FastTravel called ", __FUNCTION__);
 			return false;
 		}
 
-log::info("IDRC - {}: HandleVoiceSpellCast called for caster {}", __func__, a_caster ? a_caster->GetName() : "null");
+log::info("IDRC - {}: HandleVoiceSpellCast called for caster {}", __FUNCTION__, a_caster ? a_caster->GetName() : "null");
 
 			// call the original function
 		auto result = reinterpret_cast<decltype(&HandleVoiceSpellCast)>(_HandleVoiceSpellCast)(a_this, a_caster);
@@ -1525,16 +1510,16 @@ log::info("IDRC - {}: HandleVoiceSpellCast called for caster {}", __func__, a_ca
 			log::error("{}: trampoline not initialized!", __FUNCTION__);
 			return;
 		}
-log::info("IDRC - {}: VoiceShoutCast called", __func__);
+log::info("IDRC - {}: VoiceShoutCast called", __FUNCTION__);
 
 		if(a_caster) {
-			log::info("IDRC - {}: Caster is {}", __func__, a_caster->GetFormID());
+			log::info("IDRC - {}: Caster is {}", __FUNCTION__, a_caster->GetFormID());
 		} else {
-			log::warn("IDRC - {}: Caster is null", __func__);
+			log::warn("IDRC - {}: Caster is null", __FUNCTION__);
 		}
 		// call the original function
 		reinterpret_cast<decltype(&VoiceShoutCast)>(_VoiceShoutCast)(a_caster);
-log::info("IDRC - {}: VoiceShoutCast original function returned", __func__);
+log::info("IDRC - {}: VoiceShoutCast original function returned", __FUNCTION__);
 	}
 
 	bool StartCastHook::StartCast(RE::Actor* a_caster, RE::MagicSystem::CastingSource a_source) {
@@ -1542,7 +1527,7 @@ log::info("IDRC - {}: VoiceShoutCast original function returned", __func__);
 			log::error("{}: trampoline not initialized!", __FUNCTION__);
 			return false;
 		}
-log::info("IDRC - {}: StartCast called ...", __func__);
+log::info("IDRC - {}: StartCast called ...", __FUNCTION__);
 		// call the original function
 		auto result = reinterpret_cast<decltype(&StartCast)>(_StartCast)(a_caster, a_source);
 
@@ -1561,10 +1546,10 @@ log::info("IDRC - {}: StartCast called ...", __func__);
 			log::error("{}: trampoline not initialized!", __FUNCTION__);
 			return;
 		}
-log::info("IDRC - {}: CastSpellImmediate called ", __func__);
+log::info("IDRC - {}: CastSpellImmediate called ", __FUNCTION__);
 		// call the original function
 		reinterpret_cast<decltype(&CastSpellImmediate)>(_CastSpellImmediate)(_a_magicCaster, _a_spell, _a_loadCast, _a_desiredTargetRef, _a_effectivenessMult, _a_adjustOnlyHostileEffectiveness, _a_magnitudeOverride);
-log::info("IDRC - {}: CastSpellImmediate original function returned", __func__);
+log::info("IDRC - {}: CastSpellImmediate original function returned", __FUNCTION__);
 	}
 
 	bool ApplyCastHook::ApplyCast(RE::MagicCaster* _a_magicCaster,
@@ -1579,23 +1564,23 @@ log::info("IDRC - {}: CastSpellImmediate original function returned", __func__);
 		}
 
 if (_a_source) {
-	log::info("IDRC - {}: ApplyCast called with source {} ({}) with min ({}, {}, {}), max ({}, {}, {})", __func__, 
+	log::info("IDRC - {}: ApplyCast called with source {} ({}) with min ({}, {}, {}), max ({}, {}, {})", __FUNCTION__, 
 		_a_source->GetFormID(), _a_source->GetName(), _a_source->boundData.boundMin.x, _a_source->boundData.boundMin.y, _a_source->boundData.boundMin.z, _a_source->boundData.boundMax.x, _a_source->boundData.boundMax.y, _a_source->boundData.boundMax.z);
 } else {
-	log::warn("IDRC - {}: ApplyCast called with null source", __func__);
+	log::warn("IDRC - {}: ApplyCast called with null source", __FUNCTION__);
 }
 
 bool hasMagicCaster = false;
 if (!_a_magicCaster) {
-	log::warn("IDRC - {}: ApplyCast called with null magic caster", __func__);
+	log::warn("IDRC - {}: ApplyCast called with null magic caster", __FUNCTION__);
 } else {
-	log::info("IDRC - {}: ApplyCast called with magic caster {}", __func__, _a_magicCaster->GetCasterAsActor() ? _a_magicCaster->GetCasterAsActor()->GetName() : "null");
+	log::info("IDRC - {}: ApplyCast called with magic caster {}", __FUNCTION__, _a_magicCaster->GetCasterAsActor() ? _a_magicCaster->GetCasterAsActor()->GetName() : "null");
 	hasMagicCaster = true;
 }
 
 		// call the original function
 		auto result = reinterpret_cast<decltype(&ApplyCast)>(_ApplyCast)(_a_magicCaster, _a_effectivenessMult, _a_targetCount, _a_source, _a_loadCast, _a_adjustOnlyHostileEffectiveness);
-log::info("IDRC - {}: ApplyCast original function returned", __func__);
+log::info("IDRC - {}: ApplyCast original function returned", __FUNCTION__);
 		return result;
 	}
 
@@ -1608,7 +1593,7 @@ log::info("IDRC - {}: ApplyCast original function returned", __func__);
 			log::error("{}: trampoline not initialized!", __FUNCTION__);
 			return false;
 		}
-log::info("IDRC - {}: TestCast called ", __func__);
+log::info("IDRC - {}: TestCast called ", __FUNCTION__);
 		// call the original function
 auto actorMagicCaster = static_cast<RE::ActorMagicCaster*>(a_magicCaster);
 if (actorMagicCaster) {
@@ -1617,20 +1602,20 @@ if (actorMagicCaster) {
 auto head = _ts_SKSEFunctions::GetTargetPoint(actorMagicCaster->GetCasterAsActor(),  RE::BGSBodyPartDefs::LIMB_ENUM::kHead);
 
 if (!head) {
-    log::error("IDRC - {}: Error: Could not get head node for dragonActor", __func__);
+    log::error("IDRC - {}: Error: Could not get head node for dragonActor", __FUNCTION__);
     return false;
 }
 actorMagicCaster->magicNode = head->AsNode(); // for testing, temporarily set magicNode to head node, to see if that fixes the issue with dragon's magic hands not being visible in the shout animation
 
-		log::info("IDRC - {}: Magic caster node set to head!!", __func__);
+		log::info("IDRC - {}: Magic caster node set to head!!", __FUNCTION__);
 	} else {
-		log::warn("IDRC - {}: Magic caster node is null", __func__);
+		log::warn("IDRC - {}: Magic caster node is null", __FUNCTION__);
 	}
 } else {
-	log::warn("IDRC - {}: Magic caster is null", __func__);
+	log::warn("IDRC - {}: Magic caster is null", __FUNCTION__);
 }
 		auto result = reinterpret_cast<decltype(&TestCast)>(_TestCast)(a_magicCaster, a_spell, a_target, a_source, a_loadCast);
-log::info("IDRC - {}: TestCast original function returned", __func__);
+log::info("IDRC - {}: TestCast original function returned", __FUNCTION__);
 		return result;
 	}
 
@@ -1640,10 +1625,10 @@ log::info("IDRC - {}: TestCast original function returned", __func__);
 			log::error("{}: trampoline not initialized!", __FUNCTION__);
 			return;
 		}
-log::info("IDRC - {}: ProcedureShoutHook::Initiate called ", __func__);
+log::info("IDRC - {}: ProcedureShoutHook::Initiate called ", __FUNCTION__);
 		// call the original function
 		reinterpret_cast<decltype(&Initiate)>(_Initiate)(a_this, a_context);
-log::info("IDRC - {}: ProcedureShoutHook::Initiate original function returned", __func__);
+log::info("IDRC - {}: ProcedureShoutHook::Initiate original function returned", __FUNCTION__);
 	}
 
 	void ProcedureShoutHook::SetupExecState(std::uint64_t*  a_this,     // param_1: BGSProcedureShout*
@@ -1652,10 +1637,10 @@ log::info("IDRC - {}: ProcedureShoutHook::Initiate original function returned", 
 			log::error("{}: trampoline not initialized!", __FUNCTION__);
 			return;
 		}
-log::info("IDRC - {}: ProcedureShoutHook::SetupExecState called ", __func__);
+log::info("IDRC - {}: ProcedureShoutHook::SetupExecState called ", __FUNCTION__);
 		// call the original function
 		reinterpret_cast<decltype(&SetupExecState)>(_SetupExecState)(a_this, a_context);
-log::info("IDRC - {}: ProcedureShoutHook::SetupExecState original function returned", __func__);
+log::info("IDRC - {}: ProcedureShoutHook::SetupExecState original function returned", __FUNCTION__);
 	}
 
 	bool StartVoiceShoutCastHook::StartVoiceShoutCast(RE::Character* a_caster,
@@ -1666,11 +1651,11 @@ log::info("IDRC - {}: ProcedureShoutHook::SetupExecState original function retur
 			log::error("{}: trampoline not initialized!", __FUNCTION__);
 			return false;
 		}
-log::info("IDRC - {}: StartVoiceShoutCast called, caster: {}, shout: {}, wordIndex: {}, target: {}", __func__,
+log::info("IDRC - {}: StartVoiceShoutCast called, caster: {}, shout: {}, wordIndex: {}, target: {}", __FUNCTION__,
 	 a_caster ? a_caster->GetName() : "null", a_shout ? a_shout->GetName() : "null", a_wordIndex, a_target ? a_target->GetName() : "null");
 		// call the original function
 		auto result = reinterpret_cast<decltype(&StartVoiceShoutCast)>(_StartVoiceShoutCast)(a_caster, a_shout, a_wordIndex, a_target);
-log::info("IDRC - {}: StartVoiceShoutCast original function returned {}", __func__, result ? "true" : "false");
+log::info("IDRC - {}: StartVoiceShoutCast original function returned {}", __FUNCTION__, result ? "true" : "false");
 		return result; 
 	}
 */
