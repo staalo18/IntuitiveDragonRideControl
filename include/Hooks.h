@@ -126,12 +126,12 @@ namespace Hooks
 				REL::VariantID(88302, 90713, 0),
 				5,
 				reinterpret_cast<std::uintptr_t>(SetGroundPath));
-
+/* unused
 			_SetFlightPath = _ts_SKSEFunctions::WriteFunctionHook(
 				REL::VariantID(90008, 92493, 0),
 				6,
 				reinterpret_cast<std::uintptr_t>(SetFlightPath));
-
+*/
 			_FlightPlannerUpdate = _ts_SKSEFunctions::WriteFunctionHook(
 				REL::VariantID(90006, 92491, 0),
 				6,
@@ -148,6 +148,7 @@ namespace Hooks
 				reinterpret_cast<std::uintptr_t>(GetCurrentPathingLocation ));
 
 // Hooks for exploration / debugging only:
+/*
 			_GetCurrentMountCellOrWorldspaceForm = _ts_SKSEFunctions::WriteFunctionHook(
 				REL::VariantID(36393, 37384, 0),
 				5,
@@ -162,7 +163,7 @@ namespace Hooks
 				REL::VariantID(30669, 31513, 0),
 				5,
 				reinterpret_cast<std::uintptr_t>(BuildFlyLandPath));
-/*
+
 			_SetPathingLocFromPos = _ts_SKSEFunctions::WriteFunctionHook(
 				REL::VariantID(87972, 90353, 0),
 				6,
@@ -185,7 +186,7 @@ namespace Hooks
 	private:
 // required hooks:
 		static void SetGroundPath(std::uintptr_t  a_subPtr, std::uintptr_t* a_newNode, std::uintptr_t* a_newData);
-		static void SetFlightPath(std::uintptr_t  a_subPtr, std::uintptr_t* a_newNode, std::uintptr_t* a_newData);
+//		static void SetFlightPath(std::uintptr_t  a_subPtr, std::uintptr_t* a_newNode, std::uintptr_t* a_newData);
 		static void FlightPlannerUpdate(std::uintptr_t a_plannerSubPtr,
 									float* a_deltaTime,
 									float* a_outMovementIntention,
@@ -194,24 +195,24 @@ namespace Hooks
 		static void* GetCurrentPathingLocation (RE::BSPathing* a_pathing,RE::BSPathingLocation* a_loc, RE::Actor* a_actor, std::uintptr_t param4);
 
 // Hooks for exploration / debugging only:
-		static RE::TESForm* GetCurrentMountCellOrWorldspaceForm(RE::Actor *_ts_a_actor,void* _ts_a_param2,void* _ts_a_param3, bool _ts_a_param4);
-		static void* TESPackage_sub_140437ac0(void* a_package, void* a_param2, void* a_param3, void* a_param4);
-		static bool BuildFlyLandPath(void** a_request, RE::BSPathingSolution* a_result);
+//		static RE::TESForm* GetCurrentMountCellOrWorldspaceForm(RE::Actor *_ts_a_actor,void* _ts_a_param2,void* _ts_a_param3, bool _ts_a_param4);
+//		static void* TESPackage_sub_140437ac0(void* a_package, void* a_param2, void* a_param3, void* a_param4);
+//		static bool BuildFlyLandPath(void** a_request, RE::BSPathingSolution* a_result);
 //		static void SetPathingLocFromPos(RE::BSPathingLocation* a_loc, RE::NiPoint3 a_pos);
 //		static bool FindNavmeshTriangleForLocation(RE::BSPathingLocation* a_loc, RE::FindTriangleForLocationFilter* a_filter);
 //		static bool FindNavmeshTriangleForLocation2(RE::BSPathingLocation* a_loc, RE::FindTriangleForLocationFilter* a_filter);
 		
 // required hooks:
 		static inline std::uintptr_t _SetGroundPath{ 0 };
-		static inline std::uintptr_t _SetFlightPath{ 0 };
+//		static inline std::uintptr_t _SetFlightPath{ 0 };
 		static inline std::uintptr_t _FlightPlannerUpdate{ 0 };
 		static inline std::uintptr_t _SetupPathingRequest{ 0 };
 		static inline std::uintptr_t _GetCurrentPathingLocation{ 0 };
 
 // Hooks for exploration / debugging only:
-		static inline std::uintptr_t _GetCurrentMountCellOrWorldspaceForm{ 0 };
-		static inline std::uintptr_t _TESPackage_sub_140437ac0{ 0 };
-		static inline std::uintptr_t _BuildFlyLandPath{ 0 };
+//		static inline std::uintptr_t _GetCurrentMountCellOrWorldspaceForm{ 0 };
+//		static inline std::uintptr_t _TESPackage_sub_140437ac0{ 0 };
+//		static inline std::uintptr_t _BuildFlyLandPath{ 0 };
 //		static inline std::uintptr_t _SetPathingLocFromPos{ 0 };
 //		static inline std::uintptr_t _FindNavmeshTriangleForLocation{ 0 };
 //		static inline std::uintptr_t _FindNavmeshTriangleForLocation2{ 0 };
@@ -221,7 +222,7 @@ namespace Hooks
 		static bool IsDragonPathingRequest(std::byte* a_agent);
 
 		// unused:
-		static void LinearPathToTarget(std::byte** a_pathData, std::uint32_t a_startIndex, const RE::NiPoint3& a_targetPos);
+//		static void LinearPathToTarget(std::byte** a_pathData, std::uint32_t a_startIndex, const RE::NiPoint3& a_targetPos);
 
 // members variables:
 		static inline RE::BSPathing* m_pathingSingleton = nullptr; // pathing singleton is initialize with the first vanilla GetCurrentPathingLocation call

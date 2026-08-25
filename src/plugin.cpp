@@ -357,7 +357,7 @@ extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* sks
 
     log::info("IDRC - {}: Calling Install Hooks", __FUNCTION__);
 
-    SKSE::AllocTrampoline(35 * 14);
+    SKSE::AllocTrampoline(20*14);
 
     Hooks::Install();
 

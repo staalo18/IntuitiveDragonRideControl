@@ -137,7 +137,7 @@ namespace Hooks
 //		IDRC::FlapThrustHandler::GetSingleton().Update();
 
 // For debugging
-
+/*
 		auto* dragonActor = IDRC::DataManager::GetSingleton().GetDragonActor();
 		if (dragonActor) {
 			
@@ -165,17 +165,15 @@ log::info("IDRC - {}: DragonActor storedCombatTarget: {:0x}", __FUNCTION__, stor
 log::info("IDRC - {}: DragonActor position: {}, flyingState={}", __FUNCTION__, dragonActor->GetPosition(), flyingState);
 		}
 
-auto* playerCamera = RE::PlayerCamera::GetSingleton();
-RE::ThirdPersonState* dragonCameraState = nullptr;
+		auto* playerCamera = RE::PlayerCamera::GetSingleton();
+		RE::ThirdPersonState* dragonCameraState = nullptr;
 
-if (playerCamera && playerCamera->currentState && (playerCamera->currentState->id == RE::CameraState::kDragon)) {
-dragonCameraState = static_cast<RE::ThirdPersonState*>(playerCamera->currentState.get());
-if (dragonCameraState) {
+		if (playerCamera && playerCamera->currentState && (playerCamera->currentState->id == RE::CameraState::kDragon)) {
+			dragonCameraState = static_cast<RE::ThirdPersonState*>(playerCamera->currentState.get());
+			if (dragonCameraState) {
 log::info("IDRC - {}: AfterMainUpdate: freeRotationY: {}", __FUNCTION__, 180.f/PI * dragonCameraState->freeRotation.y);
-}
-}
-
-
+			}
+		}
 /*
 		auto* player = RE::PlayerCharacter::GetSingleton();
 		if (player) {
@@ -473,6 +471,7 @@ log::info("IDRC - {}: ReadyWeaponHook-ProcessButton called with event IDCode = {
 		return false;
 	}
 
+/* unused
 	void PathingHook::SetFlightPath(std::uintptr_t  a_subPtr, std::uintptr_t* a_newNode, std::uintptr_t* a_newData) {
 
 		if (_SetFlightPath == 0) {
@@ -485,7 +484,7 @@ log::info("IDRC - {}: ReadyWeaponHook-ProcessButton called with event IDCode = {
 		reinterpret_cast<FuncType>(_SetFlightPath)(a_subPtr, a_newNode, a_newData);
 log::info("IDRC - {}: SetFlightPath called", __FUNCTION__);
 	}
-
+*/
 	void PathingHook::FlightPlannerUpdate(std::uintptr_t a_plannerSubPtr,
 									float* a_deltaTime,
 									float* a_outMovementIntention,
@@ -519,15 +518,16 @@ log::info("IDRC - {}: SetFlightPath called", __FUNCTION__);
 		}
 
 		auto& flyingModeManager = IDRC::FlyingModeManager::GetSingleton();
-bool skipRePathing = false;
-		if(flyingModeManager.GetFlyingMode() == IDRC::FlyingMode::kFlying)
+
+/* For debugging
+		bool skipRePathing = false;
+		if (flyingModeManager.GetFlyingMode() == IDRC::FlyingMode::kHovering ||
+			flyingModeManager.GetFlyingMode() == IDRC::FlyingMode::kLanded) {
+			skipRePathing = true;
+		} else 
+*/
+		if(flyingModeManager.GetFlyingMode() != IDRC::FlyingMode::kFlying)
 		{
-		} else if (flyingModeManager.GetFlyingMode() == IDRC::FlyingMode::kHovering) {
-skipRePathing = true;
-		} else if (flyingModeManager.GetFlyingMode() == IDRC::FlyingMode::kLanded) {
-skipRePathing = true;
-		} else {
-log::info("IDRC - {}: Skipping path update.", __FUNCTION__);
 			return;
 		}
 
@@ -620,22 +620,24 @@ log::warn("IDRC - {}: wayPointBase null=? wayPointCount: {}", __FUNCTION__, wayP
 		const float tanPitch = std::tan(targetPitch);
 		const float minHeightAboveGround = 500.f;
 
-if(skipRePathing) {
-constexpr std::size_t kStride = 0x48 / sizeof(float);  // = 0x12 floats
-int color = 0xFFFF00FF;
+/* for debugging
+		if(skipRePathing) {
+			constexpr std::size_t kStride = 0x48 / sizeof(float);  // = 0x12 floats
+			int color = 0xFFFF00FF;
 
-for (std::uint32_t i = 0; i < wayPointCount; ++i) {
-auto& waypointToUpdate = *reinterpret_cast<RE::NiPoint3*>(&wayPointBase[i * kStride]);
-if (APIs::TrueHUD) {
-if (i == wayPointCount - 1) {
-APIs::TrueHUD->DrawPoint(waypointToUpdate, 10.0f, 0.0f, 0x0000FFFF);
-} else {
-APIs::TrueHUD->DrawPoint(waypointToUpdate, 5.0f, 0.0f, color);
-}	
+			for (std::uint32_t i = 0; i < wayPointCount; ++i) {
+				auto& waypointToUpdate = *reinterpret_cast<RE::NiPoint3*>(&wayPointBase[i * kStride]);
+				if (APIs::TrueHUD) {
+				if (i == wayPointCount - 1) {
+					APIs::TrueHUD->DrawPoint(waypointToUpdate, 10.0f, 0.0f, 0x0000FFFF);
+				} else {
+					APIs::TrueHUD->DrawPoint(waypointToUpdate, 5.0f, 0.0f, color);
+				}	
+			}
+		}
+		return;
 }
-}
-return;
-}		
+*/		
 		// Each entry is 0x48 bytes; XYZ floats at byte offsets +0, +4, +8
 		constexpr std::size_t kStride = 0x48 / sizeof(float);  // = 0x12 floats
 		for (std::uint32_t i = 0; i < std::min(wayPointCount - 2, currentIndex + 8u); ++i) {
@@ -657,19 +659,22 @@ return;
 			waypointToUpdate.y = dragonPos.y + distanceToUpdate * cosYaw;
 			waypointToUpdate.z = std::max(cameraZ, landZ);
 		}
-log::info("IDRC - {}: Updated waypoints for flying dragon. CurrentIndex: {}, WaypointCount: {}", __FUNCTION__, currentIndex, wayPointCount);
-for (std::uint32_t i = 0; i < std::min(wayPointCount - 2, currentIndex + 8u); ++i) {
-auto& waypointToUpdate = *reinterpret_cast<RE::NiPoint3*>(&wayPointBase[i * kStride]);
-if (APIs::TrueHUD) {
-if (i == currentIndex) {
-APIs::TrueHUD->DrawPoint(waypointToUpdate, 10.0f, 0.0f, 0x00FF00FF);
-} else {
-APIs::TrueHUD->DrawPoint(waypointToUpdate, 5.0f, 0.0f, 0xFF0000FF);
-}
-}
-}
+/* for debugging
+		log::info("IDRC - {}: Updated waypoints for flying dragon. CurrentIndex: {}, WaypointCount: {}", __FUNCTION__, currentIndex, wayPointCount);
+		for (std::uint32_t i = 0; i < std::min(wayPointCount - 2, currentIndex + 8u); ++i) {
+			auto& waypointToUpdate = *reinterpret_cast<RE::NiPoint3*>(&wayPointBase[i * kStride]);
+			if (APIs::TrueHUD) {
+				if (i == currentIndex) {
+					APIs::TrueHUD->DrawPoint(waypointToUpdate, 10.0f, 0.0f, 0x00FF00FF);
+				} else {
+					APIs::TrueHUD->DrawPoint(waypointToUpdate, 5.0f, 0.0f, 0xFF0000FF);
+				}
+			}
+		}
+*/
 	}
 
+/* unused
 	void PathingHook::LinearPathToTarget(std::byte** a_pathData, std::uint32_t a_startIndex, const RE::NiPoint3& a_targetPos) {
 		if (!a_pathData) {
 			return;
@@ -705,7 +710,7 @@ log::info("IDRC - {}: LinearPathToTarget called. StartIndex: {}, WaypointCount: 
 			waypointToUpdate.z = (1.0f - t) * dragonPos.z + t * a_targetPos.z;
 		}
 	}
-
+*/
 
 	void PathingHook::SetGroundPath(std::uintptr_t  a_subPtr, std::uintptr_t* a_newNode, std::uintptr_t* a_newData) {
 	// This hook fires whenever an actor needs updated pathing,  including dragons in flyingstate == 0 (Landed)
@@ -810,9 +815,10 @@ log::info("IDRC - {}: SetupPathingRequest called for dragon", __FUNCTION__);
 // TODO: Probably no longer needed now with GetValidLandingPosition()
 				if (_ts_a_targetPos) {
 					_ts_a_targetPos->z = _ts_SKSEFunctions::GetLandHeightWithWater(*_ts_a_targetPos, false);
+/* for debugging
 if (APIs::TrueHUD) {
-APIs::TrueHUD->DrawPoint(*_ts_a_targetPos, 10.0f, 20.0f, 0x99FFFFFF);
-}
+	APIs::TrueHUD->DrawPoint(*_ts_a_targetPos, 10.0f, 20.0f, 0x99FFFFFF);
+} */
 				}
 			}
 		}
@@ -820,27 +826,6 @@ APIs::TrueHUD->DrawPoint(*_ts_a_targetPos, 10.0f, 20.0f, 0x99FFFFFF);
 		reinterpret_cast<decltype(&SetupPathingRequest)>(_SetupPathingRequest)(_ts_a_actor, _ts_a_request, _ts_a_targetPos, _ts_a_speed, _ts_a_targetRef);
 	}
 
-	RE::TESForm* PathingHook::GetCurrentMountCellOrWorldspaceForm(RE::Actor *_ts_a_actor,void* _ts_a_param2,void* _ts_a_param3, bool _ts_a_param4)
-	{
-		if (_GetCurrentMountCellOrWorldspaceForm == 0) {
-			log::error("{}: trampoline not initialized!", __FUNCTION__);
-			return nullptr;
-		}
-
-		auto result = reinterpret_cast<decltype(&GetCurrentMountCellOrWorldspaceForm)>(_GetCurrentMountCellOrWorldspaceForm)(_ts_a_actor, _ts_a_param2, _ts_a_param3, _ts_a_param4);
-		if (result && result->AsReference()) {
-			auto resultRef = result->AsReference();
-			RE::NiPoint3 resultPos = resultRef->GetPosition();
-			auto baseForm = resultRef->GetBaseObject();
-if (APIs::TrueHUD) {
-APIs::TrueHUD->DrawPoint(resultPos, 5.0f, 20.0f, 0xFF99FFFF);
-}
-log::info("IDRC - {}: GetCurrentMountCellOrWorldspaceForm called for actor {}, returned {:0x} ({}) at position ({}, {}, {})", __FUNCTION__, _ts_a_actor ? _ts_a_actor->GetName() : "null", result ? result->GetFormID() : 0, baseForm ? baseForm->GetFormEditorID() : "NONE", resultPos.x, resultPos.y, resultPos.z);
-		}  else {
-log::info("IDRC - {}: GetCurrentMountCellOrWorldspaceForm called for actor {}, returned nullptr", __FUNCTION__, _ts_a_actor ? _ts_a_actor->GetName() : "null");
-		}
-		return result;
-	}
 
 	void* PathingHook::GetCurrentPathingLocation (RE::BSPathing* a_pathing,RE::BSPathingLocation* a_loc, RE::Actor* a_actor, std::uintptr_t param4)
 	{
@@ -859,24 +844,51 @@ log::info("IDRC - {}: GetCurrentMountCellOrWorldspaceForm called for actor {}, r
 		}
 
 		void* result = reinterpret_cast<decltype(&GetCurrentPathingLocation )>(_GetCurrentPathingLocation )(a_pathing, a_loc, a_actor, param4);
-/*		auto dragonActor = IDRC::DataManager::GetSingleton().GetDragonActor();
+/* for debugging
+		auto dragonActor = IDRC::DataManager::GetSingleton().GetDragonActor();
 		if (result && dragonActor) {
 			float x = *reinterpret_cast<float*>(reinterpret_cast<std::uintptr_t>(result) + 0x0);
 			float y = *reinterpret_cast<float*>(reinterpret_cast<std::uintptr_t>(result) + 0x4);
 			float z = *reinterpret_cast<float*>(reinterpret_cast<std::uintptr_t>(result) + 0x8);
 			RE::NiPoint3 resultPos(x, y, z);
-APIs::TrueHUD->DrawPoint(resultPos, 12.0f, 2.0f, 0xFF99FFFF);
-log::info("IDRC - {}: GetCurrentPathingLocation  returned  ({}, {}, {}), dragonPos=({},{},{}), distance: {}", __FUNCTION__, x, y, z,
-    dragonActor->GetPosition().x,
-    dragonActor->GetPosition().y,
-    dragonActor->GetPosition().z,
-    std::sqrt(std::pow(x - dragonActor->GetPosition().x, 2) + std::pow(y - dragonActor->GetPosition().y, 2)));
+			if (APIs::TrueHUD) {
+				APIs::TrueHUD->DrawPoint(resultPos, 12.0f, 2.0f, 0xFF99FFFF);
+				log::info("IDRC - {}: GetCurrentPathingLocation  returned  ({}, {}, {}), dragonPos=({},{},{}), distance: {}", __FUNCTION__, x, y, z,
+					dragonActor->GetPosition().x,
+					dragonActor->GetPosition().y,
+					dragonActor->GetPosition().z,
+					std::sqrt(std::pow(x - dragonActor->GetPosition().x, 2) + std::pow(y - dragonActor->GetPosition().y, 2)));
+			}
 		} else {
-log::info("IDRC - {}: GetCurrentPathingLocation  returned nullptr", __FUNCTION__);
-		}*/
+			log::info("IDRC - {}: GetCurrentPathingLocation  returned nullptr", __FUNCTION__);
+		}
+*/	
 		return result;
 	}
 
+/* Hooks for exploration / debugging only:
+
+	RE::TESForm* PathingHook::GetCurrentMountCellOrWorldspaceForm(RE::Actor *_ts_a_actor,void* _ts_a_param2,void* _ts_a_param3, bool _ts_a_param4)
+	{
+		if (_GetCurrentMountCellOrWorldspaceForm == 0) {
+			log::error("{}: trampoline not initialized!", __FUNCTION__);
+			return nullptr;
+		}
+
+		auto result = reinterpret_cast<decltype(&GetCurrentMountCellOrWorldspaceForm)>(_GetCurrentMountCellOrWorldspaceForm)(_ts_a_actor, _ts_a_param2, _ts_a_param3, _ts_a_param4);
+		if (result && result->AsReference()) {
+			auto resultRef = result->AsReference();
+			RE::NiPoint3 resultPos = resultRef->GetPosition();
+			auto baseForm = resultRef->GetBaseObject();
+			if (APIs::TrueHUD) {
+				APIs::TrueHUD->DrawPoint(resultPos, 5.0f, 20.0f, 0xFF99FFFF);
+			}
+			log::info("IDRC - {}: GetCurrentMountCellOrWorldspaceForm called for actor {}, returned {:0x} ({}) at position ({}, {}, {})", __FUNCTION__, _ts_a_actor ? _ts_a_actor->GetName() : "null", result ? result->GetFormID() : 0, baseForm ? baseForm->GetFormEditorID() : "NONE", resultPos.x, resultPos.y, resultPos.z);
+		}  else {
+			log::info("IDRC - {}: GetCurrentMountCellOrWorldspaceForm called for actor {}, returned nullptr", __FUNCTION__, _ts_a_actor ? _ts_a_actor->GetName() : "null");
+		}
+		return result;
+	}
 
 	void* PathingHook::TESPackage_sub_140437ac0(void* a_package, void* a_param2, void* a_param3, void* a_param4)
 	{
@@ -889,10 +901,10 @@ log::info("IDRC - {}: GetCurrentPathingLocation  returned nullptr", __FUNCTION__
 		float y = *reinterpret_cast<float*>(reinterpret_cast<std::uintptr_t>(result) + 0x4);
 		float z = *reinterpret_cast<float*>(reinterpret_cast<std::uintptr_t>(result) + 0x8);
 		RE::NiPoint3 resultPos(x, y, z);
-if (APIs::TrueHUD) {
-APIs::TrueHUD->DrawPoint(resultPos, 12.0f, 0.1f, 0xFF99FFFF);
-}
-log::info("IDRC - {}: TESPackage_sub_140437ac0 returned  ({}, {}, {})", __FUNCTION__, x, y, z);
+		if (APIs::TrueHUD) {
+			APIs::TrueHUD->DrawPoint(resultPos, 12.0f, 0.1f, 0xFF99FFFF);
+		}
+		log::info("IDRC - {}: TESPackage_sub_140437ac0 returned  ({}, {}, {})", __FUNCTION__, x, y, z);
 		return result;
 	}
 
@@ -921,7 +933,6 @@ log::info("IDRC - {}: BuildFlyLandPath called, result={}", __FUNCTION__, result 
 		return result;
 	}
 
-/* Hooks for exploration / debugging only:
 
 	void PathingHook::SetPathingLocFromPos(RE::BSPathingLocation* a_loc, RE::NiPoint3 a_pos)
 	{
