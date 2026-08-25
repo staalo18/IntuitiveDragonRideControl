@@ -771,7 +771,8 @@ log::info("IDRC - {}: FFlyingMode = {}", __FUNCTION__, m_mode);
 			return;
 		}
 
-		RE::BSPathingLocation loc;
+        RE::BSTSmartPointer<RE::BSPathingCell> cell;
+		RE::BSPathingLocation loc(RE::NiPoint3(0.0f, 0.0f, 0.0f), cell);
 		GetCurrentPathingLocation(pathingSingleton, &loc, dragonActor, 0);
 
 		if (loc.navMeshInfo == nullptr || loc.triangle < 0) {
