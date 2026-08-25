@@ -63,7 +63,9 @@ namespace IDRC {
             return false;
         }
 
-        if (Utils::GetHorizontalDistance(dragonActor, a_target) < m_maxCombatDistance &&
+        TargetReticleManager& targetReticleManager = TargetReticleManager::GetSingleton();
+
+        if (Utils::GetHorizontalDistance(dragonActor, a_target) < targetReticleManager.GetMaxTargetDistance(a_target) &&
             a_target->GetParentCell() && a_target->GetParentCell()->IsAttached() &&
             !a_target->IsDead()) {
             return true;

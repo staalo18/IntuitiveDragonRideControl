@@ -166,6 +166,7 @@ namespace IDRC {
             m_cameraLocked = true;
 
             float freeRotationX = _ts_SKSEFunctions::NormalRelativeAngle(dragonCameraState->freeRotation.x);
+            float freeRotationY = _ts_SKSEFunctions::NormalRelativeAngle(dragonCameraState->freeRotation.y);
             float realTimeDeltaTime = _ts_SKSEFunctions::GetRealTimeDeltaTime() < 0.05f ? _ts_SKSEFunctions::GetRealTimeDeltaTime() : 0.05f;
             float damping = 1.0f - 2.5f * realTimeDeltaTime;
 
@@ -176,33 +177,48 @@ namespace IDRC {
                 float dragonHeading = dragonActor->GetHeading(false);
                 float yawToTarget = atan2(shoutTargetPos.x - dragonPos.x, shoutTargetPos.y - dragonPos.y);
                 float shoutTargetYaw = _ts_SKSEFunctions::NormalRelativeAngle(yawToTarget - dragonHeading);
-                
-                if (!m_wasShoutTargetingActive) {
-                    m_shoutTransitionStartYaw = freeRotationX;
-                    m_shoutTransitionElapsed = 0.0f;
-                    m_shoutCameraTransitionDuration = 0.5f * std::fabs(shoutTargetYaw) / PI; // up to 0.5 sec for 180 deg camera turn towards target.
-                }
 
                 float deltaZ = shoutTargetPos.z - dragonPos.z;
                 float dX = shoutTargetPos.x - dragonPos.x;
                 float dY = shoutTargetPos.y - dragonPos.y;
                 float deltaXY = std::sqrt(dX * dX + dY * dY);
                 float pitchToTarget = atan2(deltaZ, deltaXY);
-log::info("IDRC - {}: freeRotationY: {}, pitchToTarget: {}", __func__, 180.f/PI * dragonCameraState->freeRotation.y, 180.f/PI * pitchToTarget);
-                dragonCameraState->freeRotation.y = _ts_SKSEFunctions::NormalRelativeAngle(damping * pitchToTarget);
+                if (!m_wasShoutTargetingActive) {
+                    m_shoutTransitionStartYaw = freeRotationX;
+                    m_shoutTransitionStartPitch = freeRotationY;
+                    m_shoutTransitionElapsed = 0.0f;
+
+                    float maxAngleDelta = std::max(std::fabs(shoutTargetYaw), std::fabs(pitchToTarget - m_shoutTransitionStartPitch));    
+                    m_shoutCameraTransitionDuration = std::max(0.2f, 0.5f * std::fabs(maxAngleDelta) / PI); // up to 0.5 sec for 180 deg camera turn towards target.
+                }
 
                 if (m_shoutTransitionElapsed < m_shoutCameraTransitionDuration) {
                     m_shoutTransitionElapsed = std::min(m_shoutTransitionElapsed + realTimeDeltaTime, m_shoutCameraTransitionDuration);
                     float t = _ts_SKSEFunctions::ApplyEasing(m_shoutTransitionElapsed / m_shoutCameraTransitionDuration, true, true);
-                    float rotationDelta = _ts_SKSEFunctions::NormalRelativeAngle(shoutTargetYaw - m_shoutTransitionStartYaw);
-                    freeRotationX = _ts_SKSEFunctions::NormalRelativeAngle(m_shoutTransitionStartYaw + rotationDelta * t);
+                    float yawDelta = _ts_SKSEFunctions::NormalRelativeAngle(shoutTargetYaw - m_shoutTransitionStartYaw);
+                    float pitchDelta = _ts_SKSEFunctions::NormalRelativeAngle(pitchToTarget - m_shoutTransitionStartPitch);
+                    freeRotationX = _ts_SKSEFunctions::NormalRelativeAngle(m_shoutTransitionStartYaw + yawDelta * t);
+                    freeRotationY = _ts_SKSEFunctions::NormalRelativeAngle(m_shoutTransitionStartPitch + pitchDelta * t);
                 } else {
                     freeRotationX = shoutTargetYaw;
+                    freeRotationY = pitchToTarget;
                 }
             }
             
             m_wasShoutTargetingActive = shoutTargetingActive;
             dragonCameraState->freeRotation.x = _ts_SKSEFunctions::NormalRelativeAngle(damping * freeRotationX);
+            dragonCameraState->freeRotation.y = _ts_SKSEFunctions::NormalRelativeAngle(damping * freeRotationY);
+
+            auto* player = RE::PlayerCharacter::GetSingleton();
+            if (player) {
+                // Later in this frame, vanilla DragonCameraStateHook::HandleLookInput() is called,
+                // via PlayerCamera::Update(), ThirdPersonState::Update().
+                // DragonCameraStateHook::HandleLookInput() updates dragonCameraState->freeRotation.y based on player rotation
+                // to keep the dragon camera oriented towards the player rotation.
+                // Need to update player rotation here to match the updated dragonCameraState->freeRotation.y.
+                // This avoids dragonCameraState->freeRotation.y being overridden by player rotation in HandleLookInput()
+                player->data.angle.x = -dragonCameraState->freeRotation.y;
+            }
         } else {
             m_cameraLocked = false;
             m_wasShoutTargetingActive = false;

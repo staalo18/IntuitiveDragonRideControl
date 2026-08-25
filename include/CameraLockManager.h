@@ -44,6 +44,7 @@ namespace IDRC {
 
             bool m_wasShoutTargetingActive = false;
             float m_shoutTransitionStartYaw = 0.0f;
+            float m_shoutTransitionStartPitch = 0.0f;
             float m_shoutTransitionElapsed = 0.0f;
             float m_shoutCameraTransitionDuration = 0.0f;
             float m_ignoredCameraPitch = -8.f * PI / 180.f;

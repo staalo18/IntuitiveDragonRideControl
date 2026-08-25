@@ -511,6 +511,14 @@ namespace IDRC {
         return targetPoint;
     }
 
+    float TargetReticleManager::GetMaxTargetDistance(RE::Actor* a_actor) const {
+        if (!a_actor) {
+            return m_maxReticleDistance;
+        }
+        
+         return  m_maxReticleDistance * GetDistanceRaceSizeMultiplier(a_actor->GetRace()); 
+    }
+
     // GetDistanceRaceSizeMultiplier() provides consistency with True Directional Movement's settings
     // Corresponding TDM function is DirectionalMovementHandler::GetTargetLockDistanceRaceSizeMultiplier()
     // see https://github.com/ersh1/TrueDirectionalMovement

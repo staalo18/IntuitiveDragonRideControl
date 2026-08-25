@@ -350,14 +350,12 @@ RE::ThirdPersonState* dragonCameraState = nullptr;
 if (playerCamera && playerCamera->currentState && (playerCamera->currentState->id == RE::CameraState::kDragon)) {
 dragonCameraState = static_cast<RE::ThirdPersonState*>(playerCamera->currentState.get());
 if (dragonCameraState) {
-log::info("IDRC - {}: Before UpdateRotation: freeRotationY: {}", __func__, 180.f/PI * dragonCameraState->freeRotation.y);
+log::info("IDRC - {}: Before UpdateRotation: freeRotationY: {}", __FUNCTION__, 180.f/PI * dragonCameraState->freeRotation.y);
 }
 }
 
 		// This is copied from True Directional Movement. All credits go to the original author Ersh!
 
-//		auto directionalMovementHandler = DirectionalMovementHandler::GetSingleton();
-//		if (directionalMovementHandler->GetFreeCameraEnabled() && !directionalMovementHandler->IFPV_IsFirstPerson() && !directionalMovementHandler->ImprovedCamera_IsFirstPerson()) {
 			float dragonCurrentDirection = reinterpret_cast<float&>(a_this->unkEC);
 			float freeRotationX = a_this->freeRotation.x;
 
@@ -643,11 +641,13 @@ int color = 0xFFFF00FF;
 
 for (std::uint32_t i = 0; i < wayPointCount; ++i) {
 auto& waypointToUpdate = *reinterpret_cast<RE::NiPoint3*>(&wayPointBase[i * kStride]);
+if (APIs::TrueHUD) {
 if (i == wayPointCount - 1) {
 APIs::TrueHUD->DrawPoint(waypointToUpdate, 10.0f, 0.0f, 0x0000FFFF);
 } else {
 APIs::TrueHUD->DrawPoint(waypointToUpdate, 5.0f, 0.0f, color);
 }	
+}
 }
 return;
 }		
@@ -675,13 +675,14 @@ return;
 log::info("IDRC - {}: Updated waypoints for flying dragon. CurrentIndex: {}, WaypointCount: {}", __func__, currentIndex, wayPointCount);
 for (std::uint32_t i = 0; i < std::min(wayPointCount - 2, currentIndex + 8u); ++i) {
 auto& waypointToUpdate = *reinterpret_cast<RE::NiPoint3*>(&wayPointBase[i * kStride]);
+if (APIs::TrueHUD) {
 if (i == currentIndex) {
 APIs::TrueHUD->DrawPoint(waypointToUpdate, 10.0f, 0.0f, 0x00FF00FF);
 } else {
 APIs::TrueHUD->DrawPoint(waypointToUpdate, 5.0f, 0.0f, 0xFF0000FF);
 }
 }
-
+}
 	}
 
 	void PathingHook::LinearPathToTarget(std::byte** a_pathData, std::uint32_t a_startIndex, const RE::NiPoint3& a_targetPos) {
@@ -824,7 +825,9 @@ log::info("IDRC - {}: SetupPathingRequest called for dragon", __func__);
 // TODO: Probably no longer needed now with GetValidLandingPosition()
 				if (_ts_a_targetPos) {
 					_ts_a_targetPos->z = _ts_SKSEFunctions::GetLandHeightWithWater(*_ts_a_targetPos, false);
+if (APIs::TrueHUD) {
 APIs::TrueHUD->DrawPoint(*_ts_a_targetPos, 10.0f, 20.0f, 0x99FFFFFF);
+}
 				}
 			}
 		}
@@ -844,7 +847,9 @@ APIs::TrueHUD->DrawPoint(*_ts_a_targetPos, 10.0f, 20.0f, 0x99FFFFFF);
 			auto resultRef = result->AsReference();
 			RE::NiPoint3 resultPos = resultRef->GetPosition();
 			auto baseForm = resultRef->GetBaseObject();
+if (APIs::TrueHUD) {
 APIs::TrueHUD->DrawPoint(resultPos, 5.0f, 20.0f, 0xFF99FFFF);
+}
 log::info("IDRC - {}: GetCurrentMountCellOrWorldspaceForm called for actor {}, returned {:0x} ({}) at position ({}, {}, {})", __func__, _ts_a_actor ? _ts_a_actor->GetName() : "null", result ? result->GetFormID() : 0, baseForm ? baseForm->GetFormEditorID() : "NONE", resultPos.x, resultPos.y, resultPos.z);
 		}  else {
 log::info("IDRC - {}: GetCurrentMountCellOrWorldspaceForm called for actor {}, returned nullptr", __func__, _ts_a_actor ? _ts_a_actor->GetName() : "null");
@@ -899,7 +904,9 @@ log::info("IDRC - {}: GetCurrentPathingLocation  returned nullptr", __func__);
 		float y = *reinterpret_cast<float*>(reinterpret_cast<std::uintptr_t>(result) + 0x4);
 		float z = *reinterpret_cast<float*>(reinterpret_cast<std::uintptr_t>(result) + 0x8);
 		RE::NiPoint3 resultPos(x, y, z);
+if (APIs::TrueHUD) {
 APIs::TrueHUD->DrawPoint(resultPos, 12.0f, 0.1f, 0xFF99FFFF);
+}
 log::info("IDRC - {}: TESPackage_sub_140437ac0 returned  ({}, {}, {})", __func__, x, y, z);
 		return result;
 	}
@@ -1140,8 +1147,6 @@ log::warn("IDRC - {}: respawn helper: stale TESObjectREFR at {:#018x} "
 		// a valid vtable but null parentCell. Calling CheckSaveGame on it crashes inside the
 		// implementation at [rax+0x04] where rax is a null sub-object (e.g. currentProcess).
 		if (a_ref->parentCell == nullptr) {
-log::warn("IDRC - {}: respawn helper: TESObjectREFR at {:#018x} (FormID={:#010x}) "
-"has null parentCell — partially-initialized actor, skipping CheckSaveGame", __func__, reinterpret_cast<std::uintptr_t>(a_ref), a_ref->GetFormID());
 			return 0;
 		}
 

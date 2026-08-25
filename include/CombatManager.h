@@ -56,7 +56,6 @@ namespace IDRC {
         RE::TESShout* m_unrelentingForceShout = nullptr;
         RE::TESShout* m_attackShout = nullptr;
         const float m_maxTargetDistance = 2000.0f;
-        const float m_maxCombatDistance = 8000.0f;
         float m_shoutTimer = 0.0f;
         float m_shoutDirection = 1.0f;
         bool m_shoutActive = false;

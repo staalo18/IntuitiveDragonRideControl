@@ -54,6 +54,8 @@ namespace IDRC {
 
             bool IsReticleLocked () const;
 
+            float GetMaxTargetDistance(RE::Actor* a_actor) const;
+            
         private:
             TargetReticleManager() = default;
 
