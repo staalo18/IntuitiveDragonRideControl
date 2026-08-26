@@ -770,9 +770,12 @@ log::info("IDRC - {}: FFlyingMode = {}", __FUNCTION__, m_mode);
 			log::warn("IDRC - {}: Dragon actor not found!", __FUNCTION__);
 			return;
 		}
-
+#if defined(COMMONLIBSSE_NG_16)
+		RE::BSPathingLocation loc;
+#else
         RE::BSTSmartPointer<RE::BSPathingCell> cell;
 		RE::BSPathingLocation loc(RE::NiPoint3(0.0f, 0.0f, 0.0f), cell);
+#endif
 		GetCurrentPathingLocation(pathingSingleton, &loc, dragonActor, 0);
 
 		if (loc.navMeshInfo == nullptr || loc.triangle < 0) {
