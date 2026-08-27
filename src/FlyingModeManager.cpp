@@ -50,18 +50,18 @@ namespace IDRC {
             }
 if (this->m_noFlyAbility) {
 bool hasNoFlyAbility = dragonActor->HasSpell(this->m_noFlyAbility);
-log::info("IDRC - {}: Dragon has NoFlyAbility = {}", __FUNCTION__, hasNoFlyAbility ? "true" : "false");
+log::info("{}: Dragon has NoFlyAbility = {}", __FUNCTION__, hasNoFlyAbility ? "true" : "false");
 } else {
-log::warn("IDRC - {}: NoFlyAbility is null", __FUNCTION__);
+log::warn("{}: NoFlyAbility is null", __FUNCTION__);
 }
-log::info("IDRC - {}: FFlyingMode = {}", __FUNCTION__, m_mode);
+log::info("{}: FFlyingMode = {}", __FUNCTION__, m_mode);
 
             // process ongoing landing
             if (GetRegisteredForLanding()) {
                 if (!m_finalizeTriggerLand && !m_landingPosSearchOngoing) {
                     auto* currentPackage = dragonActor->GetCurrentPackage();
                     if (currentPackage && currentPackage->procedureType != RE::PACKAGE_PROCEDURE_TYPE::kLanding) {
-                        log::info("IDRC - {}: Dragon dropped out of landing package during landing - re-trigger land", __FUNCTION__);
+                        log::info("{}: Dragon dropped out of landing package during landing - re-trigger land", __FUNCTION__);
                         // Dragon dropped out of landing package during landing.
                         // This can happen eg during ongoing combat,
                         // when dragon sometimes changes to kSpectator package / kObserveCombat procedure.
@@ -119,7 +119,7 @@ log::info("IDRC - {}: FFlyingMode = {}", __FUNCTION__, m_mode);
 
         auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
         if (!dragonActor) {
-            log::error("IDRC - {}: Dragon actor is null", __FUNCTION__);
+            log::error("{}: Dragon actor is null", __FUNCTION__);
             return;
         }
 
@@ -221,13 +221,13 @@ log::info("IDRC - {}: FFlyingMode = {}", __FUNCTION__, m_mode);
         log::info("IDRC - {}", __FUNCTION__);
     
         if (m_registeredForLanding) {
-            log::info("IDRC - {}: Registered for Landing - cancel update", __FUNCTION__);
+            log::info("{}: Registered for Landing - cancel update", __FUNCTION__);
             return;
         }
     
         auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
         if (!dragonActor) {
-            log::error("IDRC - {}: Dragon actor is null", __FUNCTION__);
+            log::error("{}: Dragon actor is null", __FUNCTION__);
             return;
         }
     
@@ -248,7 +248,7 @@ log::info("IDRC - {}: FFlyingMode = {}", __FUNCTION__, m_mode);
     
         auto& dataManager = DataManager::GetSingleton();
         dataManager.ToggleAutoCombat();
-        log::info("IDRC - {}: AutoCombat toggled to {}", __FUNCTION__, dataManager.GetAutoCombat());
+        log::info("{}: AutoCombat toggled to {}", __FUNCTION__, dataManager.GetAutoCombat());
     
         // Display notification if flying mode display is enabled
         if (dataManager.GetAutoCombat()) {
@@ -259,7 +259,7 @@ log::info("IDRC - {}: FFlyingMode = {}", __FUNCTION__, m_mode);
     
         auto* dragonActor = dataManager.GetDragonActor();
         if (!dragonActor) {
-            log::error("IDRC - {}: Dragon actor is null", __FUNCTION__);
+            log::error("{}: Dragon actor is null", __FUNCTION__);
             return;
         }
     
@@ -280,7 +280,7 @@ log::info("IDRC - {}: FFlyingMode = {}", __FUNCTION__, m_mode);
     
         auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
         if (!dragonActor) {
-            log::error("IDRC - {}: Dragon actor is null", __FUNCTION__);
+            log::error("{}: Dragon actor is null", __FUNCTION__);
             return;
         }
     
@@ -288,7 +288,7 @@ log::info("IDRC - {}: FFlyingMode = {}", __FUNCTION__, m_mode);
         auto& combatManager = CombatManager::GetSingleton();
         auto& dataManager = DataManager::GetSingleton();
         auto& displayManager = DisplayManager::GetSingleton();
-        log::info("IDRC - {}: OnKeyDown: keycode = {}, controlBlocked = {}, registeredForLanding = {}", 
+        log::info("{}: OnKeyDown: keycode = {}, controlBlocked = {}, registeredForLanding = {}", 
                   __FUNCTION__, a_key, controlsManager.GetControlBlocked(), m_registeredForLanding);
     
         // Handle Activate Key
@@ -396,7 +396,7 @@ log::info("IDRC - {}: FFlyingMode = {}", __FUNCTION__, m_mode);
         if (!GetRegisteredForLanding() && !GetRegisteredForPerch()) {
             auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
             if (!dragonActor) {
-                log::error("IDRC - {}: Dragon actor is null", __FUNCTION__);
+                log::error("{}: Dragon actor is null", __FUNCTION__);
                 return false;
             }
     
@@ -445,7 +445,7 @@ log::info("IDRC - {}: FFlyingMode = {}", __FUNCTION__, m_mode);
         if (!GetRegisteredForPerch()) {
             auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
             if (!dragonActor) {
-                log::error("IDRC - {}: Dragon actor is null", __FUNCTION__);
+                log::error("{}: Dragon actor is null", __FUNCTION__);
                 return false;
             }
 
@@ -493,7 +493,7 @@ log::info("IDRC - {}: FFlyingMode = {}", __FUNCTION__, m_mode);
         auto& combatManager = CombatManager::GetSingleton();
         auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
         if (!dragonActor) {
-            log::error("IDRC - {}: Dragon actor is null", __FUNCTION__);
+            log::error("{}: Dragon actor is null", __FUNCTION__);
             return;
         }
         
@@ -582,12 +582,12 @@ log::info("IDRC - {}: FFlyingMode = {}", __FUNCTION__, m_mode);
     
         auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
         if (!dragonActor) {
-            log::error("IDRC - {}: dragonActor is null", __FUNCTION__);
+            log::error("{}: dragonActor is null", __FUNCTION__);
             return false;
         }
     
         if (!a_directionMarker) {
-            log::error("IDRC - {}: Direction marker is null", __FUNCTION__);
+            log::error("{}: Direction marker is null", __FUNCTION__);
             return false;
         }
     
@@ -598,7 +598,7 @@ log::info("IDRC - {}: FFlyingMode = {}", __FUNCTION__, m_mode);
             dragonActor->EvaluatePackage();
         });
     
-        log::info("IDRC - {}: Switched to Travel Package", __FUNCTION__);
+        log::info("{}: Switched to Travel Package", __FUNCTION__);
     
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
     
@@ -617,7 +617,7 @@ log::info("IDRC - {}: FFlyingMode = {}", __FUNCTION__, m_mode);
     
         auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
         if (!dragonActor) {
-            log::error("IDRC - {}: dragonActor is null", __FUNCTION__);
+            log::error("{}: dragonActor is null", __FUNCTION__);
             return false;
         }
     
@@ -629,7 +629,7 @@ log::info("IDRC - {}: FFlyingMode = {}", __FUNCTION__, m_mode);
         // Move the orbit marker to the landing position
         auto* orbitMarker = DataManager::GetSingleton().GetOrbitMarker();
         if (!orbitMarker) {
-            log::error("IDRC - {}: orbitMarker is null", __FUNCTION__);
+            log::error("{}: orbitMarker is null", __FUNCTION__);
         }
 
         m_landingPosSearchOngoing = true;
@@ -660,7 +660,7 @@ log::info("IDRC - {}: FFlyingMode = {}", __FUNCTION__, m_mode);
 
         auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
         if (!dragonActor) {
-            log::error("IDRC - {}: dragonActor is null", __FUNCTION__);
+            log::error("{}: dragonActor is null", __FUNCTION__);
             return;
         }
 
@@ -706,7 +706,7 @@ log::info("IDRC - {}: FFlyingMode = {}", __FUNCTION__, m_mode);
 
         auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
         if (!dragonActor) {
-            log::error("IDRC - {}: dragonActor is null", __FUNCTION__);
+            log::error("{}: dragonActor is null", __FUNCTION__);
             return;
         }
 
@@ -715,18 +715,18 @@ log::info("IDRC - {}: FFlyingMode = {}", __FUNCTION__, m_mode);
             if (_ts_SKSEFunctions::IsFlyingMountFastTravelling(dragonActor) ||
                 _ts_SKSEFunctions::IsFlyingMountPatrolQueued(dragonActor)) {
                 // This should never happen!
-                log::warn("IDRC - {}: Dragon is still in fast travel or patrol after landing, triggering take-off", __FUNCTION__);
+                log::warn("{}: Dragon is still in fast travel or patrol after landing, triggering take-off", __FUNCTION__);
                 SetLandedCompleted();
                 DragonTakeOffPlayerRiding(dragonActor);
                 return;
             }
 
-            log::info("IDRC - {}: Dragon has landed", __FUNCTION__);
+            log::info("{}: Dragon has landed", __FUNCTION__);
             SKSE::GetTaskInterface()->AddTask([this, dragonActor]() {
                 if (this->m_noFlyAbility) {
                     dragonActor->AddSpell(this->m_noFlyAbility);
                 } else {
-                    log::warn("IDRC - {}: NoFlyAbility is null", __FUNCTION__);
+                    log::warn("{}: NoFlyAbility is null", __FUNCTION__);
                 }
 
                 // need to set allowFlying explicitly, because SetAllowFlying is not used
@@ -743,7 +743,7 @@ log::info("IDRC - {}: FFlyingMode = {}", __FUNCTION__, m_mode);
     void FlyingModeManager::SetLandedCompleted() {
         // Restore auto-combat if it was toggled off
         if (m_toggledAutoCombatLand) {
-            log::info("IDRC - {}: AutoCombat toggled to TRUE", __FUNCTION__);
+            log::info("{}: AutoCombat toggled to TRUE", __FUNCTION__);
             DataManager::GetSingleton().SetAutoCombat(true);
             m_toggledAutoCombatLand = false;
         }
@@ -761,13 +761,13 @@ log::info("IDRC - {}: FFlyingMode = {}", __FUNCTION__, m_mode);
 
         auto* pathingSingleton = Hooks::PathingHook::GetPathingSingleton();
 		if (!pathingSingleton) {
-			log::warn("IDRC - {}: Pathing singleton not initialized!", __FUNCTION__);
+			log::warn("{}: Pathing singleton not initialized!", __FUNCTION__);
 			return;
 		}
 
 		auto* dragonActor = IDRC::DataManager::GetSingleton().GetDragonActor();
 		if (!dragonActor) {
-			log::warn("IDRC - {}: Dragon actor not found!", __FUNCTION__);
+			log::warn("{}: Dragon actor not found!", __FUNCTION__);
 			return;
 		}
 #if defined(COMMONLIBSSE_NG_16)
@@ -779,7 +779,7 @@ log::info("IDRC - {}: FFlyingMode = {}", __FUNCTION__, m_mode);
 		GetCurrentPathingLocation(pathingSingleton, &loc, dragonActor, 0);
 
 		if (loc.navMeshInfo == nullptr || loc.triangle < 0) {
-			log::warn("IDRC - {}: Current pathing location is invalid!", __FUNCTION__);
+			log::warn("{}: Current pathing location is invalid!", __FUNCTION__);
 			return;
 		}
 
@@ -855,7 +855,7 @@ log::info("IDRC - {}: FFlyingMode = {}", __FUNCTION__, m_mode);
 
         auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
         if (!dragonActor) {
-            log::error("IDRC - {}: dragonActor is null", __FUNCTION__);
+            log::error("{}: dragonActor is null", __FUNCTION__);
             return false;
         }
 
@@ -866,11 +866,11 @@ log::info("IDRC - {}: FFlyingMode = {}", __FUNCTION__, m_mode);
         
         if (!(_ts_SKSEFunctions::GetFlyingState(dragonActor) == 2 ||
               _ts_SKSEFunctions::GetFlyingState(dragonActor) == 3)) {
-            log::info("IDRC - {}: Already landing (4) or landed (1). Ignore CancelLand request.", __FUNCTION__);
+            log::info("{}: Already landing (4) or landed (1). Ignore CancelLand request.", __FUNCTION__);
             return false;
         }
     
-        log::info("IDRC - {}: Trying to stop landing", __FUNCTION__);
+        log::info("{}: Trying to stop landing", __FUNCTION__);
 
         SetLandedCompleted();
         SKSE::GetTaskInterface()->AddTask([this, dragonActor]() {
@@ -879,14 +879,14 @@ log::info("IDRC - {}: FFlyingMode = {}", __FUNCTION__, m_mode);
             if (currentProcess) {
                 currentProcess->SetRunOncePackage(nullptr, dragonActor);
             } else {
-                log::warn("IDRC - {}: currentProcess is null", __FUNCTION__);
+                log::warn("{}: currentProcess is null", __FUNCTION__);
             }
 
             dragonActor->AsActorState()->actorState2.allowFlying = true;
             if (this->m_noFlyAbility) {
                 dragonActor->RemoveSpell(this->m_noFlyAbility);
             } else {
-                log::warn("IDRC - {}: NoFlyAbility is null", __FUNCTION__);
+                log::warn("{}: NoFlyAbility is null", __FUNCTION__);
             }
 
             dragonActor->AsActorValueOwner()->SetActorValue(RE::ActorValue::kVariable03, 3);
@@ -917,18 +917,18 @@ log::info("IDRC - {}: FFlyingMode = {}", __FUNCTION__, m_mode);
     bool FlyingModeManager::DragonHoverPlayerRiding(RE::TESObjectREFR* a_hoverTarget) {
         // Check if the dragon is registered for landing
         if (m_registeredForLanding) {
-            log::info("IDRC - {}: Registered for Landing - cancel hover", __FUNCTION__);
+            log::info("{}: Registered for Landing - cancel hover", __FUNCTION__);
             return false;
         }
     
         auto& dataManager = DataManager::GetSingleton();
         auto* dragonActor = dataManager.GetDragonActor();
         if (!dragonActor) {
-            log::error("IDRC - {}: dragonActor is null", __FUNCTION__);
+            log::error("{}: dragonActor is null", __FUNCTION__);
             return false;
         }
     
-        log::info("IDRC - {}: DragonHoverPlayerRiding, IsBeingRidden = {}", __FUNCTION__, dragonActor->IsBeingRidden());
+        log::info("{}: DragonHoverPlayerRiding, IsBeingRidden = {}", __FUNCTION__, dragonActor->IsBeingRidden());
     
         auto flyingMode = GetFlyingMode();
 
@@ -945,7 +945,7 @@ log::info("IDRC - {}: FFlyingMode = {}", __FUNCTION__, m_mode);
                 if (this->m_noFlyAbility) {
                     dragonActor->RemoveSpell(this->m_noFlyAbility);
                 } else {
-                    log::warn("IDRC - {}: NoFlyAbility is null", __FUNCTION__);
+                    log::warn("{}: NoFlyAbility is null", __FUNCTION__);
                 }
                 dragonActor->AsActorValueOwner()->SetActorValue(RE::ActorValue::kWaitingForPlayer, 0);
                 dragonActor->EvaluatePackage();
@@ -956,13 +956,13 @@ log::info("IDRC - {}: FFlyingMode = {}", __FUNCTION__, m_mode);
             if (flyingMode != FlyingMode::kHovering) {
                 // another flying mode change has been triggered since the hover command was initiated
                 // (this can happen in case Hover is triggered as event, from FlyingModeDown())
-                log::info("IDRC - {}: No longer valid - cancel hover", __FUNCTION__);
+                log::info("{}: No longer valid - cancel hover", __FUNCTION__);
                 return false;
             }
     
             auto* orbitMarker = dataManager.GetOrbitMarker();
             if (!orbitMarker) {
-                log::error("IDRC - {}: Orbit marker is null", __FUNCTION__);
+                log::error("{}: Orbit marker is null", __FUNCTION__);
                 return false;
             }
 
@@ -1017,12 +1017,12 @@ log::info("IDRC - {}: FFlyingMode = {}", __FUNCTION__, m_mode);
         auto* dragonActor = dataManager.GetDragonActor();
     
         if (!dragonActor) {
-            log::error("IDRC - {}: dragonActor is null", __FUNCTION__);
+            log::error("{}: dragonActor is null", __FUNCTION__);
             return false;
         }
     
         if (!m_flyToTargetMarker) {
-            log::error("IDRC - {}: FlyToTargetMarker is null", __FUNCTION__);
+            log::error("{}: FlyToTargetMarker is null", __FUNCTION__);
             return false;
         }
     
@@ -1056,13 +1056,13 @@ log::info("IDRC - {}: FFlyingMode = {}", __FUNCTION__, m_mode);
     
         // Check if the dragon is registered for landing
         if (m_registeredForLanding) {
-            log::info("IDRC - {}: Registered for Landing - cancel takeoff", __FUNCTION__);
+            log::info("{}: Registered for Landing - cancel takeoff", __FUNCTION__);
             return false;
         }
     
         auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
         if (!dragonActor) {
-            log::error("IDRC - {}: dragonActor is null", __FUNCTION__);
+            log::error("{}: dragonActor is null", __FUNCTION__);
             return false;
         }
         
@@ -1073,12 +1073,12 @@ log::info("IDRC - {}: FFlyingMode = {}", __FUNCTION__, m_mode);
     
             auto* orbitMarker = DataManager::GetSingleton().GetOrbitMarker();
             if (!orbitMarker) {
-                log::error("IDRC - {}: Orbit marker is null", __FUNCTION__);
+                log::error("{}: Orbit marker is null", __FUNCTION__);
                 return false;
             }
 
             if (!a_takeOffTarget) {
-                log::info("IDRC - {}: No TakeOffTarget provided - cancel takeoff", __FUNCTION__);
+                log::info("{}: No TakeOffTarget provided - cancel takeoff", __FUNCTION__);
                 return false;
             }
             
@@ -1095,7 +1095,7 @@ log::info("IDRC - {}: FFlyingMode = {}", __FUNCTION__, m_mode);
                 if (m_noFlyAbility) {
                     dragonActor->RemoveSpell(this->m_noFlyAbility);
                 } else {
-                    log::warn("IDRC - {}: NoFlyAbility is null", __FUNCTION__);
+                    log::warn("{}: NoFlyAbility is null", __FUNCTION__);
                 }
 
                 dragonActor->AsActorValueOwner()->SetActorValue(RE::ActorValue::kVariable03, 3); // Hover package
@@ -1111,11 +1111,11 @@ log::info("IDRC - {}: FFlyingMode = {}", __FUNCTION__, m_mode);
             }
     
             if (count >= 50) {
-                log::info("IDRC - {}: Dragon did not take off - cancel takeoff", __FUNCTION__);
+                log::info("{}: Dragon did not take off - cancel takeoff", __FUNCTION__);
                 return false;
             }
         } else {
-            log::info("IDRC - {}: Dragon health is low - cannot take off", __FUNCTION__);
+            log::info("{}: Dragon health is low - cannot take off", __FUNCTION__);
             RE::SendHUDMessage::ShowHUDMessage("Dragon health is low - cannot take off");
             return false;
         }
@@ -1127,12 +1127,12 @@ log::info("IDRC - {}: FFlyingMode = {}", __FUNCTION__, m_mode);
         log::info("IDRC - {}", __FUNCTION__);
     
         if (!a_ref) {
-            log::error("IDRC - {}: a_ref is null", __FUNCTION__);
+            log::error("{}: a_ref is null", __FUNCTION__);
             return;
         }
     
         if (!m_dragonTravelToMarker) {
-            log::error("IDRC - {}: DragonTravelToMarker is null", __FUNCTION__);
+            log::error("{}: DragonTravelToMarker is null", __FUNCTION__);
             return;
         }
     
@@ -1152,21 +1152,21 @@ log::info("IDRC - {}: FFlyingMode = {}", __FUNCTION__, m_mode);
 
         bool isReTriggered = false;
         if (GetRegisteredForLanding()) {
-            log::info("IDRC - {}: Already registered for landing - re-triggering landing", __FUNCTION__);
+            log::info("{}: Already registered for landing - re-triggering landing", __FUNCTION__);
             isReTriggered = true;
         }
         
         auto& dataManager = DataManager::GetSingleton();
         auto* dragonActor = dataManager.GetDragonActor();
         if (!dragonActor) {
-            log::error("IDRC - {}: dragonActor is null", __FUNCTION__);
+            log::error("{}: dragonActor is null", __FUNCTION__);
             return false;
         }
         
         // Check if the dragon is already landing or landed
         if (GetFlyingMode() == FlyingMode::kLanded && 
             _ts_SKSEFunctions::GetFlyingState(dragonActor) == 0) {
-            log::info("IDRC - {}: Already in Landing or landed. Ignore Land request.", __FUNCTION__);
+            log::info("{}: Already in Landing or landed. Ignore Land request.", __FUNCTION__);
             return false;
         }
 
@@ -1178,7 +1178,7 @@ log::info("IDRC - {}: FFlyingMode = {}", __FUNCTION__, m_mode);
             // Handle auto-combat toggling
             m_toggledAutoCombatLand = false;
             if (dataManager.GetAutoCombat()) {
-                log::info("IDRC - {}: AutoCombat toggled to FALSE", __FUNCTION__);
+                log::info("{}: AutoCombat toggled to FALSE", __FUNCTION__);
                 dataManager.SetAutoCombat(false);
                 m_toggledAutoCombatLand = true;
             }
@@ -1196,7 +1196,7 @@ log::info("IDRC - {}: FFlyingMode = {}", __FUNCTION__, m_mode);
     
         auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
         if (!dragonActor) {
-            log::error("IDRC - {}: dragonActor is null", __FUNCTION__);
+            log::error("{}: dragonActor is null", __FUNCTION__);
             return false;
         }
     
@@ -1212,7 +1212,7 @@ log::info("IDRC - {}: FFlyingMode = {}", __FUNCTION__, m_mode);
             // Start the perch quest
             auto* findPerchQuest = dataManager.GetFindPerchQuest();
             if (!findPerchQuest) {
-                log::error("IDRC - {}: findPerchQuest is null", __FUNCTION__);
+                log::error("{}: findPerchQuest is null", __FUNCTION__);
                 SetFlyingMode(oldState);
                 SetRegisteredForPerch(false);
                 return false;
@@ -1231,7 +1231,7 @@ log::info("IDRC - {}: FFlyingMode = {}", __FUNCTION__, m_mode);
                 count++;
             }
             if (count >= 100) { // waited > 1sec
-                log::error("IDRC - {}: ERROR - Timed out while waiting for FindPerchQuest to start!", __FUNCTION__);
+                log::error("{}: ERROR - Timed out while waiting for FindPerchQuest to start!", __FUNCTION__);
                 SetFlyingMode(oldState);
                 SetRegisteredForPerch(false);
                 return false;
@@ -1267,7 +1267,7 @@ log::info("IDRC - {}: FFlyingMode = {}", __FUNCTION__, m_mode);
                     closestPerch = rock;
                 }
                 if (closestPerch) {
-                    log::info("IDRC - {}: Found perch: {}", __FUNCTION__, closestPerch->GetFormID());      
+                    log::info("{}: Found perch: {}", __FUNCTION__, closestPerch->GetFormID());      
 
                     dataManager.SetPerchTarget(closestPerch);
 
@@ -1295,17 +1295,17 @@ log::info("IDRC - {}: FFlyingMode = {}", __FUNCTION__, m_mode);
         auto* orbitMarker = DataManager::GetSingleton().GetOrbitMarker();
     
         if (!dragonActor) {
-            log::error("IDRC - {}: dragonActor is None", __FUNCTION__);
+            log::error("{}: dragonActor is None", __FUNCTION__);
             return false;
         }
     
         if (!m_dragonTurnMarker) {
-            log::error("IDRC - {}: DragonTurnMarker is None", __FUNCTION__);
+            log::error("{}: DragonTurnMarker is None", __FUNCTION__);
             return false;
         }
 
         if (!orbitMarker) {
-            log::error("IDRC - {}: OrbitMarker is None", __FUNCTION__);
+            log::error("{}: OrbitMarker is None", __FUNCTION__);
             return false;
         }
         float angleZ = dragonActor->GetAngleZ() + a_turnAngle* 0.01745329252f;
@@ -1332,12 +1332,12 @@ log::info("IDRC - {}: FFlyingMode = {}", __FUNCTION__, m_mode);
     
         auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
         if (!dragonActor) {
-            log::error("IDRC - {}: dragonActor is None", __FUNCTION__);
+            log::error("{}: dragonActor is None", __FUNCTION__);
             return false;
         }
     
         if (dragonActor->AsActorState()->actorState2.allowFlying == 0) { // Check if dragon is allowed to fly
-            log::info("IDRC - {}: Dragon is not allowed to fly (injured) - cancel new direction", __FUNCTION__);
+            log::info("{}: Dragon is not allowed to fly (injured) - cancel new direction", __FUNCTION__);
             return false;
         }
     
@@ -1351,15 +1351,15 @@ log::info("IDRC - {}: FFlyingMode = {}", __FUNCTION__, m_mode);
         auto* orbitMarker = DataManager::GetSingleton().GetOrbitMarker();
 
         if (!dragonActor) {
-            log::error("IDRC - {}: dragonActor is None", __FUNCTION__);
+            log::error("{}: dragonActor is None", __FUNCTION__);
             return false;
         }
         if (!orbitMarker) {
-            log::error("IDRC - {}: OrbitMarker is None", __FUNCTION__);
+            log::error("{}: OrbitMarker is None", __FUNCTION__);
             return false;
         }
         if (dragonActor->AsActorState()->actorState2.allowFlying == 0) {
-            log::info("IDRC - {}: Dragon is not allowed to fly - cancel FlyTo", __FUNCTION__);
+            log::info("{}: Dragon is not allowed to fly - cancel FlyTo", __FUNCTION__);
             return false;
         }
         
@@ -1367,7 +1367,7 @@ log::info("IDRC - {}: FFlyingMode = {}", __FUNCTION__, m_mode);
         try {
             worldSpaceData = WorldSpaceData(dragonActor->GetWorldspace()); 
         } catch (const std::invalid_argument& e) {
-            log::error("IDRC - {}: {}", __FUNCTION__, e.what());
+            log::error("{}: {}", __FUNCTION__, e.what());
             return false;
         }
     
@@ -1380,14 +1380,14 @@ log::info("IDRC - {}: FFlyingMode = {}", __FUNCTION__, m_mode);
         // keep the target position close to the dragon, to avoid the need for the engine to frequently re-compute long paths
         float distance = 10000.f; // previously: GetDistanceToRegionBoundingBox(worldSpaceData, posX, posY, angleNorm);
         if(!IsInBorderRegion()){
-            log::info("IDRC - {}: Player is not in border region {} - cancel FlyTo...", __FUNCTION__, worldSpaceData.m_borderRegionName);
+            log::info("{}: Player is not in border region {} - cancel FlyTo...", __FUNCTION__, worldSpaceData.m_borderRegionName);
             return false;
         }  
 
         if(_ts_SKSEFunctions::IsFlyingMountPatrolQueued(dragonActor)){
             // do not trigger FastTravel while dragon is patrolQueue is still ongoing:
             // that would keep the dragon in PatrolQueued state
-            log::info("IDRC - {}: in PatrolQueued - cancel FlyTo...", __FUNCTION__);
+            log::info("{}: in PatrolQueued - cancel FlyTo...", __FUNCTION__);
             return false;
         }
 
@@ -1425,7 +1425,7 @@ log::info("IDRC - {}: FFlyingMode = {}", __FUNCTION__, m_mode);
     float FlyingModeManager::GetTargetYaw() {
         auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
         if (!dragonActor) {
-            log::error("IDRC - {}: dragonActor is null", __FUNCTION__);
+            log::error("{}: dragonActor is null", __FUNCTION__);
             return 0.0f;
         }
 
@@ -1440,7 +1440,7 @@ log::info("IDRC - {}: FFlyingMode = {}", __FUNCTION__, m_mode);
     float FlyingModeManager::GetAngleToCoordinate(float a_posX, float a_posY) {
         auto* player = RE::PlayerCharacter::GetSingleton();
         if (!player) {
-            log::error("IDRC - {}: Player reference is null", __FUNCTION__);
+            log::error("{}: Player reference is null", __FUNCTION__);
             return 0.0f;
         }
     
@@ -1467,13 +1467,13 @@ log::info("IDRC - {}: FFlyingMode = {}", __FUNCTION__, m_mode);
     float FlyingModeManager::GetWorldSpaceCenterX() {
         auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
         if (!dragonActor) {
-            log::error("IDRC - {}: Dragon actor is null", __FUNCTION__);
+            log::error("{}: Dragon actor is null", __FUNCTION__);
             return 0.0f;
         }
     
         auto* worldSpace = dragonActor->GetWorldspace();
         if (!worldSpace) {
-            log::error("IDRC - {}: Worldspace is null", __FUNCTION__);
+            log::error("{}: Worldspace is null", __FUNCTION__);
             return 0.0f;
         }
     
@@ -1483,20 +1483,20 @@ log::info("IDRC - {}: FFlyingMode = {}", __FUNCTION__, m_mode);
             return 0.0f;
         }
     
-        log::warn("IDRC - {}: Unknown worldspace - returning default center X = 0.0", __FUNCTION__);
+        log::warn("{}: Unknown worldspace - returning default center X = 0.0", __FUNCTION__);
         return 0.0f;
     }
     
     float FlyingModeManager::GetWorldSpaceCenterY() {
         auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
         if (!dragonActor) {
-            log::error("IDRC - {}: Dragon actor is null", __FUNCTION__);
+            log::error("{}: Dragon actor is null", __FUNCTION__);
             return 0.0f;
         }
     
         auto* worldSpace = dragonActor->GetWorldspace();
         if (!worldSpace) {
-            log::error("IDRC - {}: Worldspace is null", __FUNCTION__);
+            log::error("{}: Worldspace is null", __FUNCTION__);
             return 0.0f;
         }
     
@@ -1506,7 +1506,7 @@ log::info("IDRC - {}: FFlyingMode = {}", __FUNCTION__, m_mode);
             return 0.0f;
         }
     
-        log::warn("IDRC - {}: Unknown worldspace - returning default center Y = 0.0", __FUNCTION__);
+        log::warn("{}: Unknown worldspace - returning default center Y = 0.0", __FUNCTION__);
         return 0.0f;
     }
 
@@ -1522,12 +1522,12 @@ log::info("IDRC - {}: FFlyingMode = {}", __FUNCTION__, m_mode);
 /* currently not used: Scan through all regions and finde the BorderRegions for all worldspaces
         auto* dataHandler = RE::TESDataHandler::GetSingleton();
         if (!dataHandler) {
-            log::error("IDRC - {}: DataHandler is null", __FUNCTION__);
+            log::error("{}: DataHandler is null", __FUNCTION__);
             return;
         }
         auto* regionList = dataHandler->regionList;
         if (!regionList) {
-            log::error("IDRC - {}: RegionList is null", __FUNCTION__);
+            log::error("{}: RegionList is null", __FUNCTION__);
             return;
         }
         for (const auto& region : *regionList) {
@@ -1537,17 +1537,17 @@ currently not scanning through all regions of all worldspaces - instead look up 
 
             if (region && ((region->GetFormFlags() & RE::TESRegion::RecordFlags::kBorderRegion) != 0)) { 
                 // && region->worldSpace == a_worldSpace
-log::info("IDRC - {}: Worldspace {} - BorderRegion: {} / {}", __FUNCTION__, region->worldSpace->GetFullName(), region->GetFormEditorID(), region->GetFormID());
+log::info("{}: Worldspace {} - BorderRegion: {} / {}", __FUNCTION__, region->worldSpace->GetFullName(), region->GetFormEditorID(), region->GetFormID());
                 
                 sealevel= region->worldSpace->GetDefaultWaterHeight();
 
                 auto* regionPoints  = region->pointLists;
                 if (!regionPoints) {
-                    log::info("IDRC - {}: region pointLists is null", __FUNCTION__);
+                    log::info("{}: region pointLists is null", __FUNCTION__);
                 } else {
                     for (const auto& pointList : *regionPoints) {
                         if (pointList) {
-                            log::info("IDRC - {}: worldspace: {}, PointList minimums: x = {}, y = {}, maximums: x = {}, y = {}", 
+                            log::info("{}: worldspace: {}, PointList minimums: x = {}, y = {}, maximums: x = {}, y = {}", 
                                     __FUNCTION__, region->worldSpace->GetFullName(), pointList->minimums.x, pointList->minimums.y, pointList->maximums.x, pointList->maximums.y);
 
                             min_x = pointList->minimums.x - 10000.0f;
@@ -1566,20 +1566,20 @@ log::info("IDRC - {}: Worldspace {} - BorderRegion: {} / {}", __FUNCTION__, regi
                                 }
                             }
                             if (iCount > 0) {
-                                log::info("IDRC - {}: region FormID {}: avg-center ({}, {}), min/max-center ({}, {})", __FUNCTION__, 
+                                log::info("{}: region FormID {}: avg-center ({}, {}), min/max-center ({}, {})", __FUNCTION__, 
                                     region->GetFormID(), sumX / iCount, sumY / iCount, 
                                     (pointList->minimums.x + pointList->maximums.x)/2.0f, (pointList->minimums.y + pointList->maximums.y)/2.0f);
 
                                 center_x = sumX / iCount;
                                 center_y = sumY / iCount;
                             } else {
-                                log::info("IDRC - {}: PointList has no points", __FUNCTION__);
+                                log::info("{}: PointList has no points", __FUNCTION__);
                             }
                         }
                     }
                 }
             } else {
-                log::warn("IDRC - {}: Form is not a TESRegion or is not a BorderRegion", __FUNCTION__);
+                log::warn("{}: Form is not a TESRegion or is not a BorderRegion", __FUNCTION__);
             }
 //        }  end scan through all regions - currently not used.
         m_minX = min_x;
@@ -1594,7 +1594,7 @@ log::info("IDRC - {}: Worldspace {} - BorderRegion: {} / {}", __FUNCTION__, regi
 
     FlyingModeManager::WorldSpaceData::WorldSpaceData(const RE::TESWorldSpace* a_worldSpace) {
         if (!a_worldSpace) {
-            log::error("IDRC - {}: Worldspace is null", __FUNCTION__);
+            log::error("{}: Worldspace is null", __FUNCTION__);
             return;
         }
         
@@ -1616,7 +1616,7 @@ log::info("IDRC - {}: Worldspace {} - BorderRegion: {} / {}", __FUNCTION__, regi
             m_seaLevel = 0;
             m_borderRegionName = "DLC2SolstheimBorderRegion";
         } else {
-            log::error("IDRC - {}: Trying to use dragon fast travel in invalid worldspace: {}!", __FUNCTION__, worldspace_EDID.c_str());
+            log::error("{}: Trying to use dragon fast travel in invalid worldspace: {}!", __FUNCTION__, worldspace_EDID.c_str());
        }
     }
 

@@ -56,7 +56,7 @@ namespace IDRC {
         if (playerCamera && playerCamera->currentState && (playerCamera->currentState->id == RE::CameraState::kDragon)) {
             dragonCameraState = static_cast<RE::ThirdPersonState*>(playerCamera->currentState.get());
             if (!dragonCameraState) {
-                log::warn("IDRC - {}: Dragon camera state is null", __FUNCTION__);
+                log::warn("{}: Dragon camera state is null", __FUNCTION__);
                 m_cameraLocked = false;
                 return;
             }
@@ -107,13 +107,13 @@ namespace IDRC {
 
         auto* orbitMarker = DataManager::GetSingleton().GetOrbitMarker();
         if (!orbitMarker) {
-            log::warn("IDRC - {}: Could not obtain OrbitMarker", __FUNCTION__);
+            log::warn("{}: Could not obtain OrbitMarker", __FUNCTION__);
             m_cameraLocked = false;
             return;
         }
         auto* turnMarker = flyingModeManager.GetDragonTurnMarker();
         if (!turnMarker) {
-            log::warn("IDRC - {}: Could not obtain TurnMarker", __FUNCTION__);
+            log::warn("{}: Could not obtain TurnMarker", __FUNCTION__);
             m_cameraLocked = false;
             return;
         }

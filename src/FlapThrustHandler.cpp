@@ -4,20 +4,20 @@
 namespace IDRC {
     void FlapThrustHandler::Register() {
         if (m_isRegistered) {
-            log::warn("IDRC - {}: FlapThrustHandler already registered", __FUNCTION__);
+            log::warn("{}: FlapThrustHandler already registered", __FUNCTION__);
             return;
         }
         
         auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
         if (!dragonActor) {
-            log::error("IDRC - {}: dragonActor is null", __FUNCTION__);
+            log::error("{}: dragonActor is null", __FUNCTION__);
             return;
         }
 
         bool bSuccess = dragonActor->AddAnimationGraphEventSink(&FlapThrustHandler::GetSingleton());
         if (bSuccess) {
             m_isRegistered = true;
-            log::info("IDRC - {}: Registered FlapThrustHandler", __FUNCTION__);
+            log::info("{}: Registered FlapThrustHandler", __FUNCTION__);
         } else {
             RE::BSAnimationGraphManagerPtr graphManager;
             dragonActor->GetAnimationGraphManager(graphManager);
@@ -39,7 +39,7 @@ namespace IDRC {
             }
             
             if (!bSinked) {
-                log::warn("IDRC - {}: Failed to register FlapThrustHandler", __FUNCTION__);
+                log::warn("{}: Failed to register FlapThrustHandler", __FUNCTION__);
             }		
         }
     }
@@ -48,15 +48,15 @@ namespace IDRC {
         if (m_isRegistered) {
             auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
             if (!dragonActor) {
-                log::error("IDRC - {}: dragonActor is null", __FUNCTION__);
+                log::error("{}: dragonActor is null", __FUNCTION__);
                 return;
             }
 
             dragonActor->RemoveAnimationGraphEventSink(&FlapThrustHandler::GetSingleton());
             m_isRegistered = false;
-            log::info("IDRC - {}: Unregistered FlapThrustHandler", __FUNCTION__);
+            log::info("{}: Unregistered FlapThrustHandler", __FUNCTION__);
         } else {
-            log::warn("IDRC - {}: FlapThrustHandler was not registered", __FUNCTION__);
+            log::warn("{}: FlapThrustHandler was not registered", __FUNCTION__);
         }
     }
 

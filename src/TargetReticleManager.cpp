@@ -17,7 +17,7 @@ namespace IDRC {
         m_currentTargetMode = TargetMode::kNone;
         
         if (m_isInitialized) {
-            log::info("IDRC - {}: CombatTargetReticle already initialized", __FUNCTION__);
+            log::info("{}: CombatTargetReticle already initialized", __FUNCTION__);
             return;
         }
 
@@ -70,7 +70,7 @@ namespace IDRC {
         }
 
         if (!m_isInitialized) {
-            log::warn("IDRC - {}: CombatTargetReticle not initialized", __FUNCTION__);
+            log::warn("{}: CombatTargetReticle not initialized", __FUNCTION__);
             return;
         }
 
@@ -79,7 +79,7 @@ namespace IDRC {
 
     void TargetReticleManager::UpdateReticle() {
         if (!APIs::TrueHUD) {
-            log::info("IDRC - {}: TrueHUD API not available", __FUNCTION__);
+            log::info("{}: TrueHUD API not available", __FUNCTION__);
             return;
         }
 
@@ -109,7 +109,7 @@ namespace IDRC {
 
         auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
         if (!dragonActor) {
-            log::warn("IDRC - {}: No dragon actor found", __FUNCTION__);
+            log::warn("{}: No dragon actor found", __FUNCTION__);
             DisposeReticle();
             return;
         }
@@ -169,7 +169,7 @@ namespace IDRC {
         int combatState = 0;
         auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
         if (!dragonActor) {
-            log::warn("IDRC - {}: No dragon actor found", __FUNCTION__);
+            log::warn("{}: No dragon actor found", __FUNCTION__);
             return combatState;
         }
         
@@ -249,19 +249,19 @@ namespace IDRC {
         auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
 
         if (!playerActor) {
-            log::error("IDRC - {}: PlayerActor is null", __FUNCTION__);
+            log::error("{}: PlayerActor is null", __FUNCTION__);
             return nullptr;
         }
         if (!processLists) {
-            log::error("IDRC - {}: ProcessLists is null", __FUNCTION__);
+            log::error("{}: ProcessLists is null", __FUNCTION__);
             return nullptr;
         }
         if (!playerCamera) {
-            log::error("IDRC - {}: PlayerCamera is null", __FUNCTION__);
+            log::error("{}: PlayerCamera is null", __FUNCTION__);
             return nullptr;
         }
         if (!dragonActor) {
-            log::error("IDRC - {}: DragonActor is null", __FUNCTION__);
+            log::error("{}: DragonActor is null", __FUNCTION__);
             return nullptr;
         }
 
@@ -358,7 +358,7 @@ namespace IDRC {
 
     void TargetReticleManager::ToggleLockReticle() {
         if (!APIs::TrueHUD) {
-            log::info("IDRC - {}: TrueHUD API not available", __FUNCTION__);
+            log::info("{}: TrueHUD API not available", __FUNCTION__);
             return;
         }
 
@@ -404,7 +404,7 @@ namespace IDRC {
 
     void TargetReticleManager::DisposeReticle() {
         if (!APIs::TrueHUD) {
-            log::info("IDRC - {}: TrueHUD API not available", __FUNCTION__);
+            log::info("{}: TrueHUD API not available", __FUNCTION__);
             return;
         }
 
@@ -431,7 +431,7 @@ namespace IDRC {
 
     void TargetReticleManager::SetReticleTarget() {
         if (!APIs::TrueHUD) {
-            log::info("IDRC - {}: TrueHUD API not available", __FUNCTION__);
+            log::info("{}: TrueHUD API not available", __FUNCTION__);
             return;
         }
 
@@ -443,14 +443,14 @@ namespace IDRC {
         auto actorHandle = m_reticleTarget;
         auto* reticleActor = actorHandle.get().get();
         if (!reticleActor) {
-            log::warn("IDRC - {}: Actor handle is invalid", __FUNCTION__);
+            log::warn("{}: Actor handle is invalid", __FUNCTION__);
             DisposeReticle();
             return;
         }
 
         auto targetPoint = GetTargetPoint(actorHandle);
         if (!targetPoint) {
-            log::warn("IDRC - {}: Target point is nullptr", __FUNCTION__);
+            log::warn("{}: Target point is nullptr", __FUNCTION__);
             DisposeReticle();
             return;
         }
@@ -462,7 +462,7 @@ namespace IDRC {
             widget = std::make_shared<CombatTargetReticle>(actorHandle.native_handle(), actorHandle, targetPoint,
                                                             m_reticleLockAnimationStyle);
             if (!widget) {
-                log::warn("IDRC - {}: Failed to create CombatTargetReticle widget", __FUNCTION__);
+                log::warn("{}: Failed to create CombatTargetReticle widget", __FUNCTION__);
                 return;
             }
             

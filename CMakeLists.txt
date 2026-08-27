@@ -40,11 +40,11 @@ option(ENABLE_SKYRIM_VR "Enable support for Skyrim VR in the dynamic runtime fea
 set(BUILD_TESTS OFF)
 
 # Get all source files from src/ and include/
-file(GLOB_RECURSE SOURCES src/*.cpp src/*.h include/*.h)
+file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS src/*.cpp src/*.h include/*.h)
 
 # Add the include directory for TS_SKSEFunctions
 set(TSSKSEFUNCTIONS_INCLUDE_DIR "../TS_SKSEFunctions-main/include")
-file(GLOB_RECURSE TSSKSEFUNCTIONS_SOURCES "../TS_SKSEFunctions-main/src/*.cpp" "../TS_SKSEFunctions-main/include/*.h")
+file(GLOB_RECURSE TSSKSEFUNCTIONS_SOURCES CONFIGURE_DEPENDS "../TS_SKSEFunctions-main/src/*.cpp" "../TS_SKSEFunctions-main/include/*.h")
 
 # Combine the source files
 list(APPEND SOURCES ${TSSKSEFUNCTIONS_SOURCES})

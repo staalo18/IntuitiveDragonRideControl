@@ -9,7 +9,7 @@ namespace IDRC {
             return RE::BSEventNotifyControl::kContinue;
         }
         if (!m_spell) {
-            log::info("IDRC - {}: no spell defined for tracing...", __FUNCTION__);
+            log::info("{}: no spell defined for tracing...", __FUNCTION__);
             return RE::BSEventNotifyControl::kContinue;
         }
 
@@ -17,7 +17,7 @@ namespace IDRC {
             if (effect && effect->baseEffect && effect->baseEffect->GetFormID() == a_event->magicEffect) {
 
                 if (a_event->target && a_event->target.get()) {
-                        log::info("IDRC - {}: MagicEffect {} applied to {}", __FUNCTION__, m_spell->GetName(), a_event->target.get()->GetName());
+                        log::info("{}: MagicEffect {} applied to {}", __FUNCTION__, m_spell->GetName(), a_event->target.get()->GetName());
                 }
             }
         }
@@ -30,9 +30,9 @@ namespace IDRC {
 
             RE::ScriptEventSourceHolder::GetSingleton()->AddEventSink<RE::TESMagicEffectApplyEvent>(this);
             m_isRegistered = true;
-            log::info("IDRC - {}: Registered MagicEffectTracer", __FUNCTION__);
+            log::info("{}: Registered MagicEffectTracer", __FUNCTION__);
         } else {
-            log::warn("IDRC - {}: MagicEffectTracer already registered", __FUNCTION__);
+            log::warn("{}: MagicEffectTracer already registered", __FUNCTION__);
         }
         return true;
     }
@@ -43,9 +43,9 @@ namespace IDRC {
             
 //            m_spell = nullptr;
             m_isRegistered = false;
-            log::info("IDRC - {}: Unregistered MagicEffectTracer", __FUNCTION__);
+            log::info("{}: Unregistered MagicEffectTracer", __FUNCTION__);
         } else {
-            log::warn("IDRC - {}: MagicEffectTracer was not registered", __FUNCTION__);
+            log::warn("{}: MagicEffectTracer was not registered", __FUNCTION__);
         }
         return true;
     }

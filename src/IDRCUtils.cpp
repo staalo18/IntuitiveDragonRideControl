@@ -33,12 +33,12 @@ namespace IDRC {
         bool RegisterForSingleUpdate(float a_seconds) {
             auto* quest = DataManager::GetSingleton().GetRideQuest();
             if (!quest) {
-                log::error("IDRC - {}: RideQuest is null", __FUNCTION__);
+                log::error("{}: RideQuest is null", __FUNCTION__);
                 return false;
             }
             auto handle = _ts_SKSEFunctions::GetHandle(quest);
             if(!handle){
-                log::error("IDRC - {}: Quest handle is null", __FUNCTION__);
+                log::error("{}: Quest handle is null", __FUNCTION__);
                 return false;
             }
             SKSE::GetTaskInterface()->AddTask([handle, a_seconds]() {
@@ -68,7 +68,7 @@ namespace IDRC {
             CSimpleIniA ini;
             ini.SetMultiKey(true); // Enable support for duplicate sections
             if (ini.LoadFile(iniPath.string().c_str()) != SI_OK) {
-                log::error("IDRC - {}: Failed to load INI file: {}", __FUNCTION__, iniPath.string());
+                log::error("{}: Failed to load INI file: {}", __FUNCTION__, iniPath.string());
                 return worldspaces;
             }
         
@@ -87,7 +87,7 @@ namespace IDRC {
                     if (worldspaceNames.size() != worldspaceCentersX.size() ||
                         worldspaceNames.size() != worldspaceCentersY.size() ||
                         worldspaceNames.size() != worldspaceSizes.size()) {
-                        log::error("IDRC - {}: Error - Mismatched number of values in section '{}'", __FUNCTION__, section.pItem);
+                        log::error("{}: Error - Mismatched number of values in section '{}'", __FUNCTION__, section.pItem);
                         continue;
                     }
         
@@ -105,7 +105,7 @@ namespace IDRC {
                             data.center_y = std::stof(centerYIt->pItem);
                             data.size = std::stof(sizeIt->pItem);
                         } catch (const std::exception& e) {
-                            log::error("IDRC - {}: Error - Failed to parse values in section '{}': {}", __FUNCTION__, section.pItem, e.what());
+                            log::error("{}: Error - Failed to parse values in section '{}': {}", __FUNCTION__, section.pItem, e.what());
                             ++nameIt;
                             ++centerXIt;
                             ++centerYIt;
@@ -128,7 +128,7 @@ namespace IDRC {
 
         float GetHorizontalDistance(RE::TESObjectREFR* a_from, RE::TESObjectREFR* a_to) {
             if (!a_from || !a_to) {
-                log::error("IDRC - {}: One or both of the provided TESObjectREFRs are null", __FUNCTION__);
+                log::error("{}: One or both of the provided TESObjectREFRs are null", __FUNCTION__);
                 return 0.0f;
             }
 
@@ -158,7 +158,7 @@ namespace IDRC {
                 // use player roll instead
                 auto* player = RE::PlayerCharacter::GetSingleton();
                 if (!player) {
-                    log::error("IDRC - {}: PlayerCharacter is null", __FUNCTION__);
+                    log::error("{}: PlayerCharacter is null", __FUNCTION__);
                     return 0.0f;
                 }
 
@@ -168,7 +168,7 @@ namespace IDRC {
             if (reference3D) {
                 targetRoll = -asinf(reference3D->world.rotate.GetVectorX().z);
             } else {
-                log::warn("IDRC - {}: reference 3D is null", __FUNCTION__);
+                log::warn("{}: reference 3D is null", __FUNCTION__);
             }            
             return targetRoll;
         }
