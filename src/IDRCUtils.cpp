@@ -148,28 +148,16 @@ namespace IDRC {
             }
 
             float targetRoll = 0.f;
-            RE::NiAVObject* reference3D = nullptr;
+            RE::NiAVObject* reference3D = _ts_SKSEFunctions::GetTargetPoint(dragonActor, RE::BGSBodyPartDefs::LIMB_ENUM::kTorso).get();
+			if (reference3D) {
+                // Note: different actors / targetpoints use different axis conventions.
+                // The roll axis for dragon kTorso bodypart is world.rotate.GetVectorZ(). 
+                // eg for the dragon's kSaddle bodypart, the roll axis is world.rotate.GetVectorX().
+				targetRoll = asinf(reference3D->world.rotate.GetVectorZ().z);
+			} else {
+				log::warn("{}: No target point found for dragonActor", __FUNCTION__);
+			}
 
-            if (_ts_SKSEFunctions::GetFlyingState(dragonActor) == 0) {
-                // use dragon roll while grounded (player roll is too shaky while grounded)
-                reference3D = dragonActor->Get3D();
-            } else {
-                // when not grounded, dragon3D coordinates are always horizontal (no roll)
-                // use player roll instead
-                auto* player = RE::PlayerCharacter::GetSingleton();
-                if (!player) {
-                    log::error("{}: PlayerCharacter is null", __FUNCTION__);
-                    return 0.0f;
-                }
-
-                reference3D = player->Get3D();
-            }
-
-            if (reference3D) {
-                targetRoll = -asinf(reference3D->world.rotate.GetVectorX().z);
-            } else {
-                log::warn("{}: reference 3D is null", __FUNCTION__);
-            }            
             return targetRoll;
         }
     } // namespace Utils

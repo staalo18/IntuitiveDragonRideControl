@@ -63,7 +63,7 @@ namespace IDRC {
 
 
     void FastTravelManager::FastTravel(const RE::TESObjectREFR* a_fastTravelTarget) {
-        log::info("IDRC - {}", __FUNCTION__);
+//        log::info("IDRC - {}", __FUNCTION__);
         if (!a_fastTravelTarget) {
             log::error("{}: error - FastTravelTarget is none", __FUNCTION__);
             return;

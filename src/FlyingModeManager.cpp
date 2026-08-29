@@ -48,6 +48,7 @@ namespace IDRC {
                 DisplayManager::GetSingleton().DisplayLeavingBorderRegion();
                 ForceHover();
             }
+/*
 if (this->m_noFlyAbility) {
 bool hasNoFlyAbility = dragonActor->HasSpell(this->m_noFlyAbility);
 log::info("{}: Dragon has NoFlyAbility = {}", __FUNCTION__, hasNoFlyAbility ? "true" : "false");
@@ -55,7 +56,7 @@ log::info("{}: Dragon has NoFlyAbility = {}", __FUNCTION__, hasNoFlyAbility ? "t
 log::warn("{}: NoFlyAbility is null", __FUNCTION__);
 }
 log::info("{}: FFlyingMode = {}", __FUNCTION__, m_mode);
-
+*/
             // process ongoing landing
             if (GetRegisteredForLanding()) {
                 if (!m_finalizeTriggerLand && !m_landingPosSearchOngoing) {
@@ -487,7 +488,7 @@ log::info("{}: FFlyingMode = {}", __FUNCTION__, m_mode);
     }
 
     void FlyingModeManager::TriggerTurn() {
-        log::info("IDRC - {}", __FUNCTION__);
+//        log::info("IDRC - {}", __FUNCTION__);
 
         auto& controlsManager = ControlsManager::GetSingleton();
         auto& combatManager = CombatManager::GetSingleton();
@@ -1289,7 +1290,7 @@ log::info("{}: FFlyingMode = {}", __FUNCTION__, m_mode);
 
 
     bool FlyingModeManager::DragonTurnPlayerRiding(float a_turnAngle) {
-        log::info("IDRC - {}, angle: {}", __FUNCTION__, a_turnAngle);
+//        log::info("IDRC - {}, angle: {}", __FUNCTION__, a_turnAngle);
 
         auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
         auto* orbitMarker = DataManager::GetSingleton().GetOrbitMarker();
@@ -1328,7 +1329,7 @@ log::info("{}: FFlyingMode = {}", __FUNCTION__, m_mode);
     }
 
     bool FlyingModeManager::DragonNewDirection(float a_angle) {
-        log::info("IDRC - {}", __FUNCTION__);
+//        log::info("IDRC - {}", __FUNCTION__);
     
         auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
         if (!dragonActor) {
@@ -1345,7 +1346,7 @@ log::info("{}: FFlyingMode = {}", __FUNCTION__, m_mode);
     }
 
     bool FlyingModeManager::DragonFlyTo(float a_angle){
-        log::info("IDRC - {}", __FUNCTION__);
+//        log::info("IDRC - {}", __FUNCTION__);
 
         auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
         auto* orbitMarker = DataManager::GetSingleton().GetOrbitMarker();
