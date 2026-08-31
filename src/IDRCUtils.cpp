@@ -47,7 +47,7 @@ namespace IDRC {
             });
             return true;
         }
-*/
+
 
         /* loads worldspace data from ini file. ini file format:
                 [Worldspace]
@@ -59,7 +59,7 @@ namespace IDRC {
                 center_x = 10000.0
                 center_y = 10000.0
                 size = 200000.0
-        */
+        *//*
         std::vector<WorldspaceIniData> LoadWorldspaceIniData(const std::string& a_iniFilename) {
             std::vector<WorldspaceIniData> worldspaces;
         
@@ -125,7 +125,7 @@ namespace IDRC {
         
             return worldspaces;
         }
-
+*/
         float GetHorizontalDistance(RE::TESObjectREFR* a_from, RE::TESObjectREFR* a_to) {
             if (!a_from || !a_to) {
                 log::error("{}: One or both of the provided TESObjectREFRs are null", __FUNCTION__);

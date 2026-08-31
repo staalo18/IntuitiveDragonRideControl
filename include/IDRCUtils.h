@@ -14,13 +14,11 @@ namespace IDRC {
         
         void SetINIVars();
 
-//        bool RegisterForSingleUpdate(float a_seconds);
-
         float GetHorizontalDistance(RE::TESObjectREFR* a_from, RE::TESObjectREFR* a_to);
 
         float GetDragonRoll();
         
-        std::vector<WorldspaceIniData> LoadWorldspaceIniData(const std::string& a_iniFilename);
+//        std::vector<WorldspaceIniData> LoadWorldspaceIniData(const std::string& a_iniFilename);
 
         // Version-aware accessor for PlayerCharacter::queuedTargetLoc.
         // CommonLibSSE-NG hardcodes queuedTargetLoc at the SE offset (0x640), which
