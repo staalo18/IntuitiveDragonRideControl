@@ -12,7 +12,8 @@ namespace Hooks
 		static void Hook()
 		{
 			REL::Relocation<std::uintptr_t> ReadyWeaponHandlerVtbl{ RE::VTABLE_ReadyWeaponHandler[0] };
-			_ProcessButton = ReadyWeaponHandlerVtbl.write_vfunc(0x4, ProcessButton);
+			auto vtblShift = REL::Module::IsAtLeast(SKSE::RUNTIME_SSE_1_7_99) ? 2 : 0;
+			_ProcessButton = ReadyWeaponHandlerVtbl.write_vfunc(0x4 + vtblShift, ProcessButton);
 		}
 
 	private:
@@ -51,7 +52,7 @@ namespace Hooks
 			auto& trampoline = SKSE::GetTrampoline();
 			REL::Relocation<uintptr_t> hook{ RELOCATION_ID(35565, 36564) };  // 5B2FF0, 5D9F50, main update
 			
-			_Nullsub = trampoline.write_call<5>(hook.address() + RELOCATION_OFFSET(0x748, 0xC26), Nullsub);  // 5B3738, 5DAB76
+			_Nullsub = trampoline.write_call<5>(hook.address() + RELOCATION_OFFSET1799(0x748, 0xC26, 0xC38), Nullsub);  // 5B3738, 5DAB76		
 		}
 
 	private:
@@ -66,8 +67,9 @@ namespace Hooks
 		static void Hook()
 		{
 			REL::Relocation<std::uintptr_t> LookHandlerVtbl{ RE::VTABLE_LookHandler[0] };
-			_ProcessThumbstick = LookHandlerVtbl.write_vfunc(0x2, ProcessThumbstick);
-			_ProcessMouseMove = LookHandlerVtbl.write_vfunc(0x3, ProcessMouseMove);
+			auto vtblShift = REL::Module::IsAtLeast(SKSE::RUNTIME_SSE_1_7_99) ? 2 : 0;
+			_ProcessThumbstick = LookHandlerVtbl.write_vfunc(0x2 + vtblShift, ProcessThumbstick);
+			_ProcessMouseMove = LookHandlerVtbl.write_vfunc(0x3 + vtblShift, ProcessMouseMove);
 		}
 
 	private:

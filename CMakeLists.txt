@@ -26,13 +26,7 @@ configure_file(
 
 list(APPEND SOURCES ${CMAKE_CURRENT_BINARY_DIR}/plugin.rc)
 
-option(COMMONLIBSSE_NG16 "Build against the alternate CommonLibSSE-NG (CommonLibSSEPath_NG_16) instead of CommonLibSSEPath_NG" OFF)
-
-if(COMMONLIBSSE_NG16)
-    set(OUTPUT_FOLDER "C:/Users/tom/AppData/Local/ModOrganizer/MO_SkyrimSE/mods/_DEV_IntuitiveDragonRideControl_16")
-else()
-    set(OUTPUT_FOLDER "C:/Users/tom/AppData/Local/ModOrganizer/MO_SkyrimSE/mods/_DEV_IntuitiveDragonRideControl")
-endif()
+set(OUTPUT_FOLDER "C:/Users/tom/AppData/Local/ModOrganizer/MO_SkyrimSE/mods/_DEV_IntuitiveDragonRideControl")
 
 option(ENABLE_SKYRIM_SE "Enable support for Skyrim SE in the dynamic runtime feature." ON)
 option(ENABLE_SKYRIM_AE "Enable support for Skyrim AE in the dynamic runtime feature." ON)
@@ -49,19 +43,12 @@ file(GLOB_RECURSE TSSKSEFUNCTIONS_SOURCES CONFIGURE_DEPENDS "../TS_SKSEFunctions
 # Combine the source files
 list(APPEND SOURCES ${TSSKSEFUNCTIONS_SOURCES})
 
-# --- CommonLibSSE: Use local path from environment variable (switch via COMMONLIBSSE_NG16) ---
-if(COMMONLIBSSE_NG16)
-    set(COMMONLIBSSE_PATH $ENV{CommonLibSSEPath_NG_16})
+# --- CommonLibSSE: Use local path from environment variable ---
 
-    if(NOT COMMONLIBSSE_PATH)
-        message(FATAL_ERROR "CommonLibSSEPath_NG_16 environment variable is not set!")
-    endif()
-else()
-    set(COMMONLIBSSE_PATH $ENV{CommonLibSSEPath_NG})
+set(COMMONLIBSSE_PATH $ENV{CommonLibSSEPath_NG})
 
-    if(NOT COMMONLIBSSE_PATH)
-        message(FATAL_ERROR "CommonLibSSEPath_NG environment variable is not set!")
-    endif()
+if(NOT COMMONLIBSSE_PATH)
+    message(FATAL_ERROR "CommonLibSSEPath_NG environment variable is not set!")
 endif()
 
 add_subdirectory("${COMMONLIBSSE_PATH}" CommonLibSSE EXCLUDE_FROM_ALL)
@@ -79,10 +66,6 @@ add_subdirectory("$ENV{CLibUtilsPath}" ClibUtils EXCLUDE_FROM_ALL)
 add_library(${PROJECT_NAME} SHARED ${SOURCES})
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_23) # <--- use C++23 standard
 target_precompile_headers(${PROJECT_NAME} PRIVATE include/PCH.h) # <--- PCH.h is required!
-
-if(COMMONLIBSSE_NG16)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE COMMONLIBSSE_NG_16)
-endif()
 
 # Generate PDB files for all build types (Release uses /Zi + /DEBUG to keep optimizations)
 target_compile_options(${PROJECT_NAME} PRIVATE $<$<CONFIG:Release>:/Zi>)

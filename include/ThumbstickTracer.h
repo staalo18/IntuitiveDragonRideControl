@@ -16,7 +16,8 @@ namespace IDRC
 		{
 			REL::Relocation<std::uintptr_t> MovementHandlerVtbl{ RE::VTABLE_MovementHandler[0] };
 			
-			_ProcessThumbstick = MovementHandlerVtbl.write_vfunc(0x2, ProcessThumbstick);
+			auto vtblShift = REL::Module::IsAtLeast(SKSE::RUNTIME_SSE_1_7_99) ? 2 : 0;
+			_ProcessThumbstick = MovementHandlerVtbl.write_vfunc(0x2 + vtblShift, ProcessThumbstick);
 		}
 
 		static void Uninstall()
@@ -24,7 +25,8 @@ namespace IDRC
             REL::Relocation<std::uintptr_t> MovementHandlerVtbl{ RE::VTABLE_MovementHandler[0] };
 
             // Restore the original function pointer
-            MovementHandlerVtbl.write_vfunc(0x2, _ProcessThumbstick.address());
+            auto vtblShift = REL::Module::IsAtLeast(SKSE::RUNTIME_SSE_1_7_99) ? 2 : 0;
+            MovementHandlerVtbl.write_vfunc(0x2 + vtblShift, _ProcessThumbstick.address());
         }
 
 	private:

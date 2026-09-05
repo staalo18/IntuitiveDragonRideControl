@@ -357,15 +357,11 @@ log::info("{}: Updated player cell to {}, {}", __FUNCTION__, targetCellX, target
             distanceMultiplier = 2.0f;
         }
 
-        if (dragonActor->HasShout(m_unrelentingForceShout) && (isAlternateAttack || controlsManager.GetIsKeyPressed(IDRCKey::kRun))) {
-            SetShoutMode(2); // Set to Unrelenting Force
-        } else if (resolvedShoutTarget && _ts_SKSEFunctions::GetDistance(dragonActor, resolvedShoutTarget) >= distanceMultiplier * m_maxTargetDistance) {
-            SetShoutMode(1); // Set to Ball/Storm
-        } else {
-            SetShoutMode(0); // Set to Breath
-        }
+        bool useUnrelentingForce = dragonActor->HasShout(m_unrelentingForceShout) && (isAlternateAttack || controlsManager.GetIsKeyPressed(IDRCKey::kRun));
+        float targetDistance = resolvedShoutTarget ? _ts_SKSEFunctions::GetDistance(dragonActor, resolvedShoutTarget) : 2000.0f;
+        SetActiveShout(targetDistance, useUnrelentingForce);
 
-        if (m_attackShout == nullptr) {
+        if (m_attackShout == nullptr || m_attackShout->variations[0].spell == nullptr) {
             log::error("{}: Error: No Shout Found", __FUNCTION__);            
             return false;
         }
@@ -396,49 +392,91 @@ log::info("{}: Updated player cell to {}, {}", __FUNCTION__, targetCellX, target
         });
     }
 
-    RE::TESShout* CombatManager::GetShout(const RE::BGSListForm* a_shoutList) {
-        if (!a_shoutList) {
-            log::error("{}: ShoutList is null", __FUNCTION__);
-            return nullptr;
-        }
-    
+    RE::TESShout* CombatManager::GetShout(float a_targetDistance) {
         auto* dragonActor = DataManager::GetSingleton().GetDragonActor();
-    
         if (!dragonActor) {
             log::error("{}: dragonActor is null", __FUNCTION__);
             return nullptr;
         }
-    
-        // Iterate through the ShoutList in reverse order
-        for (int i = a_shoutList->forms.size() - 1; i >= 0; --i) {
-            auto* form = a_shoutList->forms[i];
-            if (!form) {
-                continue;
+
+        auto* actorBase = dragonActor->GetActorBase();
+        auto* spellList = actorBase ? actorBase->GetSpellList() : nullptr;
+        if (!spellList || !spellList->shouts) {
+            log::info("{}: Dragon has no shout list", __FUNCTION__);
+            return nullptr;
+        }
+
+        RE::TESShout* candidateShout = nullptr;
+        RE::TESShout* selectedShout = nullptr;
+        float bestDistance = -1.0f;
+        std::vector<std::uint32_t> selectableShoutIndices;
+
+        for (std::uint32_t i = spellList->numShouts; i-- > 0;) {
+            candidateShout = spellList->shouts[i];
+            if (candidateShout && dragonActor->HasShout(candidateShout) && candidateShout != m_unrelentingForceShout) {
+                if (std::size(candidateShout->variations) > 0) {
+                    auto* spell = candidateShout->variations[0].spell;
+                    if (!spell) {
+                        continue;
+                    }
+
+                    float maxProjectileRange = -1.0f;
+                    for (auto* effect : spell->effects) {
+                        auto* magicEffect = effect ? effect->baseEffect : nullptr;
+                        auto* projectile = magicEffect ? magicEffect->data.projectileBase : nullptr;
+                        if (projectile) {
+                            float projectileRange = projectile->data.range;
+                            if (projectileRange > maxProjectileRange) {
+                                maxProjectileRange = projectileRange;
+                            }
+                        }
+                    }
+
+                    if (  selectableShoutIndices.size() == 0 ||
+                          ( maxProjectileRange >= a_targetDistance && (bestDistance < a_targetDistance || maxProjectileRange <= bestDistance) ) ||
+                          ( maxProjectileRange < a_targetDistance && maxProjectileRange >= bestDistance )
+                       ) {
+                        // best distance: as close as possible to the target distance (with priority on larger than target distance)
+
+                        if (bestDistance != maxProjectileRange) {
+                            // new best distance, clear previous selectable shouts
+                            selectableShoutIndices.clear();
+                        }
+
+                        selectableShoutIndices.push_back(i);
+                        bestDistance = maxProjectileRange;
+                    }
+                }
             }
-    
-            auto* shout = form->As<RE::TESShout>();
-            if (shout && dragonActor->HasShout(shout)) {
-                return shout;
+
+            if (!selectableShoutIndices.empty()) {
+                int chosenIndex = selectableShoutIndices[0];
+
+                auto numberofSelectableShouts = selectableShoutIndices.size();
+                if (numberofSelectableShouts > 1) { // more than one shout with same best distance
+                    // pick a random index from the selectable shouts
+                    float randomValue = _ts_SKSEFunctions::GetRandomFloat(0.0f, 1.0f);
+                    chosenIndex = selectableShoutIndices[static_cast<int>(randomValue * numberofSelectableShouts)];
+                }
+
+                selectedShout = spellList->shouts[chosenIndex];
             }
         }
-    
-        log::info("{}: No valid shout found in ShoutList", __FUNCTION__);
-        return nullptr;
+
+        return selectedShout;
     }
 
-    bool CombatManager::SetShoutMode(int a_shoutMode) {
-        log::info("{}: {}", __FUNCTION__, a_shoutMode);
+    bool CombatManager::SetActiveShout(float a_targetDistance, bool a_useUnrelentingForce) {
+        log::info("{}: {}, {}", __FUNCTION__, a_targetDistance, a_useUnrelentingForce);
     
         RE::TESShout* usedShout = nullptr;
-    
-        if (a_shoutMode == 0) { // Breath
-            usedShout = GetShout(GetBreathShoutList());
-        } else if (a_shoutMode == 1) { // Ball / Storm
-            usedShout = GetShout(GetBallShoutList());
-        } else if (a_shoutMode == 2) { // Unrelenting Force
+
+        if (a_useUnrelentingForce && m_unrelentingForceShout) {
             usedShout = m_unrelentingForceShout;
+        } else {
+            usedShout = GetShout(a_targetDistance);
         }
-    
+
         if (!usedShout) {
             log::error("{}: No Shout found!", __FUNCTION__);
             return false;

@@ -65,9 +65,9 @@ namespace IDRC {
         RE::ActorHandle m_storedCombatTarget{};
         int m_storedCombatTargetState = 0;
 
-        RE::TESShout* GetShout(const RE::BGSListForm* a_shoutList);
+        RE::TESShout* GetShout(float a_targetDistance);
 
-        bool SetShoutMode(int a_shoutMode);
+        bool SetActiveShout(float a_targetDistance,  bool a_useUnrelentingForce = false);
 
         bool IsValidTarget(RE::Actor* a_target);
 

@@ -1,5 +1,5 @@
 ## Requirements
-* [CommonLibSSE-NG](https://github.com/alandtse/CommonLibVR/tree/ng))
+* [CommonLibSSE-NG](https://github.com/alandtse/CommonLibSSE-NG))
 	* Add the environment variable `COMMONLIBSSE_PATH` with the value as the path to the folder containing CommonLibSSE-NG
 * [_ts_SKSEFunctions](https://github.com/staalo18/TS_SKSEFunctions))
 	* Install this into a directory parallel to the IDRC project directory
