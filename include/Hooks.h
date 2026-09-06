@@ -504,8 +504,6 @@ FastTravel-related hooks:
 			[papyrus FastTravel]
 			└─ ExecuteTeleport (ExecuteTeleportHook)  (same subtree as above)
 
-	See IDRC::Utils::GetQueuedTargetLoc for how to obtain and modify queuedTargetLoc.
-
 - UpdateFlyingMountFastTravelHook::UpdateFastTravel (0x1406badd0, REL::VariantID(39716, 40818, 0)) 
     is called once per frame from the main player update loop (0x14069e580).
 	UpdateFastTravel is handling the flying mount logic once airborne. 

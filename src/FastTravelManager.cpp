@@ -123,24 +123,24 @@ namespace IDRC {
                 log::warn("{}: Cannot access worldspace", __FUNCTION__);
                 return;
             }
-
+/*
             // trigger fast travel to a_fastTravelTarget in next frame 
-            auto* loc = Utils::GetQueuedTargetLoc(player);
-            loc->world         = worldspace;
-            loc->interior      = nullptr;
-            loc->location      = a_fastTravelTarget->GetPosition();
-            loc->angle         = a_fastTravelTarget->GetAngle();
-            loc->arrivalFunc   = nullptr;
-            loc->arrivalFuncData = 0;
-            loc->furnitureRef  = RE::RefHandle{};
-            GetRefHandle(a_fastTravelTarget, &loc->fastTravelMarker);
-            loc->resetWeather  = false;
-            loc->allowAutoSave = false;
-            loc->isValid       = true;  // triggers the fast travel on next per-frame ExecuteTeleport call
-
+            auto& data = player->GetPlayerRuntimeData();
+            data.queuedTargetLoc.world         = worldspace;
+            data.queuedTargetLoc.interior      = nullptr;
+            data.queuedTargetLoc.location      = a_fastTravelTarget->GetPosition();
+            data.queuedTargetLoc.angle         = a_fastTravelTarget->GetAngle();
+            data.queuedTargetLoc.arrivalFunc   = nullptr;
+            data.queuedTargetLoc.arrivalFuncData = 0;
+            data.queuedTargetLoc.furnitureRef  = RE::RefHandle{};
+            GetRefHandle(a_fastTravelTarget, &data.queuedTargetLoc.fastTravelMarker);
+            data.queuedTargetLoc.resetWeather  = false;
+            data.queuedTargetLoc.allowAutoSave = false;
+            data.queuedTargetLoc.isValid       = true;  // triggers the fast travel on next per-frame ExecuteTeleport call
+*/
 // Previous solution: call the Papyrus function Game.FastTravel(). 
 // This works as well and is an alternative to setting the loc values.
-//            _ts_SKSEFunctions::CallPapyrusFunction("Game"sv, "FastTravel"sv, a_fastTravelTarget);
+            _ts_SKSEFunctions::CallPapyrusFunction("Game"sv, "FastTravel"sv, a_fastTravelTarget);
 
             // trigger fasttravel package
             dragonActor->AsActorValueOwner()->SetActorValue(RE::ActorValue::kVariable03, 2);

@@ -1430,9 +1430,9 @@ log::info("{}: --------------->>>>>>>>>>>>>> FlyingMountActivate called", __FUNC
 			return false;
 		}
 		if (m_blockExecuteTeleport) {
-			if (auto* loc = IDRC::Utils::GetQueuedTargetLoc(a_this); loc->isValid) {
+			if (a_this->GetPlayerRuntimeData().queuedTargetLoc.isValid) {
 log::info("{}: --------------->>>>>>>>>>>> ExecuteTeleport called - isValid == true", __FUNCTION__);
-				loc->isValid = false;
+				a_this->GetPlayerRuntimeData().queuedTargetLoc.isValid = false;
 			}
 		}
 		using FuncType = bool(*)(RE::PlayerCharacter*);
