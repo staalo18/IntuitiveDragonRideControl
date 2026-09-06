@@ -195,24 +195,26 @@ namespace IDRC {
         if (!isPressed) {
             // No mapped gamepad control found, or no gamepad key pressed. 
             // Check if a keyboard key is pressed
-            auto* keyboard = deviceManager->GetKeyboard();
+            RE::BSWin32KeyboardDevice* keyboard = deviceManager->GetKeyboard();
             if (!keyboard) {
                 log::error("{}: Keyboard is null", __FUNCTION__);
                 return false;
             }
             
-            if (keyboard->curState[static_cast<uint32_t>(scanCode)]) {
-                isPressed = (static_cast<uint32_t>(scanCode) < 256) && ((keyboard->curState[static_cast<uint32_t>(scanCode)] & 0x80) != 0);
+            auto& curState = keyboard->GetRuntimeData().curState;
+            if (curState[static_cast<uint32_t>(scanCode)]) {
+                isPressed = (static_cast<uint32_t>(scanCode) < 256) && ((curState[static_cast<uint32_t>(scanCode)] & 0x80) != 0);
             }
         }
         if (!isPressed) {
             // Check if the key is pressed on the mouse
-            auto* mouse = deviceManager->GetMouse();
+            RE::BSWin32MouseDevice* mouse = deviceManager->GetMouse();
             if (!mouse) {
                 return false;
             }
-            auto it = mouse->deviceButtons.find(static_cast<uint32_t>(static_cast<uint32_t>(scanCode) - InputMap::kMacro_MouseButtonOffset));
-            if (it != mouse->deviceButtons.end()) {
+            auto& deviceButtons = mouse->RE::BSInputDevice::GetRuntimeData().deviceButtons;
+            auto it = deviceButtons.find(static_cast<uint32_t>(static_cast<uint32_t>(scanCode) - InputMap::kMacro_MouseButtonOffset));
+            if (it != deviceButtons.end()) {
                 const auto& button = it->second;
                 isPressed = button && (button->heldDownSecs > 0.0); // Check if the button is held down
             } 
@@ -392,8 +394,9 @@ namespace IDRC {
         }
 
         bool isPressed = false;
-        auto it = gamepad->deviceButtons.find(static_cast<uint32_t>(a_gamepadButton));
-        if (it != gamepad->deviceButtons.end()) {
+        auto& deviceButtons = gamepad->RE::BSInputDevice::GetRuntimeData().deviceButtons;
+        auto it = deviceButtons.find(static_cast<uint32_t>(a_gamepadButton));
+        if (it != deviceButtons.end()) {
             const auto& button = it->second;
             isPressed = button && (button->heldDownSecs > 0.0); // Check if the button is held down
         } 
@@ -426,8 +429,9 @@ namespace IDRC {
             return;
         }
 
-        auto it = gamepad->deviceButtons.find(a_buttonEvent->GetIDCode());
-        if (it != gamepad->deviceButtons.end()) {
+        auto& deviceButtons = gamepad->RE::BSInputDevice::GetRuntimeData().deviceButtons;
+        auto it = deviceButtons.find(a_buttonEvent->GetIDCode());
+        if (it != deviceButtons.end()) {
             auto& button = it->second;
             //  heldDownSecs > 0 indicates button-touched
             button->heldDownSecs += 0.1f;
@@ -456,8 +460,9 @@ namespace IDRC {
             return;
         }
 
-        auto it = mouse->deviceButtons.find(a_buttonEvent->GetIDCode());
-        if (it != mouse->deviceButtons.end()) {
+        auto& deviceButtons = mouse->RE::BSInputDevice::GetRuntimeData().deviceButtons;
+        auto it = deviceButtons.find(a_buttonEvent->GetIDCode());
+        if (it != deviceButtons.end()) {
             auto& button = it->second;
             //  heldDownSecs > 0 indicates button-touched
             button->heldDownSecs += 0.1f;
@@ -478,16 +483,18 @@ namespace IDRC {
     
         RE::BSFixedString mapping;
     
-        log::info("{}: Scanning all mappings for device: {}", __FUNCTION__, static_cast<int>(a_device->device));
+        RE::INPUT_DEVICE deviceType = a_device->GetRuntimeData().device;
+
+        log::info("{}: Scanning all mappings for device: {}", __FUNCTION__, static_cast<int>(deviceType));
     
         // Iterate over a range of possible keyCodes
         for (uint32_t keyCode = 0; keyCode <= a_maxKeyCode; ++keyCode) {
-            if (deviceManager->GetDeviceButtonNameFromID(a_device->device, keyCode, mapping)) {
+            if (deviceManager->GetDeviceButtonNameFromID(deviceType, keyCode, mapping)) {
                 log::info("{}: keyCode: {}, Mapping: {}", __FUNCTION__, keyCode, mapping.c_str());
             }
         }
     
-        log::info("{}: Finished scanning mappings for device: {}", __FUNCTION__, static_cast<int>(a_device->device));
+        log::info("{}: Finished scanning mappings for device: {}", __FUNCTION__, static_cast<int>(deviceType));
     }
 
     void ControlsManager::SetInitialAutoCombatMode(bool a_auto) {
