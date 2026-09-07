@@ -13,20 +13,10 @@ namespace IDRC {
         CombatManager(const CombatManager&) = delete;
         CombatManager& operator=(const CombatManager&) = delete;
 
-        void InitializeData(RE::BGSListForm* a_breathShoutList, 
-                            RE::BGSListForm* a_ballShoutList,
-                            RE::TESShout* a_unrelentingForceShout,
+        void InitializeData(RE::TESShout* a_unrelentingForceShout,
                             RE::TESShout* a_attackShout);
  
         bool DragonAttack(bool a_alternateAttack = false);
-
-        RE::BGSListForm* GetBreathShoutList();
-
-        void SetBreathShoutList(RE::BGSListForm* a_breathShoutList);
-
-        RE::BGSListForm* GetBallShoutList();
-
-        void SetBallShoutList(RE::BGSListForm* a_ballShoutList);
 
         void Update();
     
@@ -51,8 +41,6 @@ namespace IDRC {
 
         // accessed by other classes
         // change value only via Set function to trigger PropertyUpdateEvent
-        RE::BGSListForm* m_breathShoutList = nullptr;
-        RE::BGSListForm* m_ballShoutList = nullptr;
         RE::TESShout* m_unrelentingForceShout = nullptr;
         RE::TESShout* m_attackShout = nullptr;
         const float m_maxTargetDistance = 2000.0f;

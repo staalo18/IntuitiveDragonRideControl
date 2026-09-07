@@ -33,8 +33,8 @@ Spell Property DLC2TameDragonNoFlyAbility  Auto
 Shout Property AttackShout auto
 Shout Property UnrelentingForceShout auto
 
-Formlist Property BreathShoutList auto
-Formlist Property BallShoutList auto
+Formlist Property BreathShoutList auto ; no longer needed - can be removed from ESP whenever it fits.
+Formlist Property BallShoutList auto  ; no longer needed - can be removed from ESP whenever it fits.
 
 
 
@@ -57,7 +57,6 @@ function InitializeData_SKSE(Quest rideQuest, Quest findPerchQuest, \
 							ReferenceAlias TowerPerch, \
 							ReferenceAlias RockPerch, \
 							ReferenceAlias PerchTarget, \							
-							FormList BreathShoutList, FormList BallShoutList, \
 							Shout UnrelentingForceShout, Shout AttackShout, \
 							ObjectReference DragonTurnMarker, ObjectReference DragonTravelToMarker,\
 							ObjectReference FlyToTargetMarker, \
@@ -75,7 +74,7 @@ _ts_Debug_Trace_Message("IDRC - _ts_DR_RideControlScript - InitVariables: IsUsin
 
 	InitializeData_SKSE((self as quest), FindPerchQuest, dragonAlias, DLC2TameDragonOrbitMarker, \
 						WordWallPerch, TowerPerch, RockPerch, PerchTarget, \
-						BreathShoutList, BallShoutList, UnrelentingForceShout, AttackShout, \
+						UnrelentingForceShout, AttackShout, \
 						DragonTurnMarker, DragonTravelToMarker, FlyToTargetMarker,\
 						DLC2TameDragonNoFlyAbility, DragonName, \
 						(MCMConfigQuest as _ts_DR_MCMConfig).bCameraLockInitiallyEnabled)
@@ -358,29 +357,25 @@ _ts_Debug_Trace_Message("IDRC - _ts_DR_RideControlScript - SetAutoCombat: bAutoC
 	SetAutoCombat_SKSE(bValue)
 endfunction
 
-function SetBreathShoutList_SKSE(Formlist ShoutList) global native
+; ShoutList functions are only kept to keep API compatible for GoTDragonCompanions
+; They do no longer provide any functionality, nor have any effect
+; Can be removed whenever the function calls in GoTDragonCompanions are removed.
 function SetBreathShoutList(Formlist ShoutList)
-_ts_Debug_Trace_Message("IDRC - _ts_DR_RideControlScript - SetBreathShoutList")
 	BreathShoutList = ShoutList
-	SetBreathShoutList_SKSE(ShoutList)
 endfunction
 
-function SetBallShoutList_SKSE(Formlist ShoutList) global native
 function SetBallShoutList(Formlist ShoutList)
-_ts_Debug_Trace_Message("IDRC - _ts_DR_RideControlScript - SetBallShoutList")
 	BallShoutList = ShoutList
-	SetBallShoutList_SKSE(ShoutList)
 endfunction
 
-Formlist function GetBreathShoutList_SKSE() global native
 Formlist function GetBreathShoutList()
-	return GetBreathShoutList_SKSE()
+	return BreathShoutList
 endfunction
 
-Formlist function GetBallShoutList_SKSE() global native
 Formlist function GetBallShoutList()
-	return GetBallShoutList_SKSE()
+	return BallShoutList
 endfunction
+; END legacy ShoutList functions
 
 bool function GetInitialAutoCombatMode_SKSE() global native
 bool function GetInitialAutoCombatMode()

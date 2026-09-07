@@ -14,43 +14,15 @@
 
 namespace IDRC {   
 
-    void CombatManager::InitializeData(RE::BGSListForm* a_breathShoutList, 
-                                RE::BGSListForm* a_ballShoutList,
-                                RE::TESShout* a_unrelentingForceShout,
+    void CombatManager::InitializeData(RE::TESShout* a_unrelentingForceShout,
                                 RE::TESShout* a_attackShout) {
         log::info("IDRC - {}", __FUNCTION__);
-        SetBreathShoutList(a_breathShoutList);
-        SetBallShoutList(a_ballShoutList);
         m_unrelentingForceShout = a_unrelentingForceShout;
         m_attackShout = a_attackShout;
     }
 
     float CombatManager::GetMaxTargetDistance() {
         return m_maxTargetDistance;
-    }
-
-    RE::BGSListForm* CombatManager::GetBreathShoutList() {
-        return m_breathShoutList;
-    }
-
-    void CombatManager::SetBreathShoutList(RE::BGSListForm* a_breathShoutList) {
-        if (!a_breathShoutList) {
-            log::error("{}: breathShoutList is null", __FUNCTION__);
-        }
-
-        m_breathShoutList = a_breathShoutList;
-    }
-
-    RE::BGSListForm* CombatManager::GetBallShoutList() {
-        return m_ballShoutList;
-    }
-
-    void CombatManager::SetBallShoutList(RE::BGSListForm* a_ballShoutList) {
-        if (!a_ballShoutList) {
-            log::error("{}: ballShoutList is null", __FUNCTION__);
-        }
-        
-        m_ballShoutList = a_ballShoutList;
     }
 
     bool CombatManager::IsValidTarget(RE::Actor* a_target) {

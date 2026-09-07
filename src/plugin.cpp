@@ -39,8 +39,6 @@ namespace IDRC {
                                 RE::BGSRefAlias* a_towerPerch,
                                 RE::BGSRefAlias* a_rockPerch,
                                 RE::BGSRefAlias* a_perchTarget,
-                                RE::BGSListForm* a_breathList, 
-                                RE::BGSListForm* a_ballList,
                                 RE::TESShout* a_unrelentingForceShout,
                                 RE::TESShout* a_attackShout,
                                 RE::TESObjectREFR* a_dragonTurnMarker,
@@ -54,7 +52,7 @@ namespace IDRC {
                                             a_wordWallPerch, a_towerPerch, a_rockPerch, a_perchTarget);
             FlyingModeManager::GetSingleton().InitializeData(a_dragonTurnMarker, 
                                             a_dragonTravelToMarker, a_flyToTargetMarker, a_noFlyAbility);
-            CombatManager::GetSingleton().InitializeData(a_breathList, a_ballList, a_unrelentingForceShout, a_attackShout);  
+            CombatManager::GetSingleton().InitializeData(a_unrelentingForceShout, a_attackShout);  
             ControlsManager::GetSingleton().InitializeData();
             TargetReticleManager::GetSingleton().Initialize();
             CameraLockManager::GetSingleton().SetInitiallyEnabled(cameraLockInitiallyEnabled);
@@ -109,26 +107,6 @@ namespace IDRC {
         void SetAutoCombat_SKSE(RE::StaticFunctionTag*, bool a_auto) {
             log::info("{}: {}", __FUNCTION__, a_auto);
             DataManager::GetSingleton().SetAutoCombat(a_auto);
-        }
-
-        void SetBreathShoutList_SKSE(RE::StaticFunctionTag*, RE::BGSListForm* a_breathShoutList) {
-            log::info("IDRC - {}", __FUNCTION__);
-            CombatManager::GetSingleton().SetBreathShoutList(a_breathShoutList);
-        }
-
-        RE::BGSListForm* GetBreathShoutList_SKSE(RE::StaticFunctionTag*) {
-            log::info("IDRC - {}", __FUNCTION__);
-            return CombatManager::GetSingleton().GetBreathShoutList();
-        }
-
-        void SetBallShoutList_SKSE(RE::StaticFunctionTag*, RE::BGSListForm* a_ballShoutList) {
-            log::info("IDRC - {}", __FUNCTION__);
-            CombatManager::GetSingleton().SetBallShoutList(a_ballShoutList);
-        }
-
-        RE::BGSListForm* GetBallShoutList_SKSE(RE::StaticFunctionTag*) {
-            log::info("IDRC - {}", __FUNCTION__);
-            return CombatManager::GetSingleton().GetBallShoutList();
         }
 
         bool GetInitialAutoCombatMode_SKSE(RE::StaticFunctionTag*) {
@@ -257,10 +235,6 @@ namespace IDRC {
         
             // functions for GoTDragonCompanions
             a_vm->RegisterFunction("SetAutoCombat_SKSE", "_ts_DR_RideControlScript", SetAutoCombat_SKSE);
-            a_vm->RegisterFunction("SetBreathShoutList_SKSE", "_ts_DR_RideControlScript", SetBreathShoutList_SKSE);
-            a_vm->RegisterFunction("SetBallShoutList_SKSE", "_ts_DR_RideControlScript", SetBallShoutList_SKSE);
-            a_vm->RegisterFunction("GetBreathShoutList_SKSE", "_ts_DR_RideControlScript", GetBreathShoutList_SKSE);
-            a_vm->RegisterFunction("GetBallShoutList_SKSE", "_ts_DR_RideControlScript", GetBallShoutList_SKSE);
             a_vm->RegisterFunction("GetInitialAutoCombatMode_SKSE", "_ts_DR_RideControlScript", GetInitialAutoCombatMode_SKSE);
             a_vm->RegisterFunction("SetDisplayAttackMessage_SKSE", "_ts_DR_RideControlScript", SetDisplayAttackMessage_SKSE);
 
