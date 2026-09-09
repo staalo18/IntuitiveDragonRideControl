@@ -96,7 +96,6 @@ namespace IDRC {
         ~FastTravelManager() = default;
 
         bool m_skipFastTravelRequest = false; 
-        bool m_lastPatrolQueuedState = false;
         bool m_lastFastTravelState = false;
     }; // class FastTravelManager
 } // namespace IDRC

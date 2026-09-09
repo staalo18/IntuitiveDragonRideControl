@@ -33,9 +33,6 @@ Spell Property DLC2TameDragonNoFlyAbility  Auto
 Shout Property AttackShout auto
 Shout Property UnrelentingForceShout auto
 
-Formlist Property BreathShoutList auto ; no longer needed - can be removed from ESP whenever it fits.
-Formlist Property BallShoutList auto  ; no longer needed - can be removed from ESP whenever it fits.
-
 
 
 ; Initialization 
@@ -361,19 +358,19 @@ endfunction
 ; They do no longer provide any functionality, nor have any effect
 ; Can be removed whenever the function calls in GoTDragonCompanions are removed.
 function SetBreathShoutList(Formlist ShoutList)
-	BreathShoutList = ShoutList
 endfunction
 
 function SetBallShoutList(Formlist ShoutList)
-	BallShoutList = ShoutList
 endfunction
 
 Formlist function GetBreathShoutList()
-	return BreathShoutList
+	Formlist  ShoutList
+	return ShoutList
 endfunction
 
 Formlist function GetBallShoutList()
-	return BallShoutList
+	Formlist  ShoutList
+	return ShoutList
 endfunction
 ; END legacy ShoutList functions
 

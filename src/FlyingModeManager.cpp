@@ -85,8 +85,7 @@ log::info("{}: FFlyingMode = {}", __FUNCTION__, m_mode);
 
             // handle map-triggered fasttravel
             if (m_mode != kFlying && _ts_SKSEFunctions::GetFlyingState(dragonActor) == 2 &&
-                (_ts_SKSEFunctions::IsFlyingMountFastTravelling(dragonActor) ||
-                 _ts_SKSEFunctions::IsFlyingMountPatrolQueued(dragonActor))) {
+                (Utils::IsFastTravelActive())) {
                 // Can happen eg when player triggers fast travel via map.
                 // Map-based fasttravel currently not supported, because the dynamic
                 // repathing in PathingHook::UpdateFlightPathData will override any 
@@ -103,8 +102,7 @@ log::info("{}: FFlyingMode = {}", __FUNCTION__, m_mode);
             auto* storedCombatTarget = combatManager.GetStoredCombatTarget();
             if ( DataManager::GetSingleton().GetAutoCombat() && 
                  storedCombatTarget &&
-                 (_ts_SKSEFunctions::IsFlyingMountFastTravelling(dragonActor) ||
-                  _ts_SKSEFunctions::IsFlyingMountPatrolQueued(dragonActor)) &&
+                 (Utils::IsFastTravelActive()) &&
                  combatManager.IsFastTravelAttack()
                 ) {
                 DragonHoverPlayerRiding(storedCombatTarget);
@@ -409,7 +407,7 @@ log::info("{}: FFlyingMode = {}", __FUNCTION__, m_mode);
                 if (!(controlsManager.GetIsKeyPressed(IDRCKey::kStrafeLeft) || controlsManager.GetIsKeyPressed(IDRCKey::kStrafeRight))) {
                     controlsManager.SetControlBlocked(true);
 
-                    if (mode == FlyingMode::kFlying && !_ts_SKSEFunctions::IsFlyingMountFastTravelling(dragonActor)) {
+                    if (mode == FlyingMode::kFlying && *g_FastTravelState == false) {
                         DragonNewDirection(dragonActor->GetAngleZ());
                         wait = 0.1f;
                     } else if (mode == FlyingMode::kHovering && dragonActor->AsActorState()->actorState2.allowFlying) {
@@ -666,8 +664,7 @@ log::info("{}: FFlyingMode = {}", __FUNCTION__, m_mode);
         }
 
         if (m_finalizeTriggerLand && !m_landingPosSearchOngoing) {
-            if (_ts_SKSEFunctions::IsFlyingMountFastTravelling(dragonActor) ||
-                _ts_SKSEFunctions::IsFlyingMountPatrolQueued(dragonActor)) {
+            if (Utils::IsFastTravelActive()) {
                 // still in fast travel or patrol, ensure orbit package 
                 // to force stop fast travel via package conditions
                 SKSE::GetTaskInterface()->AddTask([dragonActor]() {
@@ -713,8 +710,7 @@ log::info("{}: FFlyingMode = {}", __FUNCTION__, m_mode);
 
         if (m_waitForLanded && _ts_SKSEFunctions::GetFlyingState(dragonActor) == 0) {
             m_waitForLanded = false;
-            if (_ts_SKSEFunctions::IsFlyingMountFastTravelling(dragonActor) ||
-                _ts_SKSEFunctions::IsFlyingMountPatrolQueued(dragonActor)) {
+            if (Utils::IsFastTravelActive()) {
                 // This should never happen!
                 log::warn("{}: Dragon is still in fast travel or patrol after landing, triggering take-off", __FUNCTION__);
                 SetLandedCompleted();
@@ -1379,13 +1375,6 @@ log::info("{}: FFlyingMode = {}", __FUNCTION__, m_mode);
         float distance = 10000.f; // previously: GetDistanceToRegionBoundingBox(worldSpaceData, posX, posY, angleNorm);
         if(!IsInBorderRegion()){
             log::info("{}: Player is not in border region {} - cancel FlyTo...", __FUNCTION__, worldSpaceData.m_borderRegionName);
-            return false;
-        }  
-
-        if(_ts_SKSEFunctions::IsFlyingMountPatrolQueued(dragonActor)){
-            // do not trigger FastTravel while dragon is patrolQueue is still ongoing:
-            // that would keep the dragon in PatrolQueued state
-            log::info("{}: in PatrolQueued - cancel FlyTo...", __FUNCTION__);
             return false;
         }
 

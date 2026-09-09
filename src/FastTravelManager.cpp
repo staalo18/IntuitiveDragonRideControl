@@ -1,6 +1,7 @@
 #include "FastTravelManager.h"
 #include "_ts_SKSEFunctions.h"
 #include "DataManager.h"
+#include "IDRCUtils.h"
 
 #include "RE/Skyrim.h"
 #include "SKSE/API.h"
@@ -18,9 +19,7 @@ namespace IDRC {
             return;
         }
 
-        bool patrolQueuedState =_ts_SKSEFunctions::IsFlyingMountPatrolQueued(dragonActor);
-        bool fastTravelState = _ts_SKSEFunctions::IsFlyingMountFastTravelling(dragonActor);
-        if (patrolQueuedState || fastTravelState) {
+        if (Utils::IsFastTravelActive()) {
             // in dragon-FastTravel mode - check if dragon is allowed to fly
             if (!dragonActor->AsActorState()->actorState2.allowFlying) {
                 log::info("{}: in FastTravel mode, but not allowed to fly - stopping fast travel...", __FUNCTION__);
@@ -39,7 +38,7 @@ namespace IDRC {
                     dragonActor->EvaluatePackage();
                 });
             }
-        } else if (m_lastPatrolQueuedState || m_lastFastTravelState) {
+        } else if (m_lastFastTravelState) {
             // leaving FastTravel mode
             auto& flyingModeManager = FlyingModeManager::GetSingleton();
             if (!dragonActor->AsActorState()->actorState2.allowFlying) {
@@ -57,8 +56,12 @@ namespace IDRC {
             }
         }
 
-        m_lastPatrolQueuedState = patrolQueuedState;
-        m_lastFastTravelState = fastTravelState;
+        m_lastFastTravelState = Utils::IsFastTravelActive();
+
+        if (*g_PatrolQueuedState == 1) {
+            *g_PatrolQueuedState = 0;
+            *g_FastTravelState = true;
+        }
     }
 
 

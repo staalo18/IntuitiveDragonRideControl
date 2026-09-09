@@ -98,9 +98,7 @@ namespace IDRC {
         }
 
         // restart combat with stored target when dragon leaves flying state.
-        if (!_ts_SKSEFunctions::IsFlyingMountPatrolQueued(dragonActor) && 
-            !_ts_SKSEFunctions::IsFlyingMountFastTravelling(dragonActor)) 
-        {
+        if (!Utils::IsFastTravelActive()) {
             if (m_restartCombatPending)
             {
                 m_restartCombatPending = false;            
@@ -295,8 +293,7 @@ log::info("{}: Updated player cell to {}, {}", __FUNCTION__, targetCellX, target
             m_shoutDirection = -1.f; // pass target on the right for this attack
         }
         
-        if (_ts_SKSEFunctions::IsFlyingMountFastTravelling(dragonActor) ||
-            _ts_SKSEFunctions::IsFlyingMountPatrolQueued(dragonActor)){
+        if (Utils::IsFastTravelActive()){
             // use stored combat target during flying (fastTraveling)
             // (in FastTravel mode, dragon's combat state is always 0)
             m_isFastTravelAttack = true;

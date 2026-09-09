@@ -174,8 +174,7 @@ namespace IDRC {
         }
         
         if (m_reticleTarget == GetCombatTarget()) {    
-            if (_ts_SKSEFunctions::IsFlyingMountFastTravelling(dragonActor) ||
-                _ts_SKSEFunctions::IsFlyingMountPatrolQueued(dragonActor)) {
+            if (Utils::IsFastTravelActive()) {
                 combatState = CombatManager::GetSingleton().GetStoredCombatTargetState();
             } else {
                 combatState = _ts_SKSEFunctions::GetCombatState(dragonActor);
@@ -319,9 +318,7 @@ namespace IDRC {
         }
         auto handle = dragonActor->GetActorRuntimeData().currentCombatTarget;
 
-        if (!(handle && handle.get().get()) &&
-            (_ts_SKSEFunctions::IsFlyingMountFastTravelling(dragonActor) ||
-            _ts_SKSEFunctions::IsFlyingMountPatrolQueued(dragonActor))) {
+        if (!(handle && handle.get().get()) && (Utils::IsFastTravelActive())) {
            handle = CombatManager::GetSingleton().GetStoredCombatTargetHandle();
         }
         

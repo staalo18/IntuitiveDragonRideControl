@@ -169,7 +169,6 @@ if(DEFINED OUTPUT_FOLDER)
         POST_BUILD
         COMMAND "${CMAKE_COMMAND}" -E make_directory "${OUTPUT_FOLDER}"
         COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/ESP/IntuitiveDragonRideControl.esp" "${OUTPUT_FOLDER}/IntuitiveDragonRideControl.esp"
-        COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/ESP/IntuitiveDragonRideControl_LE.esp" "${OUTPUT_FOLDER}/IntuitiveDragonRideControl_LE.esp"
         COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/ESP/IntuitiveDragonRideControl.ini" "${DLL_FOLDER}/IntuitiveDragonRideControl.ini"
         VERBATIM
     )

@@ -18,6 +18,8 @@ namespace IDRC {
 
         float GetDragonRoll();
         
+        bool IsFastTravelActive();
+
 //        std::vector<WorldspaceIniData> LoadWorldspaceIniData(const std::string& a_iniFilename);
     } // namespace Utils
 } // namespace IDRC
