@@ -142,12 +142,28 @@ namespace Hooks
 		if (dragonActor) {
 			
 			auto combatState = _ts_SKSEFunctions::GetCombatState(dragonActor);
-			bool fastTravelFlag = GetFlyingMountFastTravelStateFlag();
-			bool patrolQueuedFlag = GetFlyingMountPatrolQueuedStateFlag();
 			bool isAllowedToFly = dragonActor->AsActorState()->actorState2.allowFlying;
 log::info("{}: FastTravelFlag={}, PatrolQueuedFlag={}, combatState={}, AV1 = {}, AV3= {}, isAllowedToFly= {}", __FUNCTION__, 
-fastTravelFlag, patrolQueuedFlag, combatState, dragonActor->AsActorValueOwner()->GetActorValue(RE::ActorValue::kVariable01),
+*g_FastTravelState, *g_PatrolQueuedState, combatState, dragonActor->AsActorValueOwner()->GetActorValue(RE::ActorValue::kVariable01),
 dragonActor->AsActorValueOwner()->GetActorValue(RE::ActorValue::kVariable03), isAllowedToFly);
+
+
+
+if (*g_PatrolQueuedState) {
+log::info("{}: ----------------->>>>>>>>>>>>>>>> PATROLQUEUED", __FUNCTION__);
+}
+bool TS_patrolQueuedState =_ts_SKSEFunctions::IsFlyingMountPatrolQueued(dragonActor);
+bool TS_fastTravelState = _ts_SKSEFunctions::IsFlyingMountFastTravelling(dragonActor);
+if (TS_patrolQueuedState != static_cast<bool>(*g_PatrolQueuedState) || TS_fastTravelState != static_cast<bool>(*g_FastTravelState)) {
+log::info("{}: ----------->>>>>>>>>>>>  Mismatch detected between TS flags and global flags", __FUNCTION__);
+log::info("{}: TS Flags - TS_FastTravelState={}, TS_PatrolQueuedState={}", __FUNCTION__, TS_fastTravelState, TS_patrolQueuedState);
+log::info("{}: Flags - FastTravelFlag={}, PatrolQueuedFlag={}", __FUNCTION__, *g_FastTravelState, *g_PatrolQueuedState);
+}
+
+
+
+		}
+
 			auto currentPackage = dragonActor->GetCurrentPackage();
 			if (currentPackage) {
 				auto packageType = currentPackage->packData.packType;
@@ -812,9 +828,8 @@ log::info("{}: LinearPathToTarget called. StartIndex: {}, WaypointCount: {}, Tar
 			if (IDRC::FlyingModeManager::GetSingleton().GetRegisteredForLanding()) {
 				// avoid targetpos for landing to be in the air
 				// This can happen over terrain without navmesh (eg Whiterun).
-// TODO: Probably no longer needed now with GetValidLandingPosition()
 				if (_ts_a_targetPos) {
-					_ts_a_targetPos->z = _ts_SKSEFunctions::GetLandHeightWithWater(*_ts_a_targetPos, false);
+					_ts_a_targetPos->z = _ts_SKSEFunctions::GetLandHeightWithWater(*_ts_a_targetPos, true);
 /* for debugging
 if (APIs::TrueHUD) {
 	APIs::TrueHUD->DrawPoint(*_ts_a_targetPos, 10.0f, 20.0f, 0x99FFFFFF);

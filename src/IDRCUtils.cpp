@@ -160,8 +160,10 @@ namespace IDRC {
 
             return targetRoll;
         }
-        
-        bool IsFastTravelActive() {return (*g_PatrolQueuedState == 1 || *g_FastTravelState == true);}
+
+        bool IsFastTravelActive() {
+            return (*g_PatrolQueuedState == 1  || *g_PatrolQueuedState == 4 || *g_FastTravelState == true);
+        }
 
     } // namespace Utils
 } // namespace IDRC

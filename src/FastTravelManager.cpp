@@ -58,7 +58,7 @@ namespace IDRC {
 
         m_lastFastTravelState = Utils::IsFastTravelActive();
 
-        if (*g_PatrolQueuedState == 1) {
+        if (*g_PatrolQueuedState == 1 || *g_PatrolQueuedState == 4) {
             *g_PatrolQueuedState = 0;
             *g_FastTravelState = true;
         }

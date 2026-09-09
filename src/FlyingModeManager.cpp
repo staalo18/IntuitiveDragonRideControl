@@ -783,6 +783,7 @@ log::info("{}: FFlyingMode = {}", __FUNCTION__, m_mode);
 		if (FindNavmeshTriangleForLocation(&loc, &pathingSingleton->defaultTriangleFilter)) {
 			if (loc.location.z > RE::PlayerCharacter::GetSingleton()->GetWaterHeight()) {
 				m_landingPos = loc.location;
+				m_landingPos.z = _ts_SKSEFunctions::GetLandHeightWithWater(m_landingPos, true);
 				return;
 			}
 		}
@@ -817,6 +818,7 @@ log::info("{}: FFlyingMode = {}", __FUNCTION__, m_mode);
 
 				if (_ts_SKSEFunctions::HasNavmesh(candidatePos, true)) {
 					m_landingPos = candidatePos;
+                    m_landingPos.z = _ts_SKSEFunctions::GetLandHeightWithWater(candidatePos, true);
 					return;
 				}
 
@@ -832,7 +834,8 @@ log::info("{}: FFlyingMode = {}", __FUNCTION__, m_mode);
 
 					if (_ts_SKSEFunctions::HasNavmesh(candidatePos, true)) {
 						m_landingPos = candidatePos;
-						return;
+                        m_landingPos.z = _ts_SKSEFunctions::GetLandHeightWithWater(candidatePos, true);
+                        return;
 					}
 				}
 			}
