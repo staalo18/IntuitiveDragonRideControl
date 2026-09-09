@@ -450,6 +450,8 @@ log::info("{}: FFlyingMode = {}", __FUNCTION__, m_mode);
 
             auto& controlsManager = ControlsManager::GetSingleton();
             FlyingMode mode = GetFlyingMode();
+            auto* currentPackage = dragonActor->GetCurrentPackage();
+            auto packageType = currentPackage ? currentPackage->packData.packType : RE::PACKAGE_TYPE::kNone;
    
             while (controlsManager.GetIsKeyPressed(IDRCKey::kBack)) {
                 if (!(controlsManager.GetIsKeyPressed(IDRCKey::kStrafeLeft) || controlsManager.GetIsKeyPressed(IDRCKey::kStrafeRight))) {
@@ -463,7 +465,10 @@ log::info("{}: FFlyingMode = {}", __FUNCTION__, m_mode);
                             this->DragonHoverPlayerRiding(dragonActor);
                         }).detach();
                     
-                    } else if (mode == FlyingMode::kHovering) {
+                    } else if (mode == FlyingMode::kHovering && packageType != RE::PACKAGE_TYPE::kGetUpFromChairBed) {
+                        // don't trigger perching or landing if the a previous take-off procedure is still ongoing
+                        // Take-off would continue with the dragon ending up in FlyingMode == kLanded, isAllowedToFly==fals
+                        // but actually flying (orbiting)
                         if (controlsManager.GetIsKeyPressed(IDRCKey::kRun)) {
                             DragonPerchPlayerRiding();
                             mode = FlyingMode::kPerching;
