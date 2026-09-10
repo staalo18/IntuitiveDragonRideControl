@@ -143,9 +143,10 @@ namespace Hooks
 			
 			auto combatState = _ts_SKSEFunctions::GetCombatState(dragonActor);
 			bool isAllowedToFly = dragonActor->AsActorState()->actorState2.allowFlying;
-log::info("{}: FastTravelFlag={}, PatrolQueuedFlag={}, combatState={}, AV1 = {}, AV3= {}, isAllowedToFly= {}", __FUNCTION__, 
-*g_FastTravelState, *g_PatrolQueuedState, combatState, dragonActor->AsActorValueOwner()->GetActorValue(RE::ActorValue::kVariable01),
-dragonActor->AsActorValueOwner()->GetActorValue(RE::ActorValue::kVariable03), isAllowedToFly);
+			int flyingState = _ts_SKSEFunctions::GetFlyingState(dragonActor);
+log::info("{}: FastTravelFlag={}, PatrolQueuedFlag={}, combatState={}, AV3= {}, isAllowedToFly= {}, flyingState= {}", __FUNCTION__, 
+*g_FastTravelState, *g_PatrolQueuedState, combatState,
+dragonActor->AsActorValueOwner()->GetActorValue(RE::ActorValue::kVariable03), isAllowedToFly, flyingState);
 
 
 
@@ -814,6 +815,7 @@ log::info("{}: LinearPathToTarget called. StartIndex: {}, WaypointCount: {}, Tar
 		}
 	}
 
+/* for debugging:
 	void PathingHook::SetupPathingRequest(RE::Actor* _ts_a_actor, void* _ts_a_request, RE::NiPoint3* _ts_a_targetPos, float _ts_a_speed, RE::TESObjectREFR* _ts_a_targetRef)
 	{
 		if (_SetupPathingRequest == 0) {
@@ -823,24 +825,14 @@ log::info("{}: LinearPathToTarget called. StartIndex: {}, WaypointCount: {}, Tar
 
 		auto dragonActor = IDRC::DataManager::GetSingleton().GetDragonActor();
 		if (dragonActor && dragonActor == _ts_a_actor) {
-//log::info("{}: SetupPathingRequest called for dragon", __FUNCTION__);
-	
-			if (IDRC::FlyingModeManager::GetSingleton().GetRegisteredForLanding()) {
-				// avoid targetpos for landing to be in the air
-				// This can happen over terrain without navmesh (eg Whiterun).
-				if (_ts_a_targetPos) {
-					_ts_a_targetPos->z = _ts_SKSEFunctions::GetLandHeightWithWater(*_ts_a_targetPos, true);
-/* for debugging
-if (APIs::TrueHUD) {
-	APIs::TrueHUD->DrawPoint(*_ts_a_targetPos, 10.0f, 20.0f, 0x99FFFFFF);
-} */
-				}
+			if (APIs::TrueHUD && IDRC::FlyingModeManager::GetSingleton().GetRegisteredForLanding() && _ts_a_targetPos) {
+				APIs::TrueHUD->DrawPoint(*_ts_a_targetPos, 10.0f, 20.0f, 0x99FFFFFF);
 			}
 		}
 
 		reinterpret_cast<decltype(&SetupPathingRequest)>(_SetupPathingRequest)(_ts_a_actor, _ts_a_request, _ts_a_targetPos, _ts_a_speed, _ts_a_targetRef);
 	}
-
+*/
 
 	void* PathingHook::GetCurrentPathingLocation (RE::BSPathing* a_pathing,RE::BSPathingLocation* a_loc, RE::Actor* a_actor, std::uintptr_t param4)
 	{
