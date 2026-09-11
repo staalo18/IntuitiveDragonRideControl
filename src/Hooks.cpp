@@ -524,6 +524,10 @@ log::info("{}: SetFlightPath called", __FUNCTION__);
 
 
 	void PathingHook::UpdateFlightPathData(std::byte* a_agent) {
+		if (!a_agent) {
+			return;
+		}
+
 		if (!IsDragonPathingRequest(a_agent)) {
 			return;
 		}
@@ -657,7 +661,7 @@ log::warn("{}: wayPointBase null=? wayPointCount: {}", __FUNCTION__, wayPointCou
 */		
 		// Each entry is 0x48 bytes; XYZ floats at byte offsets +0, +4, +8
 		constexpr std::size_t kStride = 0x48 / sizeof(float);  // = 0x12 floats
-		for (std::uint32_t i = 0; i < std::min(wayPointCount - 2, currentIndex + 8u); ++i) {
+		for (std::uint32_t i = 0; i < std::min(wayPointCount, currentIndex + 8u); ++i) {
 			// #Adjusting the first waypoints to impact the immediate path.
 			// Other waypoints do not be adjusted in this frame,
 			// because they do not impact the form of the interpolated path close to the dragon.  
@@ -665,15 +669,21 @@ log::warn("{}: wayPointBase null=? wayPointCount: {}", __FUNCTION__, wayPointCou
 			float dx = waypointToUpdate.x - dragonPos.x;
 			float dy = waypointToUpdate.y - dragonPos.y;
 			float distanceToUpdate = std::sqrt(dx * dx + dy * dy);
+
+			if (i >= wayPointCount - 2) {
+				// If re-pathing is late and currentIndex reaches last waypoints, make sure those stay ahead of the dragon
+				distanceToUpdate = std::max(distanceToUpdate, 2000.0f);
+			}
+
 			float cameraZ = dragonPos.z + distanceToUpdate * tanPitch;
 			if (shoutActive) {
 				cameraZ = dragonPos.z + distanceToUpdate / distanceToTarget * (pathTargetPos.z - dragonPos.z);
 			}
 
-			float landZ = _ts_SKSEFunctions::GetLandHeightWithWater(waypointToUpdate, true) + minHeightAboveGround;
-
 			waypointToUpdate.x = dragonPos.x + distanceToUpdate * sinYaw;
 			waypointToUpdate.y = dragonPos.y + distanceToUpdate * cosYaw;
+
+			float landZ = _ts_SKSEFunctions::GetLandHeightWithWater(waypointToUpdate, true) + minHeightAboveGround;
 			waypointToUpdate.z = std::max(cameraZ, landZ);
 		}
 /* for debugging

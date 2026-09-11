@@ -1102,19 +1102,6 @@ log::info("{}: FFlyingMode = {}", __FUNCTION__, m_mode);
                 dragonActor->AsActorValueOwner()->SetActorValue(RE::ActorValue::kVariable03, 3); // Hover package
                 dragonActor->EvaluatePackage();
             });
-        
-            // Wait for the dragon to take off
-            int count = 0;
-            while (count < 50 && (_ts_SKSEFunctions::GetFlyingState(dragonActor) == 0 || _ts_SKSEFunctions::GetFlyingState(dragonActor) == 5)) {
-                _ts_SKSEFunctions::WaitWhileGameIsPaused();
-                std::this_thread::sleep_for(std::chrono::milliseconds(100));
-                count++;
-            }
-    
-            if (count >= 50) {
-                log::info("{}: Dragon did not take off - cancel takeoff", __FUNCTION__);
-                return false;
-            }
         } else {
             log::info("{}: Dragon health is low - cannot take off", __FUNCTION__);
             RE::SendHUDMessage::ShowHUDMessage("Dragon health is low - cannot take off");
