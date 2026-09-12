@@ -203,11 +203,12 @@ namespace IDRC {
                     freeRotationX = shoutTargetYaw;
                     freeRotationY = pitchToTarget;
                 }
+
+                dragonCameraState->freeRotation.y = _ts_SKSEFunctions::NormalRelativeAngle(damping * freeRotationY);
             }
             
             m_wasShoutTargetingActive = shoutTargetingActive;
             dragonCameraState->freeRotation.x = _ts_SKSEFunctions::NormalRelativeAngle(damping * freeRotationX);
-            dragonCameraState->freeRotation.y = _ts_SKSEFunctions::NormalRelativeAngle(damping * freeRotationY);
 
             auto* player = RE::PlayerCharacter::GetSingleton();
             if (player) {
