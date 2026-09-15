@@ -1043,9 +1043,8 @@ log::info("{}: FFlyingMode = {}", __FUNCTION__, m_mode);
             _ts_SKSEFunctions::MoveTo(this->m_flyToTargetMarker, dragonActor, offsetX, offsetY, 0.0f);
             RE::NiPoint3 angle = { 0.0f, 0.0f, angleZ };
             _ts_SKSEFunctions::SetAngle(this->m_flyToTargetMarker, angle);
+            DragonHoverPlayerRiding(m_flyToTargetMarker);
         });
-    
-        DragonHoverPlayerRiding(m_flyToTargetMarker);
     
         ControlsManager::GetSingleton().SetControlBlocked(false);
 
