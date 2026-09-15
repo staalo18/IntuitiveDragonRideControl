@@ -170,21 +170,15 @@ namespace IDRC {
             float realTimeDeltaTime = _ts_SKSEFunctions::GetRealTimeDeltaTime() < 0.05f ? _ts_SKSEFunctions::GetRealTimeDeltaTime() : 0.05f;
             float damping = 1.0f - 2.5f * realTimeDeltaTime;
 
-            bool shoutTargetingActive = combatManager.IsShoutActive() && combatManager.GetShoutTarget();
+            auto* shoutTarget = combatManager.GetShoutTarget();
+            bool shoutTargetingActive = combatManager.IsShoutActive() && shoutTarget;
             if (shoutTargetingActive) {
                 auto dragonPos = dragonActor->GetPosition();
+                auto shoutTargetPos = shoutTarget->GetPosition();
                 float cameraDistance = dragonPos.GetDistance(_ts_SKSEFunctions::GetCameraPos());
-
-                auto shoutTargetPos = combatManager.GetShoutTarget()->GetPosition();
                 float dragonHeading = dragonActor->GetHeading(false);
-
-                float dX = shoutTargetPos.x - dragonPos.x;
-                float dY = shoutTargetPos.y - dragonPos.y;
-                float deltaZ = shoutTargetPos.z - dragonPos.z;
-                float deltaXY = std::sqrt(dX * dX + dY * dY);
-                float distanceToTarget = std::sqrt(deltaXY * deltaXY + deltaZ * deltaZ);
-
-                float yawToTarget = atan2(dX, dY);
+                float distanceToTarget = dragonActor->GetDistance(shoutTarget);
+                float yawToTarget = _ts_SKSEFunctions::GetAngleZ(dragonPos, shoutTargetPos);
                 
                 float yawOffset = 0.f;
                 float pitchOffset = 0.0f;
@@ -193,13 +187,16 @@ namespace IDRC {
                     auto flyingMode = FlyingModeManager::GetSingleton().GetFlyingMode();
                     float pitchOffsetSign = (flyingMode == FlyingMode::kLanded || flyingMode == FlyingMode::kPerching) ? 1.0f : -1.0f;
                     const float pitchTheta =  m_maxTargetOffset * m_pitchOffsetStrength * pitchOffsetSign;
+                    float dX = shoutTargetPos.x - dragonPos.x;
+                    float dY = shoutTargetPos.y - dragonPos.y;
+                    float deltaXY = std::sqrt(dX * dX + dY * dY);
                     yawOffset = ComputeOffsetAngle(yawTheta, cameraDistance, deltaXY);
                     pitchOffset = ComputeOffsetAngle(pitchTheta, cameraDistance, distanceToTarget);
 //                }
 
                 float shoutTargetYaw = _ts_SKSEFunctions::NormalRelativeAngle(yawToTarget + yawOffset - dragonHeading);
 
-                float pitchToTarget = atan2(deltaZ, deltaXY) + pitchOffset;
+                float pitchToTarget = _ts_SKSEFunctions::GetAngleX(dragonPos, shoutTargetPos) + pitchOffset;
                 if (!m_wasShoutTargetingActive) {
                     m_shoutTransitionStartYaw = freeRotationX;
                     m_shoutTransitionStartPitch = freeRotationY;

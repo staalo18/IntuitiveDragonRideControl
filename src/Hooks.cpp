@@ -25,6 +25,7 @@ namespace Hooks
 //		GetMountHook::Hook();
 //		FlightGoalHook::Hook();
 		PathingHook::Hook();
+		ProjectileLaunchHook::Hook();
 
 		// Patches below have been implemented with Claude Sonnet 5 to fix vanilla crashes
 		// IDRC amplifies the occurance of these crashes, as the dragon traverses quickly over 
@@ -1012,6 +1013,34 @@ log::info("{}: BuildFlyLandPath called, result={}", __FUNCTION__, result ? "true
 */
 
 /*****************************************************************************************/
+
+	RE::ProjectileHandle* ProjectileLaunchHook::Launch(RE::ProjectileHandle* a_result, RE::Projectile::LaunchData& a_data) {
+		if (_Launch == 0) {
+			log::error("{}: trampoline not initialized!", __FUNCTION__);
+			return a_result;
+		}
+
+		auto* dragonActor = IDRC::DataManager::GetSingleton().GetDragonActor();
+		if (dragonActor && dragonActor == a_data.shooter) {
+			// Sometimes the vanilla aiming for ball shouts is not working correctly
+			// (ball pitch not aligned with the shout target)
+			// Reason is not understood.
+			// Patch overwrites projectile's pitch value with the actual direction to target.
+			auto* shoutTarget = IDRC::CombatManager::GetSingleton().GetShoutTarget();
+			if (shoutTarget) {
+				auto shoutOrigin = dragonActor->GetPosition();
+				RE::NiAVObject* reference3D = _ts_SKSEFunctions::GetTargetPoint(dragonActor, RE::BGSBodyPartDefs::LIMB_ENUM::kHead).get();
+				if (reference3D) {
+					shoutOrigin = reference3D->world.translate;
+				}
+
+				auto shoutTargetPos = shoutTarget->GetPosition();
+				a_data.angleX = -_ts_SKSEFunctions::GetAngleX(shoutOrigin, shoutTargetPos);
+			}
+		}
+
+		return reinterpret_cast<decltype(&Launch)>(_Launch)(a_result, a_data);	
+	}
 
 	void FlushQueuedFormLoadsHook::Hook()
 	{

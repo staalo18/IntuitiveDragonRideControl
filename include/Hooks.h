@@ -245,6 +245,21 @@ namespace Hooks
 		const static inline float m_shoutHeight = 500.f;
 	};
 
+	class ProjectileLaunchHook
+	{
+	public:
+		static void Hook()
+		{
+			_Launch = _ts_SKSEFunctions::WriteFunctionHook(
+				REL::VariantID(42928, 44108, 0),
+				5,
+				reinterpret_cast<std::uintptr_t>(Launch));
+		}
+	private:
+		static RE::ProjectileHandle* Launch(RE::ProjectileHandle* a_result,  RE::Projectile::LaunchData& a_data);
+		static inline std::uintptr_t _Launch{ 0 };
+
+	};
 
 // BEGIN - patches for vanilla crashes which have amplified frequency due to rapid cell traversal during dragon flight.
 //         Patches have been implemented with Claude Sonnet 5, and have been reviewed.
