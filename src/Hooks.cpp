@@ -34,9 +34,9 @@ namespace Hooks
 		// and nullify the corresponding parentCell pointers.
 		FlushQueuedFormLoadsHook::Hook();
 		CheckSaveGameHook::Hook();
-// CreateSourceTextureResultHook fixes crashing but the engine will freeze later, likely
-// because it enters an infinite re-try loop or deadlock situation.
-//		CreateSourceTextureResultHook::Hook();
+// NOTE: CreateSourceTextureResultHook fixes crashing but sometimes the engine will freeze (a few secs) later
+// So in many cases a crash is prevented, but some of the prevented crashes end up becoming a freeze...
+		CreateSourceTextureResultHook::Hook();
 /* UNUSED HOOKS:
 		TestHook::Hook();
 		DragonFlyLandHook::Hook();
