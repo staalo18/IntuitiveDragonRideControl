@@ -219,7 +219,8 @@ namespace IDRC {
                 }
 
                 dragonCameraState->freeRotation.x = _ts_SKSEFunctions::NormalRelativeAngle(freeRotationX);
-                dragonCameraState->freeRotation.y = _ts_SKSEFunctions::NormalRelativeAngle(freeRotationY);
+                freeRotationY = _ts_SKSEFunctions::NormalRelativeAngle(freeRotationY);
+                dragonCameraState->freeRotation.y = std::clamp(freeRotationY, -70.f * PI / 180.f, 45.f * PI / 180.f); // max vanilla pitch range for the dragon camera
             } else {
                 dragonCameraState->freeRotation.x = _ts_SKSEFunctions::NormalRelativeAngle(damping * freeRotationX);
             }
