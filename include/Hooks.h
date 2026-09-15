@@ -133,6 +133,12 @@ namespace Hooks
 				REL::VariantID(90008, 92493, 0),
 				6,
 				reinterpret_cast<std::uintptr_t>(SetFlightPath));
+			
+			_ProcessPathUpdate = _ts_SKSEFunctions::WriteFunctionHook(
+				REL::VariantID(88448, 90873, 0),
+				6,
+				reinterpret_cast<std::uintptr_t>(ProcessPathUpdate));
+
 */
 			_FlightPlannerUpdate = _ts_SKSEFunctions::WriteFunctionHook(
 				REL::VariantID(90006, 92491, 0),
@@ -194,6 +200,10 @@ namespace Hooks
 									float* a_deltaTime,
 									float* a_outMovementIntention,
 									void* a_context);
+//		static void ProcessPathUpdate(std::uintptr_t a_arbiter,
+//									void* a_newNode,
+//									void* a_newData,
+//									void* a_param4);
 //		static void SetupPathingRequest(RE::Actor* _ts_a_actor, void* _ts_a_request, RE::NiPoint3* _ts_a_targetPos, float _ts_a_speed, RE::TESObjectREFR* _ts_a_targetRef);
 		static void* GetCurrentPathingLocation (RE::BSPathing* a_pathing,RE::BSPathingLocation* a_loc, RE::Actor* a_actor, std::uintptr_t param4);
 
@@ -209,6 +219,7 @@ namespace Hooks
 		static inline std::uintptr_t _SetGroundPath{ 0 };
 //		static inline std::uintptr_t _SetFlightPath{ 0 };
 		static inline std::uintptr_t _FlightPlannerUpdate{ 0 };
+//		static inline std::uintptr_t _ProcessPathUpdate{ 0 };
 //		static inline std::uintptr_t _SetupPathingRequest{ 0 };
 		static inline std::uintptr_t _GetCurrentPathingLocation{ 0 };
 

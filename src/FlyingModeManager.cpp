@@ -788,6 +788,10 @@ log::info("{}: FFlyingMode = {}", __FUNCTION__, m_mode);
 		if (FindNavmeshTriangleForLocation(&loc, &pathingSingleton->defaultTriangleFilter)) {
 			if (loc.location.z > RE::PlayerCharacter::GetSingleton()->GetWaterHeight()) {
 				m_landingPos = loc.location;
+//log::info("{}: Found valid landing position at {}", __FUNCTION__, m_landingPos);
+//if (APIs::TrueHUD) {
+//	APIs::TrueHUD->DrawPoint(m_landingPos, 5.0f, 20.0f, 0xFFFFFFFF);
+//}
 				return;
 			}
 		}
@@ -823,6 +827,10 @@ log::info("{}: FFlyingMode = {}", __FUNCTION__, m_mode);
 				if (_ts_SKSEFunctions::HasNavmesh(candidatePos, true)) {
 					m_landingPos = candidatePos;
                     m_landingPos.z = _ts_SKSEFunctions::GetLandHeightWithWater(candidatePos, true);
+//log::info("{}: Found valid landing position via Navmesh (right) {}", __FUNCTION__, m_landingPos);
+//if (APIs::TrueHUD) {
+//	APIs::TrueHUD->DrawPoint(m_landingPos, 5.0f, 20.0f, 0xFFFFFFFF);
+//}
 					return;
 				}
 
@@ -839,6 +847,10 @@ log::info("{}: FFlyingMode = {}", __FUNCTION__, m_mode);
 					if (_ts_SKSEFunctions::HasNavmesh(candidatePos, true)) {
 						m_landingPos = candidatePos;
                         m_landingPos.z = _ts_SKSEFunctions::GetLandHeightWithWater(candidatePos, true);
+//log::info("{}: Found valid landing position via Navmesh (left) {}", __FUNCTION__, m_landingPos);
+//if (APIs::TrueHUD) {
+//	APIs::TrueHUD->DrawPoint(m_landingPos, 5.0f, 20.0f, 0xFFFFFFFF);
+//}
                         return;
 					}
 				}
@@ -1385,7 +1397,9 @@ log::info("{}: FFlyingMode = {}", __FUNCTION__, m_mode);
                 dragonActor->AsActorValueOwner()->SetActorValue(RE::ActorValue::kVariable03, 2); // FastTravel
 
                 dragonActor->EvaluatePackage();
-
+//if (APIs::TrueHUD) {
+//    APIs::TrueHUD->DrawPoint(orbitMarker->GetPosition(), 15.0f, 0.0f, 0xAA00AAFF);
+//}
                 // Start the FastTravel mode
                 FastTravelManager::GetSingleton().FastTravel(orbitMarker);
             });

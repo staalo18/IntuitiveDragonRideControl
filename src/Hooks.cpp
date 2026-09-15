@@ -33,7 +33,9 @@ namespace Hooks
 		// and nullify the corresponding parentCell pointers.
 		FlushQueuedFormLoadsHook::Hook();
 		CheckSaveGameHook::Hook();
-		CreateSourceTextureResultHook::Hook();
+// CreateSourceTextureResultHook fixes crashing but the engine will freeze later, likely
+// because it enters an infinite re-try loop or deadlock situation.
+//		CreateSourceTextureResultHook::Hook();
 /* UNUSED HOOKS:
 		TestHook::Hook();
 		DragonFlyLandHook::Hook();
@@ -702,6 +704,22 @@ log::warn("{}: wayPointBase null=? wayPointCount: {}", __FUNCTION__, wayPointCou
 	}
 
 /* unused
+	void PathingHook::ProcessPathUpdate(std::uintptr_t a_arbiter,
+									void* a_newNode,
+									void* a_newData,
+									void* a_param4) {
+
+		if (_ProcessPathUpdate == 0) {
+			log::error("{}: trampoline not initialized!", __FUNCTION__);
+			return;
+		}
+
+log::info("{}: ---------------->>>>>>>>>>>>>> Processing path update.", __FUNCTION__);
+		// Call the original ProcessPathUpdate function
+		using FuncType = decltype(&ProcessPathUpdate);
+		reinterpret_cast<FuncType>(_ProcessPathUpdate)(a_arbiter, a_newNode, a_newData, a_param4);
+	}
+
 	void PathingHook::LinearPathToTarget(std::byte** a_pathData, std::uint32_t a_startIndex, const RE::NiPoint3& a_targetPos) {
 		if (!a_pathData) {
 			return;
@@ -1446,12 +1464,12 @@ log::info("{}: --------------->>>>>>>>>>>>>> FlyingMountActivate called", __FUNC
 			log::error("{}: trampoline not initialized!", __FUNCTION__);
 			return false;
 		}
-		if (m_blockExecuteTeleport) {
+//		if (m_blockExecuteTeleport) {
 			if (a_this->GetPlayerRuntimeData().queuedTargetLoc.isValid) {
 log::info("{}: --------------->>>>>>>>>>>> ExecuteTeleport called - isValid == true", __FUNCTION__);
-				a_this->GetPlayerRuntimeData().queuedTargetLoc.isValid = false;
+//				a_this->GetPlayerRuntimeData().queuedTargetLoc.isValid = false;
 			}
-		}
+//		}
 		using FuncType = bool(*)(RE::PlayerCharacter*);
 log::info("{}: Calling original ExecuteTeleport", __FUNCTION__);
 		return reinterpret_cast<FuncType>(_ExecuteTeleport)(a_this);

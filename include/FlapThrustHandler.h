@@ -35,10 +35,10 @@ namespace IDRC
 
 		bool m_isRegistered = false;
         float m_timeSinceLastFlap = 0.0f;
-        const float m_timeBeforeLift = 0.2f;
-        const float m_liftTime = 0.4f;
+        const float m_timeBeforeLift = 0.3f;
+        const float m_liftTime = 1.5f;
         const float m_dropTime = 10.0f;
-        const float m_thrustAmplitude = 300.0f;
+        const float m_thrustAmplitude = 500.0f;
 // TODO: currently m_thrustDirection is set to 0.5*PI, ie 'up'.
 //       The idea is to set m_thrustDirection to something like 0.25 * PI (45 degrees) 
 //       to provide a combined forward & lift thrust.
