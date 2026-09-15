@@ -173,16 +173,33 @@ namespace IDRC {
             bool shoutTargetingActive = combatManager.IsShoutActive() && combatManager.GetShoutTarget();
             if (shoutTargetingActive) {
                 auto dragonPos = dragonActor->GetPosition();
+                float cameraDistance = dragonPos.GetDistance(_ts_SKSEFunctions::GetCameraPos());
+
                 auto shoutTargetPos = combatManager.GetShoutTarget()->GetPosition();
                 float dragonHeading = dragonActor->GetHeading(false);
-                float yawToTarget = atan2(shoutTargetPos.x - dragonPos.x, shoutTargetPos.y - dragonPos.y);
-                float shoutTargetYaw = _ts_SKSEFunctions::NormalRelativeAngle(yawToTarget - dragonHeading);
 
-                float deltaZ = shoutTargetPos.z - dragonPos.z;
                 float dX = shoutTargetPos.x - dragonPos.x;
                 float dY = shoutTargetPos.y - dragonPos.y;
+                float deltaZ = shoutTargetPos.z - dragonPos.z;
                 float deltaXY = std::sqrt(dX * dX + dY * dY);
-                float pitchToTarget = atan2(deltaZ, deltaXY);
+                float distanceToTarget = std::sqrt(deltaXY * deltaXY + deltaZ * deltaZ);
+
+                float yawToTarget = atan2(dX, dY);
+                
+                float yawOffset = 0.f;
+                float pitchOffset = 0.0f;
+//                if (cameraDistance > 10.0f) { TODO: ImprovedCamera firstPerson support - Check SmoothCam / TDM sources _ImprovedCamera_IsFirstPerson for reference.
+                    const float yawTheta =  m_maxTargetOffset * m_yawOffsetStrength;
+                    auto flyingMode = FlyingModeManager::GetSingleton().GetFlyingMode();
+                    float pitchOffsetSign = (flyingMode == FlyingMode::kLanded || flyingMode == FlyingMode::kPerching) ? 1.0f : -1.0f;
+                    const float pitchTheta =  m_maxTargetOffset * m_pitchOffsetStrength * pitchOffsetSign;
+                    yawOffset = ComputeOffsetAngle(yawTheta, cameraDistance, deltaXY);
+                    pitchOffset = ComputeOffsetAngle(pitchTheta, cameraDistance, distanceToTarget);
+//                }
+
+                float shoutTargetYaw = _ts_SKSEFunctions::NormalRelativeAngle(yawToTarget + yawOffset - dragonHeading);
+
+                float pitchToTarget = atan2(deltaZ, deltaXY) + pitchOffset;
                 if (!m_wasShoutTargetingActive) {
                     m_shoutTransitionStartYaw = freeRotationX;
                     m_shoutTransitionStartPitch = freeRotationY;
@@ -229,6 +246,14 @@ namespace IDRC {
         m_isUserTurning = false; // reset flag. Is set to true in LookHook::ProcessMouseMove() in case of user-triggered camera rotation
     }
 
+    float CameraLockManager::ComputeOffsetAngle(float a_theta, float a_cameraDistance, float a_targetDistance) {
+        if (a_targetDistance < 1.0f) {
+            return 0.0f;
+        }
+        float sinArg = std::clamp(-a_cameraDistance / a_targetDistance * std::sin(a_theta), -1.0f, 1.0f);
+        return std::asin(sinArg) - a_theta;
+    }
+
     void CameraLockManager::SetInitiallyEnabled(bool a_enabled)
     {
         m_initiallyEnabled = a_enabled;
@@ -265,5 +290,13 @@ namespace IDRC {
 
     void CameraLockManager::SetIgnoredCameraPitch(float a_pitch) {
         m_ignoredCameraPitch = -a_pitch * PI / 180.f;
+    }
+
+    void CameraLockManager::SetYawOffsetStrength(float a_strength) {
+        m_yawOffsetStrength = a_strength;
+    }
+
+    void CameraLockManager::SetPitchOffsetStrength(float a_strength) {
+        m_pitchOffsetStrength = a_strength;
     }
 }  // namespace IDRC

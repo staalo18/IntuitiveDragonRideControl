@@ -172,6 +172,15 @@ namespace IDRC {
             CameraLockManager::GetSingleton().SetIgnoredCameraPitch(a_pitch);
         }
 
+        void SetYawOffsetStrength_SKSE(RE::StaticFunctionTag*, float a_strength) {
+            log::info("{}: {}", __FUNCTION__, a_strength);
+            CameraLockManager::GetSingleton().SetYawOffsetStrength(a_strength);
+        }
+        void SetPitchOffsetStrength_SKSE(RE::StaticFunctionTag*, float a_strength) {
+            log::info("{}: {}", __FUNCTION__, a_strength);
+            CameraLockManager::GetSingleton().SetPitchOffsetStrength(a_strength);
+        }
+
         RE::BSScript::LatentStatus DragonLandPlayerRiding_SKSE_Latent(RE::BSScript::Internal::VirtualMachine* a_vm, RE::VMStackID a_stackID, RE::StaticFunctionTag*, RE::TESObjectREFR* a_landTarget) {
             std::thread([a_vm, a_stackID, a_landTarget]() {
                 bool result = FlyingModeManager::GetSingleton().DragonLandPlayerRiding(a_landTarget);
@@ -232,6 +241,8 @@ namespace IDRC {
             a_vm->RegisterFunction("SetMaxTargetScanAngle_SKSE", "_ts_DR_RideControlScript", SetMaxTargetScanAngle_SKSE);
             a_vm->RegisterFunction("SetCameraLockInitiallyEnabled_SKSE", "_ts_DR_RideControlScript", SetCameraLockInitiallyEnabled_SKSE);
             a_vm->RegisterFunction("SetIgnoredCameraPitch_SKSE", "_ts_DR_RideControlScript", SetIgnoredCameraPitch_SKSE);
+            a_vm->RegisterFunction("SetYawOffsetStrength_SKSE", "_ts_DR_RideControlScript", SetYawOffsetStrength_SKSE);
+            a_vm->RegisterFunction("SetPitchOffsetStrength_SKSE", "_ts_DR_RideControlScript", SetPitchOffsetStrength_SKSE);
         
             // functions for GoTDragonCompanions
             a_vm->RegisterFunction("SetAutoCombat_SKSE", "_ts_DR_RideControlScript", SetAutoCombat_SKSE);

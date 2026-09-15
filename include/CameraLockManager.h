@@ -30,8 +30,14 @@ namespace IDRC {
 
             void SetIgnoredCameraPitch(float a_pitch);
 
+            void SetYawOffsetStrength(float a_strength);
+            
+            void SetPitchOffsetStrength(float a_strength);
+
         private:
             CameraLockManager() = default;
+
+            float ComputeOffsetAngle(float a_theta, float a_cameraDistance, float a_targetDistance);
 
             bool m_initiallyEnabled = true;
             bool m_isEnabled = true;
@@ -48,5 +54,8 @@ namespace IDRC {
             float m_shoutTransitionElapsed = 0.0f;
             float m_shoutCameraTransitionDuration = 0.0f;
             float m_ignoredCameraPitch = -8.f * PI / 180.f;
+            const float m_maxTargetOffset = 20.0f * PI / 180.f;
+            float m_yawOffsetStrength = 0.25f;
+            float m_pitchOffsetStrength = 0.25f;
     }; // class CameraLockManager
 }  // namespace IDRC

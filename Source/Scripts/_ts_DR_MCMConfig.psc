@@ -39,6 +39,9 @@ float property fTargetScanAngle auto hidden conditional
 string[] InitialCameraLockList
 bool property bCameraLockInitiallyEnabled auto hidden conditional
 float property fIgnoredCameraPitch auto hidden conditional
+float property fYawOffsetStrength auto hidden conditional
+float property fPitchOffsetStrength auto hidden conditional
+
 int iToggleCameraLockKey
 ;int iAttackRegularKey
 ;int iAttackAlternateKey
@@ -79,6 +82,8 @@ int iTargetScanAngle_OID
 int iCameraLockEnabled_OID
 int iToggleCameraLockKey_OID
 int iIgnoredCameraPitch_OID
+int iYawOffsetStrength_OID
+int iPitchOffsetStrength_OID
 
 int function GetDisplayHealthKey()
 	return iDisplayHealthKey
@@ -163,6 +168,12 @@ endFunction
 float function GetIgnoredCameraPitch()
 	return fIgnoredCameraPitch
 endFunction
+float function GetYawOffsetStrength()
+	return fYawOffsetStrength
+endFunction
+float function GetPitchOffsetStrength()
+	return fPitchOffsetStrength
+endFunction
 
 event OnConfigInit()
 	iDisplayHealthKey = input.GetMappedKey("Ready Weapon", 0)
@@ -218,6 +229,8 @@ event OnConfigInit()
 	bCameraLockInitiallyEnabled = true
 	iToggleCameraLockKey = 46 ; "C"
 	fIgnoredCameraPitch = 8.0
+	fYawOffsetStrength = 0.25
+	fPitchOffsetStrength = 0.25
 EndEvent
 
 
@@ -357,7 +370,15 @@ Event OnOptionDefault(int option)
 	elseif option == iIgnoredCameraPitch_OID
 		fIgnoredCameraPitch = 8.0
 		SetSliderOptionValue(iIgnoredCameraPitch_OID, fIgnoredCameraPitch, "{1}")
-		(DragonRideQuest as _ts_DR_RideControlScript).SetIgnoredCameraPitch(fIgnoredCameraPitch)	
+		(DragonRideQuest as _ts_DR_RideControlScript).SetIgnoredCameraPitch(fIgnoredCameraPitch)
+	elseif option == iYawOffsetStrength_OID
+		fYawOffsetStrength = 0.25
+		SetSliderOptionValue(iYawOffsetStrength_OID, fYawOffsetStrength, "{2}")
+		(DragonRideQuest as _ts_DR_RideControlScript).SetYawOffsetStrength(fYawOffsetStrength)
+	elseif option == iPitchOffsetStrength_OID
+		fPitchOffsetStrength = 0.25
+		SetSliderOptionValue(iPitchOffsetStrength_OID, fPitchOffsetStrength, "{2}")
+		(DragonRideQuest as _ts_DR_RideControlScript).SetPitchOffsetStrength(fPitchOffsetStrength)
 	endif
 
 endevent
@@ -415,27 +436,28 @@ function OnPageReset(String page)
 		SetCursorPosition(0)
 		AddHeaderOption("Combat Mode", 0)
 		AddHeaderOption("Combat Target", 0)
-		AddEmptyOption()
-		AddEmptyOption()
 		iCombatMode_OID = AddMenuOption("Initial Combat Mode", CombatModeList[iCombatMode])
-		iPrimaryTargetMode_OID = AddMenuOption("Primary Target", PrimaryTargetModeList[iPrimaryTargetMode])
+		AddEmptyOption()
 		iAutoCombat_OID = AddKeyMapOption("Toggle Combat Mode", iAutoCombatKey, 0)
+		iPrimaryTargetMode_OID = AddMenuOption("Primary Target", PrimaryTargetModeList[iPrimaryTargetMode])
+		AddEmptyOption()
 		iTargetScanAngle_OID = AddSliderOption("Target Scan Angle", fTargetScanAngle, "{1}")
-		AddEmptyOption()
+		AddHeaderOption("Camera Offsets during Attacks", 0)
 		iMaxTargetDistance_OID = AddSliderOption("Maximum Target Distance", fMaxTargetDistance, "{1}")
-		AddEmptyOption()
+		iYawOffsetStrength_OID = AddSliderOption("Yaw Offset Strength", fYawOffsetStrength, "{2}")
 		iDistanceMultiplierSmall_OID = AddSliderOption("Distance Multiplier Small Targets", fDistanceMultiplierSmall, "{1}")
-		AddHeaderOption("Target Reticle (Requires TrueHUD)", 0)
+		iPitchOffsetStrength_OID = AddSliderOption("Pitch Offset Strength", fPitchOffsetStrength, "{2}")
 		iDistanceMultiplierLarge_OID = AddSliderOption("Distance Multiplier Large Targets", fDistanceMultiplierLarge, "{1}")
 		AddEmptyOption()
 		iDistanceMultiplierExtraLarge_OID = AddSliderOption("Distance Multiplier Extra Large Targets", fDistanceMultiplierExtraLarge, "{1}")
-		iTargetReticleMode_OID = AddMenuOption("Target Reticle", TargetReticleModeList[iTargetReticleMode])
+		AddHeaderOption("Target Reticle (Requires TrueHUD)", 0)
 		AddEmptyOption()
-		iToggleLockReticle_OID = AddKeyMapOption("Lock / Unlock Target Reticle", iToggleLockReticleKey, 0)
+		iTargetReticleMode_OID = AddMenuOption("Target Reticle", TargetReticleModeList[iTargetReticleMode])
 		AddHeaderOption("True Directional Movement Interaction", 0)
-		iReticleLockAnimationStyle_OID = AddMenuOption("Reticle Lock Animation", ReticleLockAnimationStyleList[iReticleLockAnimationStyle])
+		iToggleLockReticle_OID = AddKeyMapOption("Lock / Unlock Target Reticle", iToggleLockReticleKey, 0)
 ;		iTogglePrimaryTargetMode_OID = AddKeyMapOption("Toggle Primary Target", iTogglePrimaryTargetModeKey, 0)
 		iTDMLock_OID = AddMenuOption("TDM Target Lock Focus", TDMLockList[iTDMLock])
+		iReticleLockAnimationStyle_OID = AddMenuOption("Reticle Lock Animation", ReticleLockAnimationStyleList[iReticleLockAnimationStyle])
 	endIf	
 endFunction
 
@@ -480,6 +502,16 @@ event OnOptionSliderOpen(int option)
 		SetSliderDialogDefaultValue(8.0)
 		SetSliderDialogRange(0.0, 90.0)
 		SetSliderDialogInterval(1.0)
+	elseif option == iYawOffsetStrength_OID
+		SetSliderDialogStartValue(fYawOffsetStrength)
+		SetSliderDialogDefaultValue(0.25)
+		SetSliderDialogRange(-1.0, 1.0)
+		SetSliderDialogInterval(0.05)
+	elseif option == iPitchOffsetStrength_OID
+		SetSliderDialogStartValue(fPitchOffsetStrength)
+		SetSliderDialogDefaultValue(0.25)
+		SetSliderDialogRange(0.0, 1.0)
+		SetSliderDialogInterval(0.05)
 	endif
 endevent
 
@@ -516,6 +548,14 @@ event OnOptionSliderAccept(int option, float value)
 		fIgnoredCameraPitch = value
 		SetSliderOptionValue(iIgnoredCameraPitch_OID, fIgnoredCameraPitch, "{1}")
 		(DragonRideQuest as _ts_DR_RideControlScript).SetIgnoredCameraPitch(fIgnoredCameraPitch)
+	elseif option == iYawOffsetStrength_OID
+		fYawOffsetStrength = value
+		SetSliderOptionValue(iYawOffsetStrength_OID, fYawOffsetStrength, "{2}")
+		(DragonRideQuest as _ts_DR_RideControlScript).SetYawOffsetStrength(fYawOffsetStrength)
+	elseif option == iPitchOffsetStrength_OID
+		fPitchOffsetStrength = value
+		SetSliderOptionValue(iPitchOffsetStrength_OID, fPitchOffsetStrength, "{2}")
+		(DragonRideQuest as _ts_DR_RideControlScript).SetPitchOffsetStrength(fPitchOffsetStrength)
 	endif
 endevent
 
@@ -633,9 +673,9 @@ function OnOptionHighlight(Int option)
 	elseif option == iRollAmplitude_OID
 		SetInfoText("Defines the strength of the camera roll while mounted.")
 	elseif option == iForward_OID
-		SetInfoText("Press this key to accelerate the dragon (Hover->Orbit->Fly), and to move forward while grounded.")
+		SetInfoText("Press this key to accelerate the dragon (Hover->Fly), and to move forward while grounded.")
 	elseif option == iBack_OID
-		SetInfoText("Press this key to decelerate the dragon (Fly->Orbit->Hover->Land), and to take off while grounded.")
+		SetInfoText("Press this key to decelerate the dragon (Fly->Hover->Land), and to take off while grounded.")
 	elseif option == iStrafeLeft_OID
 		SetInfoText("Press this key to turn left.")
 	elseif option == iStrafeRight_OID
@@ -682,6 +722,10 @@ function OnOptionHighlight(Int option)
 		SetInfoText("Press this key to toggle camera lock on/off.")
 	elseif option == iIgnoredCameraPitch_OID
 		SetInfoText("Downward camera pitches until this angle will not trigger height changes of the flying dragon.")
+	elseif option == iYawOffsetStrength_OID
+		SetInfoText("Strength of the camera yaw offset during a dragon attack.")
+	elseif option == iPitchOffsetStrength_OID
+		SetInfoText("Strength of the camera pitch offset during a dragon attack.")
 	else
 		SetInfoText("")
 		; no change

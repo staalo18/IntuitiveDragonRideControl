@@ -86,6 +86,8 @@ _ts_Debug_Trace_Message("IDRC - _ts_DR_RideControlScript - InitVariables: IsUsin
 	SetDistanceMultiplierExtraLarge((MCMConfigQuest as _ts_DR_MCMConfig).fDistanceMultiplierExtraLarge)
 	SetMaxTargetScanAngle((MCMConfigQuest as _ts_DR_MCMConfig).fTargetScanAngle)
 	SetIgnoredCameraPitch((MCMConfigQuest as _ts_DR_MCMConfig).fIgnoredCameraPitch)
+	SetYawOffsetStrength((MCMConfigQuest as _ts_DR_MCMConfig).fYawOffsetStrength)
+	SetPitchOffsetStrength((MCMConfigQuest as _ts_DR_MCMConfig).fPitchOffsetStrength)
 
 	if bIsOnLoad
 		if (MCMConfigQuest as _ts_DR_MCMConfig) != None
@@ -319,6 +321,16 @@ endfunction
 function SetIgnoredCameraPitch_SKSE(float fIgnoredCameraPitch) global native
 function SetIgnoredCameraPitch(float fIgnoredCameraPitch)
 	SetIgnoredCameraPitch_SKSE(fIgnoredCameraPitch)
+endfunction
+
+function SetYawOffsetStrength_SKSE(float fYawOffsetStrength) global native
+function SetYawOffsetStrength(float fYawOffsetStrength)
+	SetYawOffsetStrength_SKSE(fYawOffsetStrength)
+endfunction
+
+function SetPitchOffsetStrength_SKSE(float fPitchOffsetStrength) global native
+function SetPitchOffsetStrength(float fPitchOffsetStrength)
+	SetPitchOffsetStrength_SKSE(fPitchOffsetStrength)
 endfunction
 
 ; Interface to other scripts
