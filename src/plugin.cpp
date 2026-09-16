@@ -181,6 +181,11 @@ namespace IDRC {
             CameraLockManager::GetSingleton().SetPitchOffsetStrength(a_strength);
         }
 
+        void SetInvertPitchOffsetDuringFlight_SKSE(RE::StaticFunctionTag*, bool a_invert) {
+            log::info("{}: {}", __FUNCTION__, a_invert);
+            CameraLockManager::GetSingleton().SetInvertPitchOffsetDuringFlight(a_invert);
+        }
+
         RE::BSScript::LatentStatus DragonLandPlayerRiding_SKSE_Latent(RE::BSScript::Internal::VirtualMachine* a_vm, RE::VMStackID a_stackID, RE::StaticFunctionTag*, RE::TESObjectREFR* a_landTarget) {
             std::thread([a_vm, a_stackID, a_landTarget]() {
                 bool result = FlyingModeManager::GetSingleton().DragonLandPlayerRiding(a_landTarget);
@@ -243,6 +248,7 @@ namespace IDRC {
             a_vm->RegisterFunction("SetIgnoredCameraPitch_SKSE", "_ts_DR_RideControlScript", SetIgnoredCameraPitch_SKSE);
             a_vm->RegisterFunction("SetYawOffsetStrength_SKSE", "_ts_DR_RideControlScript", SetYawOffsetStrength_SKSE);
             a_vm->RegisterFunction("SetPitchOffsetStrength_SKSE", "_ts_DR_RideControlScript", SetPitchOffsetStrength_SKSE);
+            a_vm->RegisterFunction("SetInvertPitchOffsetDuringFlight_SKSE", "_ts_DR_RideControlScript", SetInvertPitchOffsetDuringFlight_SKSE);
         
             // functions for GoTDragonCompanions
             a_vm->RegisterFunction("SetAutoCombat_SKSE", "_ts_DR_RideControlScript", SetAutoCombat_SKSE);

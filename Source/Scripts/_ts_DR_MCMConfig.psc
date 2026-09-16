@@ -41,6 +41,7 @@ bool property bCameraLockInitiallyEnabled auto hidden conditional
 float property fIgnoredCameraPitch auto hidden conditional
 float property fYawOffsetStrength auto hidden conditional
 float property fPitchOffsetStrength auto hidden conditional
+bool property bInvertPitchOffsetDuringFlight auto hidden conditional
 
 int iToggleCameraLockKey
 ;int iAttackRegularKey
@@ -84,6 +85,7 @@ int iToggleCameraLockKey_OID
 int iIgnoredCameraPitch_OID
 int iYawOffsetStrength_OID
 int iPitchOffsetStrength_OID
+int iInvertPitchOffsetDuringFlight_OID
 
 int function GetDisplayHealthKey()
 	return iDisplayHealthKey
@@ -174,6 +176,9 @@ endFunction
 float function GetPitchOffsetStrength()
 	return fPitchOffsetStrength
 endFunction
+bool function GetInvertPitchOffsetDuringFlight()
+	return bInvertPitchOffsetDuringFlight
+endFunction
 
 event OnConfigInit()
 	iDisplayHealthKey = input.GetMappedKey("Ready Weapon", 0)
@@ -231,6 +236,7 @@ event OnConfigInit()
 	fIgnoredCameraPitch = 8.0
 	fYawOffsetStrength = 0.25
 	fPitchOffsetStrength = 0.25
+	bInvertPitchOffsetDuringFlight = true
 EndEvent
 
 
@@ -379,6 +385,10 @@ Event OnOptionDefault(int option)
 		fPitchOffsetStrength = 0.25
 		SetSliderOptionValue(iPitchOffsetStrength_OID, fPitchOffsetStrength, "{2}")
 		(DragonRideQuest as _ts_DR_RideControlScript).SetPitchOffsetStrength(fPitchOffsetStrength)
+	elseif option == iInvertPitchOffsetDuringFlight_OID
+		bInvertPitchOffsetDuringFlight = true
+		SetToggleOptionValue(iInvertPitchOffsetDuringFlight_OID, bInvertPitchOffsetDuringFlight)
+		(DragonRideQuest as _ts_DR_RideControlScript).SetInvertPitchOffsetDuringFlight(bInvertPitchOffsetDuringFlight)
 	endif
 
 endevent
@@ -437,27 +447,28 @@ function OnPageReset(String page)
 		AddHeaderOption("Combat Mode", 0)
 		AddHeaderOption("Combat Target", 0)
 		iCombatMode_OID = AddMenuOption("Initial Combat Mode", CombatModeList[iCombatMode])
-		AddEmptyOption()
-		iAutoCombat_OID = AddKeyMapOption("Toggle Combat Mode", iAutoCombatKey, 0)
 		iPrimaryTargetMode_OID = AddMenuOption("Primary Target", PrimaryTargetModeList[iPrimaryTargetMode])
-		AddEmptyOption()
+		iAutoCombat_OID = AddKeyMapOption("Toggle Combat Mode", iAutoCombatKey, 0)
 		iTargetScanAngle_OID = AddSliderOption("Target Scan Angle", fTargetScanAngle, "{1}")
-		AddHeaderOption("Camera Offsets during Attacks", 0)
+		AddEmptyOption()
 		iMaxTargetDistance_OID = AddSliderOption("Maximum Target Distance", fMaxTargetDistance, "{1}")
-		iYawOffsetStrength_OID = AddSliderOption("Yaw Offset Strength", fYawOffsetStrength, "{2}")
-		iDistanceMultiplierSmall_OID = AddSliderOption("Distance Multiplier Small Targets", fDistanceMultiplierSmall, "{1}")
-		iPitchOffsetStrength_OID = AddSliderOption("Pitch Offset Strength", fPitchOffsetStrength, "{2}")
-		iDistanceMultiplierLarge_OID = AddSliderOption("Distance Multiplier Large Targets", fDistanceMultiplierLarge, "{1}")
-		AddEmptyOption()
-		iDistanceMultiplierExtraLarge_OID = AddSliderOption("Distance Multiplier Extra Large Targets", fDistanceMultiplierExtraLarge, "{1}")
 		AddHeaderOption("Target Reticle (Requires TrueHUD)", 0)
-		AddEmptyOption()
+		iDistanceMultiplierSmall_OID = AddSliderOption("Distance Multiplier Small Targets", fDistanceMultiplierSmall, "{1}")
 		iTargetReticleMode_OID = AddMenuOption("Target Reticle", TargetReticleModeList[iTargetReticleMode])
-		AddHeaderOption("True Directional Movement Interaction", 0)
+		iDistanceMultiplierLarge_OID = AddSliderOption("Distance Multiplier Large Targets", fDistanceMultiplierLarge, "{1}")
 		iToggleLockReticle_OID = AddKeyMapOption("Lock / Unlock Target Reticle", iToggleLockReticleKey, 0)
-;		iTogglePrimaryTargetMode_OID = AddKeyMapOption("Toggle Primary Target", iTogglePrimaryTargetModeKey, 0)
-		iTDMLock_OID = AddMenuOption("TDM Target Lock Focus", TDMLockList[iTDMLock])
+		iDistanceMultiplierExtraLarge_OID = AddSliderOption("Distance Multiplier Extra Large Targets", fDistanceMultiplierExtraLarge, "{1}")
 		iReticleLockAnimationStyle_OID = AddMenuOption("Reticle Lock Animation", ReticleLockAnimationStyleList[iReticleLockAnimationStyle])
+		AddEmptyOption()
+		AddEmptyOption()
+		AddHeaderOption("Camera Offsets During Attacks", 0)
+		AddHeaderOption("True Directional Movement Interaction", 0)
+		iYawOffsetStrength_OID = AddSliderOption("Yaw Offset Strength", fYawOffsetStrength, "{2}")
+		iTDMLock_OID = AddMenuOption("TDM Target Lock Focus", TDMLockList[iTDMLock])
+		iPitchOffsetStrength_OID = AddSliderOption("Pitch Offset Strength", fPitchOffsetStrength, "{2}")
+		AddEmptyOption()
+;		iTogglePrimaryTargetMode_OID = AddKeyMapOption("Toggle Primary Target", iTogglePrimaryTargetModeKey, 0)
+		iInvertPitchOffsetDuringFlight_OID = AddToggleOption("Invert Pitch Offset During Flight Attacks", bInvertPitchOffsetDuringFlight, 0)
 	endIf	
 endFunction
 
@@ -649,6 +660,10 @@ function OnOptionSelect(Int option)
 		bRegenHealth = !bRegenHealth
 		SetToggleOptionValue(iRegenHealth_OID, bRegenHealth, false)
 		(DragonRideQuest as _ts_DR_RideControlScript).SetRegenerateHealth(bRegenHealth)
+	elseif option == iInvertPitchOffsetDuringFlight_OID
+		bInvertPitchOffsetDuringFlight = !bInvertPitchOffsetDuringFlight
+		SetToggleOptionValue(iInvertPitchOffsetDuringFlight_OID, bInvertPitchOffsetDuringFlight, false)
+		(DragonRideQuest as _ts_DR_RideControlScript).SetInvertPitchOffsetDuringFlight(bInvertPitchOffsetDuringFlight)
 	endIf
 endFunction
 
@@ -658,6 +673,8 @@ function OnOptionHighlight(Int option)
 		SetInfoText("Displays messages when commanding attacks.")
 ;	elseif option == iSkipOrbit_OID
 ;		SetInfoText("If activated, Orbit mode is skipped when accelerating or decelerating the dragon.")
+	elseif option == iInvertPitchOffsetDuringFlight_OID
+		SetInfoText("If activated, the camera is offset below the center during flight attacks, otherwise above center.")
 	elseif option == iTriggerMessage_OID
 		SetInfoText("If activated, the dragon comments when commanded to attack.")
 	elseif option == iDragonRoars_OID

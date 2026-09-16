@@ -185,7 +185,10 @@ namespace IDRC {
 //                if (cameraDistance > 10.0f) { TODO: ImprovedCamera firstPerson support - Check SmoothCam / TDM sources _ImprovedCamera_IsFirstPerson for reference.
                     const float yawTheta =  m_maxTargetOffset * m_yawOffsetStrength;
                     auto flyingMode = FlyingModeManager::GetSingleton().GetFlyingMode();
-                    float pitchOffsetSign = (flyingMode == FlyingMode::kLanded || flyingMode == FlyingMode::kPerching) ? 1.0f : -1.0f;
+                    float pitchOffsetSign = 1.0f;
+                    if (m_invertPitchOffsetDuringFlight && flyingMode != FlyingMode::kLanded && flyingMode != FlyingMode::kPerching) {
+                        pitchOffsetSign = -1.0f;
+                    }
                     const float pitchTheta =  m_maxTargetOffset * m_pitchOffsetStrength * pitchOffsetSign;
                     float dX = shoutTargetPos.x - dragonPos.x;
                     float dY = shoutTargetPos.y - dragonPos.y;
@@ -296,5 +299,9 @@ namespace IDRC {
 
     void CameraLockManager::SetPitchOffsetStrength(float a_strength) {
         m_pitchOffsetStrength = a_strength;
+    }
+
+    void CameraLockManager::SetInvertPitchOffsetDuringFlight(bool a_invert) {
+        m_invertPitchOffsetDuringFlight = a_invert;
     }
 }  // namespace IDRC

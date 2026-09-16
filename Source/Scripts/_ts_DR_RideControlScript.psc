@@ -88,6 +88,7 @@ _ts_Debug_Trace_Message("IDRC - _ts_DR_RideControlScript - InitVariables: IsUsin
 	SetIgnoredCameraPitch((MCMConfigQuest as _ts_DR_MCMConfig).fIgnoredCameraPitch)
 	SetYawOffsetStrength((MCMConfigQuest as _ts_DR_MCMConfig).fYawOffsetStrength)
 	SetPitchOffsetStrength((MCMConfigQuest as _ts_DR_MCMConfig).fPitchOffsetStrength)
+	SetInvertPitchOffsetDuringFlight((MCMConfigQuest as _ts_DR_MCMConfig).bInvertPitchOffsetDuringFlight)
 
 	if bIsOnLoad
 		if (MCMConfigQuest as _ts_DR_MCMConfig) != None
@@ -331,6 +332,11 @@ endfunction
 function SetPitchOffsetStrength_SKSE(float fPitchOffsetStrength) global native
 function SetPitchOffsetStrength(float fPitchOffsetStrength)
 	SetPitchOffsetStrength_SKSE(fPitchOffsetStrength)
+endfunction
+
+function SetInvertPitchOffsetDuringFlight_SKSE(bool bInvert) global native
+function SetInvertPitchOffsetDuringFlight(bool bInvert)
+	SetInvertPitchOffsetDuringFlight_SKSE(bInvert)
 endfunction
 
 ; Interface to other scripts

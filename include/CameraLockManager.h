@@ -31,8 +31,10 @@ namespace IDRC {
             void SetIgnoredCameraPitch(float a_pitch);
 
             void SetYawOffsetStrength(float a_strength);
-            
+
             void SetPitchOffsetStrength(float a_strength);
+
+            void SetInvertPitchOffsetDuringFlight(bool a_invert);
 
         private:
             CameraLockManager() = default;
@@ -57,5 +59,6 @@ namespace IDRC {
             const float m_maxTargetOffset = 20.0f * PI / 180.f;
             float m_yawOffsetStrength = 0.25f;
             float m_pitchOffsetStrength = 0.25f;
+            bool m_invertPitchOffsetDuringFlight = true;
     }; // class CameraLockManager
 }  // namespace IDRC
