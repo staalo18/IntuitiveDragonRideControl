@@ -172,7 +172,7 @@ namespace IDRC {
 
             auto* shoutTarget = combatManager.GetShoutTarget();
             bool shoutTargetingActive = combatManager.IsShoutActive() && shoutTarget;
-            if (shoutTargetingActive) {
+            if (shoutTargetingActive && !isTDMLocked) {
                 auto dragonPos = dragonActor->GetPosition();
                 auto shoutTargetPos = shoutTarget->GetPosition();
                 float cameraDistance = dragonPos.GetDistance(_ts_SKSEFunctions::GetCameraPos());

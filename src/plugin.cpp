@@ -342,7 +342,7 @@ extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* sks
 
     log::info("{}: Calling Install Hooks", __FUNCTION__);
 
-    SKSE::AllocTrampoline(18*14);
+    SKSE::AllocTrampoline(20*14);
 
     Hooks::Install();
 
